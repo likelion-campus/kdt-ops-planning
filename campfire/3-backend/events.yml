@@ -1,0 +1,31 @@
+# Campfire — Amplitude/내부 분석 이벤트 정의 (단일 진실)
+
+version: 1
+owner: be-campfire-lead
+
+events:
+  checkin_prompted:
+    description: "Trainee에게 Check-in 알림이 노출된 시점."
+    properties:
+      cohort_id: string
+      channel: "enum: push|inapp|email"
+
+  checkin_submitted:
+    description: "Daily Check-in 응답 제출 완료."
+    properties:
+      cohort_id: string
+      squad_id: string
+      mood: "enum: great|ok|tired|stuck"
+      response_time_ms: number
+
+  checkin_missed_streak_3:
+    description: "3일 연속 미수행 감지, Operator 알림 발송."
+    properties:
+      trainee_id: string
+      cohort_id: string
+
+  operator_alert_viewed:
+    description: "Operator가 알림 리스트를 열람한 시점."
+    properties:
+      operator_id: string
+      alert_count: number

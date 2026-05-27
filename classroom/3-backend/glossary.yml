@@ -1,0 +1,16 @@
+version: 1
+owner: be-classroom-lead
+
+terms:
+  Lecture:
+    description: "1회차 강의 단위. Cohort에 속한다."
+    entity: Lecture
+  Session:
+    description: "Lecture 안의 라이브/녹화 슬롯. 입장 가능 시간 구간을 가진다."
+    entity: Session
+  AINote:
+    description: "Trainee가 Session 중 작성하는 AI 보조 학습 노트."
+    entity: AINote
+  Attendance:
+    description: "Trainee × Session 의 출석 기록."
+    entity: Attendance

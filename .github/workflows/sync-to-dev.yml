@@ -1,0 +1,121 @@
+# v1 PPT의 단방향 sync 패턴 계승 + 팀×역할 path 필터링
+# main 브랜치 push 시 path별로 다운스트림 4개 레포에 PR 생성/갱신
+#
+# 사전 준비:
+#   - secrets.SYNC_TOKEN: 4개 다운스트림 레포에 write 권한 가진 PAT
+#   - 각 다운스트림 레포에 planning-docs/ 디렉터리 존재 (1:1 mirror with --delete)
+
+name: sync-to-dev
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'shared/**'
+      - 'campfire/**'
+      - 'classroom/**'
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      campfire_fe: ${{ steps.filter.outputs.campfire_fe }}
+      campfire_be: ${{ steps.filter.outputs.campfire_be }}
+      classroom_fe: ${{ steps.filter.outputs.classroom_fe }}
+      classroom_be: ${{ steps.filter.outputs.classroom_be }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            campfire_fe:
+              - 'shared/**'
+              - 'campfire/1-planning/**'
+              - 'campfire/2-design/**'
+              - 'campfire/4-frontend/**'
+            campfire_be:
+              - 'shared/**'
+              - 'campfire/1-planning/**'
+              - 'campfire/3-backend/**'
+            classroom_fe:
+              - 'shared/**'
+              - 'classroom/1-planning/**'
+              - 'classroom/2-design/**'
+              - 'classroom/4-frontend/**'
+            classroom_be:
+              - 'shared/**'
+              - 'classroom/1-planning/**'
+              - 'classroom/3-backend/**'
+
+  sync:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: campfire-fe
+            condition: ${{ needs.detect.outputs.campfire_fe == 'true' }}
+            paths: "shared campfire/1-planning campfire/2-design campfire/4-frontend"
+          - target: campfire-be
+            condition: ${{ needs.detect.outputs.campfire_be == 'true' }}
+            paths: "shared campfire/1-planning campfire/3-backend"
+          - target: classroom-fe
+            condition: ${{ needs.detect.outputs.classroom_fe == 'true' }}
+            paths: "shared classroom/1-planning classroom/2-design classroom/4-frontend"
+          - target: classroom-be
+            condition: ${{ needs.detect.outputs.classroom_be == 'true' }}
+            paths: "shared classroom/1-planning classroom/3-backend"
+    steps:
+      - name: Skip if no changes
+        if: ${{ matrix.condition != 'true' }}
+        run: echo "No changes for ${{ matrix.target }}, skipping." && exit 0
+
+      - name: Checkout planning repo
+        if: ${{ matrix.condition == 'true' }}
+        uses: actions/checkout@v4
+
+      - name: Checkout target dev repo
+        if: ${{ matrix.condition == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: kdt-ops/${{ matrix.target }}
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: _target
+
+      - name: Mirror paths (1:1 with --delete)
+        if: ${{ matrix.condition == 'true' }}
+        run: |
+          BRANCH="sync/planning-${{ github.sha }}"
+          cd _target
+          git checkout -B "$BRANCH"
+          mkdir -p planning-docs
+          for p in ${{ matrix.paths }}; do
+            mkdir -p "planning-docs/$p"
+            rsync -a --delete "../$p/" "planning-docs/$p/"
+          done
+          git config user.name "kdt-ops-sync-bot"
+          git config user.email "sync-bot@likelion.net"
+          git add planning-docs
+          if git diff --cached --quiet; then
+            echo "No diff after mirror, skipping."
+            exit 0
+          fi
+          git commit -m "docs: sync from planning@${GITHUB_SHA::7}"
+          git push -f origin "$BRANCH"
+
+      - name: Open or update PR
+        if: ${{ matrix.condition == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          cd _target
+          BRANCH="sync/planning-${{ github.sha }}"
+          gh pr create \
+            --repo kdt-ops/${{ matrix.target }} \
+            --base main \
+            --head "$BRANCH" \
+            --title "docs: sync from planning@${GITHUB_SHA::7}" \
+            --body "Auto-sync from kdt-ops-planning. See [source commit](${{ github.event.head_commit.url }})." \
+            || gh pr comment --repo kdt-ops/${{ matrix.target }} "$BRANCH" --body "Updated: ${{ github.event.head_commit.url }}"

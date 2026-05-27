@@ -1,0 +1,34 @@
+# figma-links.yml 에 등록된 URL의 형식·접근성을 주 1회 자동 점검.
+
+name: figma-link-check
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # 매주 월요일 00:00 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/figma-links.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate figma URLs
+        run: |
+          set -e
+          fail=0
+          for f in campfire/2-design/figma-links.yml classroom/2-design/figma-links.yml; do
+            [ -f "$f" ] || continue
+            echo "Checking $f"
+            urls=$(grep -oE 'https://(www\.)?figma\.com/[^ "]+' "$f" || true)
+            for u in $urls; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 15 "$u" || echo "000")
+              if [[ "$code" != "200" && "$code" != "302" && "$code" != "301" ]]; then
+                echo "::error file=$f::Figma URL unreachable ($code): $u"
+                fail=1
+              fi
+            done
+          done
+          exit $fail

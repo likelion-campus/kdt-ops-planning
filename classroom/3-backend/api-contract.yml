@@ -1,0 +1,13 @@
+version: 1
+owner: be-classroom-lead
+
+endpoints:
+  "GET /classroom/sessions/today":
+    summary: "오늘 진행되는 Session 리스트"
+    auth: trainee
+    related_policies: [POL-CR-01]
+
+  "POST /classroom/sessions/{sessionId}/enter":
+    summary: "Session 입장 기록"
+    auth: trainee
+    related_policies: [POL-CR-01]

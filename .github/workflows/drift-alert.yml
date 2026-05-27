@@ -1,0 +1,47 @@
+# 다운스트림 4개 레포의 planning-docs/ 와 본 레포의 SSOT 가 일치하는지 일일 검증.
+# 불일치 발생 시 issue 자동 생성 (sync 실패 조기 감지).
+
+name: drift-alert
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # 매일 KST 08:00 (UTC 23:00)
+  workflow_dispatch:
+
+jobs:
+  detect-drift:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [campfire-fe, campfire-be, classroom-fe, classroom-be]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: planning
+      - uses: actions/checkout@v4
+        with:
+          repository: kdt-ops/${{ matrix.target }}
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: target
+      - name: Diff planning vs target/planning-docs
+        id: diff
+        run: |
+          set +e
+          # target 레포는 다운스트림에서 'planning-docs/' 아래에 미러됨
+          diff -rq planning target/planning-docs > drift.txt
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+            head -50 drift.txt
+          fi
+          exit 0
+      - name: Open drift issue
+        if: steps.diff.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[drift] ${{ matrix.target }} planning-docs out of sync" \
+            --body "$(head -100 drift.txt)" \
+            --label drift,automation

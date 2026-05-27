@@ -1,0 +1,15 @@
+version: 1
+owner: be-classroom-lead
+
+events:
+  session_entered:
+    description: "Trainee 가 Session 에 입장"
+    properties:
+      session_id: string
+      latency_sec: number
+
+  session_left_early:
+    description: "5분 이상 idle 또는 명시적 퇴장"
+    properties:
+      session_id: string
+      reason: "enum: idle|explicit"

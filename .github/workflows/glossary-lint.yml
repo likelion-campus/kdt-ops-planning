@@ -1,0 +1,24 @@
+# v1 한계 ③ "용어 불일치" 차단: 본문에서 정의되지 않은 핵심 명사 사용 시 PR fail.
+# 룰: shared/glossary.yml + {team}/3-backend/glossary.yml 에 정의된 term만 허용.
+
+name: glossary-lint
+
+on:
+  pull_request:
+    paths:
+      - 'shared/**'
+      - 'campfire/**'
+      - 'classroom/**'
+      - 'scripts/lint-glossary.mjs'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save js-yaml glob
+      - name: Run glossary lint
+        run: node scripts/lint-glossary.mjs

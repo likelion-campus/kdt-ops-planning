@@ -1,0 +1,27 @@
+# 전사 공통 용어사전 (v1 한계 ③ "용어 불일치" 차단)
+# 도메인 특화 용어는 {team}/3-backend/glossary.yml 에서 관리
+# 룰: 신규 용어는 PR로 추가, BE 리드 승인 필수
+
+version: 1
+owner: be-leads
+
+terms:
+  KDT:
+    full_name: "K-Digital Training"
+    description: "고용노동부 주관 디지털 인재 양성 부트캠프."
+    aliases: ["케이디티"]
+  AXP:
+    full_name: "Academic Experience Platform"
+    description: "KDT 운영을 위한 멋쟁이사자처럼 내부 플랫폼 통칭."
+  Bootcamp:
+    description: "한 기수(보통 5~6개월) 단위로 운영되는 KDT 과정."
+    aliases: ["부트캠프", "기수"]
+  Trainee:
+    description: "부트캠프 수강생."
+    aliases: ["수강생", "교육생"]
+  Operator:
+    description: "부트캠프 운영진(매니저/멘토 포함)."
+    aliases: ["운영진"]
+  Cohort:
+    description: "동일 기수 그룹."
+    aliases: ["기수"]

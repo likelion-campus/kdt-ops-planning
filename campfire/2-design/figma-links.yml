@@ -1,0 +1,21 @@
+# Figma 임베드 대신 링크만 관리 (v1 한계 ⑤ 대응)
+# figma-link-check.yml 워크플로우가 주 1회 URL liveness 검증.
+
+version: 1
+file_root: "https://www.figma.com/design/REPLACE_FILE_KEY/campfire"
+
+screens:
+  daily-checkin-list:
+    node: "1:23"
+    url: "https://www.figma.com/design/REPLACE_FILE_KEY/campfire?node-id=1-23"
+    last_review: "2026-05-26"
+  daily-checkin-form:
+    node: "1:48"
+    url: "https://www.figma.com/design/REPLACE_FILE_KEY/campfire?node-id=1-48"
+    last_review: "2026-05-26"
+
+# PRD ID → 사용하는 screen 키 매핑 (prd-gate.yml 이 ready-for-dev 승격 시 확인)
+prd_map:
+  PRD-campfire-daily-checkin:
+    - daily-checkin-list
+    - daily-checkin-form

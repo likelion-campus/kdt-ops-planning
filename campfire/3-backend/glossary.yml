@@ -1,0 +1,17 @@
+# Campfire 도메인 용어. shared/glossary.yml 의 용어는 자동 상속됨.
+
+version: 1
+owner: be-campfire-lead
+
+terms:
+  Squad:
+    description: "Cohort 안의 5~7명 단위 소그룹. Daily Check-in 의 1차 공유 단위."
+    entity: Squad
+  "Daily Check-in":
+    description: "평일 09:00~10:30 사이 Trainee가 컨디션·계획을 응답하는 의식."
+    entity: DailyCheckin
+    aliases: ["체크인", "데일리"]
+  CheckinPrompt:
+    description: "Daily Check-in 시 보여지는 3개 질문 묶음."
+  StreakCount:
+    description: "Trainee가 연속으로 Check-in 한 평일 수."

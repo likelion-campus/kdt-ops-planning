@@ -1,0 +1,27 @@
+# Campfire — API contract 요약 (planning surface)
+# 실제 OpenAPI spec 은 campfire-be 레포의 openapi.yaml 이 단일 진실.
+# 여기서는 endpoint id + 정책 매핑만.
+
+version: 1
+owner: be-campfire-lead
+
+endpoints:
+  "GET /campfire/checkin/today":
+    summary: "오늘 본인의 Check-in 상태 조회"
+    auth: trainee
+    related_policies: [POL-CF-01]
+
+  "POST /campfire/checkin":
+    summary: "Daily Check-in 응답 제출"
+    auth: trainee
+    related_policies: [POL-CF-01]
+
+  "GET /campfire/squad/{squadId}/checkin":
+    summary: "Squad 일자별 Check-in 보드 (Operator + 같은 Squad Trainee)"
+    auth: trainee_or_operator
+    related_policies: [POL-CF-01]
+
+  "GET /campfire/operator/alerts":
+    summary: "3일 연속 미수행 Trainee 리스트"
+    auth: operator
+    related_policies: [POL-CF-01]
