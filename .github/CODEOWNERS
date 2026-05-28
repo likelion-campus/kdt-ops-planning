@@ -4,7 +4,7 @@
 # TODO: 각 영역 담당자 GitHub 핸들 추가하기.
 
 # 전역 fallback (어디에도 매칭 안 되면 이 사람들에게)
-*                              @JBlikelion
+*                              @JBlikelion @likelion-simu
 
 # 전사 공통
 /shared/                       @JBlikelion
