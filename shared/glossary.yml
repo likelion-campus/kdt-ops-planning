@@ -23,5 +23,5 @@ terms:
     description: "부트캠프 운영진(매니저/멘토 포함)."
     aliases: ["운영진"]
   Cohort:
-    description: "동일 기수 그룹."
-    aliases: ["기수"]
+    description: "동일 기수 그룹. Campfire 도메인에서는 'Cohort'를 그대로 사용한다. Classroom 도메인 본문·UI·정책 문서에서는 '해당 수업'으로 표기한다 (classroom/3-backend/glossary.yml '해당수업' 항목 참조)."
+    aliases: ["기수", "해당 수업(Classroom 도메인)"]
