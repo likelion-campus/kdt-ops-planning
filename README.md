@@ -27,6 +27,19 @@ classroom/               ← 팀2 (동일 구조)
 | `classroom-fe` | `shared/**`, `classroom/{1-planning,2-design,4-frontend}/**` |
 | `classroom-be` | `shared/**`, `classroom/{1-planning,3-backend}/**` |
 
+## 자동화 도입 상태
+
+현재 활성 워크플로우는 `sync-to-dev` **1개만** 입니다. 나머지(glossary-lint, prd-gate, figma-link-check, drift-alert)는 `.yml.disabled` 로 비활성 상태로 두고, 팀이 익숙해진 뒤 단계적으로 켭니다.
+
+| 단계 | 활성 워크플로우 |
+|---|---|
+| 1주차 (현재) | `sync-to-dev` |
+| 2주차 | + `glossary-lint` |
+| 3~4주차 | + `prd-gate` |
+| 이후 | + `figma-link-check`, `drift-alert` |
+
+활성화 방법: `.github/workflows/{name}.yml.disabled` → `.yml` 로 rename + commit.
+
 ## 핵심 규칙 (v1 → v2 진화)
 
 1. **기획 ≠ 기술값**: PRD/정책서에는 API 주소·상태값 적지 않음. `3-backend/`에서만 정의.

@@ -1,23 +1,39 @@
-# CODEOWNERS — 폴더별 오너 강제 (v1 한계 ④ "다수 PM 충돌" 해결)
-# 실제 GitHub 핸들로 교체해서 사용
+# CODEOWNERS — 폴더별 자동 리뷰어 호출
+#
+# 현재 단계: 개인 collaborator 기반. 사람이 늘면 likelion-campus 조직 Team으로 전환 권장.
+# TODO: 각 영역 담당자 GitHub 핸들 추가하기.
 
-# 전사 공통: 모든 PM + 백엔드 리드
-/shared/                       @kdt-ops/pm-leads @kdt-ops/be-leads
+# 전역 fallback (어디에도 매칭 안 되면 이 사람들에게)
+*                              @JBlikelion
+
+# 전사 공통
+/shared/                       @JBlikelion
+# TODO: 양 팀 BE/PM lead 추가
 
 # Campfire
-/campfire/1-planning/          @kdt-ops/pm-campfire
-/campfire/2-design/            @kdt-ops/design-campfire
-/campfire/3-backend/           @kdt-ops/be-campfire
-/campfire/4-frontend/          @kdt-ops/fe-campfire
-/campfire/5-qa/                @kdt-ops/qa-campfire
+/campfire/1-planning/          @JBlikelion
+# TODO: PM-Campfire @핸들
+/campfire/2-design/            @JBlikelion
+# TODO: Design-Campfire @핸들
+/campfire/3-backend/           @JBlikelion
+# TODO: BE-Campfire @핸들
+/campfire/4-frontend/          @JBlikelion
+# TODO: FE-Campfire @핸들
+/campfire/5-qa/                @JBlikelion
+# TODO: QA-Campfire @핸들
 
 # Classroom
-/classroom/1-planning/         @kdt-ops/pm-classroom
-/classroom/2-design/           @kdt-ops/design-classroom
-/classroom/3-backend/          @kdt-ops/be-classroom
-/classroom/4-frontend/         @kdt-ops/fe-classroom
-/classroom/5-qa/               @kdt-ops/qa-classroom
+/classroom/1-planning/         @JBlikelion
+# TODO: PM-Classroom @핸들
+/classroom/2-design/           @JBlikelion
+# TODO: Design-Classroom @핸들
+/classroom/3-backend/          @JBlikelion
+# TODO: BE-Classroom @핸들
+/classroom/4-frontend/         @JBlikelion
+# TODO: FE-Classroom @핸들
+/classroom/5-qa/               @JBlikelion
+# TODO: QA-Classroom @핸들
 
-# CI/CD 변경은 인프라 리드
-/.github/                      @kdt-ops/infra-leads
-/scripts/                      @kdt-ops/infra-leads
+# CI/CD/스크립트
+/.github/                      @JBlikelion
+/scripts/                      @JBlikelion
