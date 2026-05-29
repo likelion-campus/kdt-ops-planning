@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>TIL — 프로토타입 v2</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="./assets/tokens.css" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script src="./assets/mock-data.js"></script>
+  <script src="./assets/components.js"></script>
+</head>
+<body>
+  <script>
+    // ============================================================
+    // 헬퍼·데이터 — 모두 init() 호출 전에 정의 (TDZ 회피)
+    // ============================================================
+    function weekStart(today, weeksBack) {
+      const d = new Date(today);
+      const day = d.getDay();
+      const offsetToMonday = (day === 0 ? -6 : 1 - day);
+      d.setDate(d.getDate() + offsetToMonday - weeksBack * 7);
+      return d;
+    }
+    function fmtISO(d) { return d.toISOString().slice(0, 10); }
+
+    const WEEK_COUNT = 26;
+    const WEEKDAY_LABELS = ['월', '화', '수', '목', '금'];
+    const weeks = [];
+    for (let w = WEEK_COUNT - 1; w >= 0; w--) {
+      const monday = weekStart(MOCK.meta.today, w);
+      const days = [];
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        days.push(fmtISO(d));
+      }
+      weeks.push({ monday: fmtISO(monday), days });
+    }
+
+    function pseudoTilStatus(studentId, date) {
+      const student = MOCK.students.find((s) => s.id === studentId);
+      if (!student) return 'none';
+      let h = 0;
+      const str = studentId + date;
+      for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+      const r = (Math.abs(h) % 1000) / 1000;
+      if (r < student.baseActivity * 0.85) return 'written';
+      if (r < student.baseActivity) return 'temp';
+      return 'none';
+    }
+    function tilStatusOn(studentId, date) {
+      if (!MOCK.isLearningDay(date)) return 'holiday';
+      const mock = MOCK.tils[studentId]?.[date];
+      if (mock) return mock.status;
+      if (new Date(date) <= new Date(MOCK.meta.today)) return pseudoTilStatus(studentId, date);
+      return 'future';
+    }
+    function statusToHeat(status) {
+      if (status === 'written') return { level: 4 };
+      if (status === 'temp')    return { level: 2, pattern: 'stripe' };
+      return { level: 0 };
+    }
+
+    function getTilForDate(sid, date) {
+      const m = MOCK.tils[sid]?.[date];
+      if (m && m.status !== 'none') return m;
+      const status = tilStatusOn(sid, date);
+      if (status === 'written' || status === 'temp') {
+        return { status, title: `${UI.fmtDate(date, { short: true })} TIL`, body: '# 오늘 배운것\n오늘 배운 내용을 정리합니다.\n\n# 막힌것\n특정 개념에서 막힌 부분.\n\n# 내일 할 것\n복습 + 추가 학습 계획', updatedAt: date + 'T18:00', editCount: 0 };
+      }
+      return null;
+    }
+
+    // ============================================================
+    // 메인 진입
+    // ============================================================
+    const { root, view } = UI.renderShell('til');
+    const _isMgr = view === 'manager';
+    UI.renderPageHead(root, {
+      title: _isMgr ? '해당 수업 TIL' : '나의 TIL',
+      subtitle: _isMgr ? '학생 × 주차 히트맵 · 셀 클릭 시 본문 상세' : '매일 느낀점을 정리해보세요',
+      actions: _isMgr ? [] : [UI.button({ label: '작성하기', icon: 'ri-edit-line', type: 'outline', color: 'primary', onClick: () => openTraineeEdit(MOCK.meta.today, MOCK.tils[MOCK.activeStudentId]?.[MOCK.meta.today]) })],
+    });
+
+    if (view === 'trainee') renderTrainee(); else renderManager();
+
+    // ============================================================
+    // 학생뷰
+    // ============================================================
+    function renderTrainee() {
+      const sid = MOCK.activeStudentId;
+
+      // 1) 활동 기록 (5행 × 26주차)
+      const heatCard = document.createElement('div');
+      heatCard.className = 'card';
+      heatCard.style.marginBottom = '32px';
+      heatCard.innerHTML = `
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">활동 기록</h3>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">최근 6개월 · 평일 5일 × 26주차</p>
+          </div>
+          <div id="heat-legend"></div>
+        </div>
+        <div class="til-heatmap">
+          <div class="til-heatmap-row-labels" id="row-labels"></div>
+          <div class="til-heatmap-grid" id="grid"></div>
+        </div>
+        <div class="til-month-labels" id="months"></div>
+      `;
+      const legend = UI.renderLegend([
+        { color: 'var(--lk-color-bg-normal)', label: '미작성' },
+        { color: 'var(--lk-color-primary-200)', label: '임시', pattern: 'stripe' },
+        { color: 'var(--lk-color-primary-500)', label: '작성' },
+      ]);
+      heatCard.querySelector('#heat-legend').appendChild(legend);
+
+      const rowLabels = heatCard.querySelector('#row-labels');
+      WEEKDAY_LABELS.forEach((lbl) => {
+        const el = document.createElement('div');
+        el.textContent = lbl;
+        rowLabels.appendChild(el);
+      });
+
+      const grid = heatCard.querySelector('#grid');
+      weeks.forEach((wk) => {
+        wk.days.forEach((d) => {
+          const cell = document.createElement('div');
+          cell.className = 'heat-cell';
+          const status = tilStatusOn(sid, d);
+          const heat = statusToHeat(status);
+          cell.setAttribute('data-level', String(heat.level));
+          if (heat.pattern) cell.setAttribute('data-pattern', heat.pattern);
+          const lbl = status === 'written' ? '작성' : status === 'temp' ? '임시' : status === 'holiday' ? '휴일' : status === 'future' ? '미래' : '미작성';
+          cell.title = `${d} · ${lbl}`;
+          if (status === 'written' || status === 'temp') {
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', () => openTilDetail(d, getTilForDate(sid, d)));
+          } else if (new Date(d) <= new Date(MOCK.meta.today) && MOCK.isLearningDay(d)) {
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', () => openTraineeEdit(d, null));
+          }
+          grid.appendChild(cell);
+        });
+      });
+
+      const months = heatCard.querySelector('#months');
+      let prevMonth = null;
+      weeks.forEach((wk) => {
+        const m = new Date(wk.monday).getMonth() + 1;
+        const span = document.createElement('span');
+        span.style.minWidth = '20px';
+        span.textContent = (m !== prevMonth) ? `${m}월` : '';
+        prevMonth = m;
+        months.appendChild(span);
+      });
+      root.appendChild(heatCard);
+
+      // 2) 카드 리스트
+      const head = document.createElement('div');
+      head.className = 'section-head';
+      head.innerHTML = '<h3>나의 TIL</h3><div class="search-field"><i class="ri-icon ri-search-line"></i><input type="search" placeholder="제목(으)로 검색" /></div>';
+      root.appendChild(head);
+
+      // 작성한 TIL: mock 기준 + 시뮬 보강
+      const writtenDates = [];
+      // mock 기준
+      Object.keys(MOCK.tils[sid] || {}).forEach((d) => {
+        if (MOCK.tils[sid][d].status === 'written') writtenDates.push(d);
+      });
+      // 시뮬 기준 추가 (mock 범위 밖에서 written로 판정된 날들)
+      weeks.flatMap((w) => w.days).forEach((d) => {
+        if (writtenDates.includes(d)) return;
+        if (new Date(d) > new Date(MOCK.meta.today)) return;
+        if (tilStatusOn(sid, d) === 'written') writtenDates.push(d);
+      });
+      writtenDates.sort().reverse();
+
+      if (UI.stateFlag === 'empty' || writtenDates.length === 0) {
+        root.appendChild(UI.emptyCard({
+          icon: 'ri-quill-pen-line',
+          title: '매일 느낀점을 정리해보세요',
+          body: '하루 한 줄도 좋아요.',
+          cta: { label: '작성하기', onClick: () => openTraineeEdit(MOCK.meta.today, null) },
+        }));
+        return;
+      }
+
+      const list = document.createElement('div');
+      list.className = 'note-list';
+      writtenDates.slice(0, 20).forEach((d) => {
+        const t = getTilForDate(sid, d);
+        if (!t) return;
+        const card = document.createElement('article');
+        card.className = 'note-list-card';
+        card.innerHTML = `
+          <div class="body-col">
+            <div class="meta">
+              <i class="ri-icon ri-book-2-line"></i>
+              <span data-slot="d"></span>
+            </div>
+            <div class="title" data-slot="t"></div>
+            <p class="preview" data-slot="p"></p>
+          </div>
+          <div class="right-col">
+            ${t.editCount ? `<span class="tag tag-small tag-weak-warning">수정됨</span>` : '<span class="tag tag-small tag-weak-success">작성</span>'}
+          </div>
+        `;
+        card.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
+        card.querySelector('[data-slot="t"]').textContent = t.title;
+        const firstParas = t.body.split('\n').filter((l) => l.trim() && !l.startsWith('#')).join(' / ');
+        card.querySelector('[data-slot="p"]').textContent = firstParas || '작성된 내용을 확인해 보세요.';
+        card.addEventListener('click', () => openTilDetail(d, t));
+        list.appendChild(card);
+      });
+      root.appendChild(list);
+    }
+
+    // ============================================================
+    // TIL 상세 — fullpage
+    // ============================================================
+    function openTilDetail(date, t) {
+      if (!t) { openTraineeEdit(date, null); return; }
+      const fp = UI.openFullPage({ backLabel: 'TIL' });
+      const editBtn = UI.button({ label: '수정', icon: 'ri-edit-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => { UI.closeFullPage(); openTraineeEdit(date, t); } });
+      fp.actions.appendChild(editBtn);
+
+      fp.body.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="card-meta" data-slot="d"></span>
+          ${t.editCount ? `<span class="tag tag-small tag-weak-warning">수정됨 · ${UI.relTime(t.updatedAt)}</span>` : '<span class="tag tag-small tag-weak-success">작성</span>'}
+        </div>
+        <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 24px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="title"></h1>
+        <div class="md-view" data-slot="body" style="max-width: 760px;"></div>
+      `;
+      fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(date);
+      fp.body.querySelector('[data-slot="title"]').textContent = t.title;
+      fp.body.querySelector('[data-slot="body"]').innerHTML = UI.md(t.body || '');
+    }
+
+    // ============================================================
+    // TIL 작성 — fullpage + 우측 3탭 컨텍스트
+    // ============================================================
+    function openTraineeEdit(date, existing) {
+      const sid = MOCK.activeStudentId;
+      const today = MOCK.meta.today;
+      const placeholder = '# 오늘 배운것\n\n\n# 막힌것\n\n\n# 내일 할 것\n';
+      const initialBody = existing?.body || placeholder;
+
+      const fp = UI.openFullPage({ backLabel: 'TIL' });
+      const tempBtn = UI.button({ label: '임시저장', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('임시저장되었어요', 'success') });
+      const publishBtn = UI.button({ label: '게시하기', type: 'solid', color: 'primary', size: 'medium', onClick: () => {
+        UI.closeFullPage();
+        UI.toast(`${date === today ? '오늘' : UI.fmtDate(date, { short: true })} TIL이 게시되었어요${existing ? ' (수정됨 표시 노출)' : ''}`, 'success');
+      } });
+      fp.actions.appendChild(tempBtn);
+      fp.actions.appendChild(publishBtn);
+
+      fp.body.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <span class="card-meta" data-slot="d"></span>
+          <span class="tag tag-small tag-weak-warning" id="autosave">자동 저장됨</span>
+          ${existing?.editCount ? `<span class="tag tag-small tag-weak-warning">수정됨 · ${UI.relTime(existing.updatedAt)}</span>` : ''}
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr); gap: 28px; align-items: start;">
+          <!-- 좌: 에디터 (스크린샷 톤) -->
+          <div class="col" style="gap: 0;">
+            <input type="text" id="title" placeholder="제목을 입력하세요" style="width: 100%; padding: 14px 16px; border: 1px solid var(--lk-color-border-normal); border-radius: 10px; font-size: 20px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.01em;" />
+            <div class="editor-toolbar">
+              <button title="굵게"><i class="ri-icon ri-bold"></i></button>
+              <button title="기울임"><i class="ri-icon ri-italic"></i></button>
+              <button title="취소선"><i class="ri-icon ri-strikethrough"></i></button>
+              <span class="sep"></span>
+              <button title="제목"><i class="ri-icon ri-heading"></i></button>
+              <button title="인용"><i class="ri-icon ri-double-quotes-l"></i></button>
+              <button title="목록"><i class="ri-icon ri-list-check-2"></i></button>
+              <button title="번호 목록"><i class="ri-icon ri-list-ordered"></i></button>
+              <span class="sep"></span>
+              <button title="링크"><i class="ri-icon ri-link"></i></button>
+              <button title="이미지"><i class="ri-icon ri-image-line"></i></button>
+              <button title="테이블"><i class="ri-icon ri-table-line"></i></button>
+              <button title="코드"><i class="ri-icon ri-code-line"></i></button>
+            </div>
+            <textarea id="body" placeholder="본문을 입력하세요 (마크다운 지원)" style="width: 100%; min-height: 620px; padding: 18px; border: 1px solid var(--lk-color-border-normal); border-top: 0; border-radius: 0 0 10px 10px; font-family: ui-monospace, monospace; font-size: 14px; line-height: 1.8;"></textarea>
+          </div>
+
+          <!-- 우: 컨텍스트 3탭 -->
+          <aside style="position: sticky; top: 16px; background: var(--lk-color-bg-white); border: 1px solid var(--lk-color-border-weak); border-radius: 12px; padding: 0; overflow: hidden;">
+            <div class="tabs" id="ctx-tabs" style="padding: 0 16px;">
+              <button class="tab is-active" data-ctx="note">AI 노트</button>
+              <button class="tab" data-ctx="quiz">퀴즈 결과</button>
+              <button class="tab" data-ctx="wrong">오답노트</button>
+            </div>
+            <div id="ctx-pane" style="padding: 16px 20px; min-height: 600px; max-height: 720px; overflow-y: auto;"></div>
+          </aside>
+        </div>
+      `;
+
+      fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(date);
+      fp.body.querySelector('#title').value = existing?.title || `${UI.fmtDate(date, { short: true })} TIL`;
+      fp.body.querySelector('#body').value = initialBody;
+
+      let saveTimer;
+      fp.body.querySelector('#body').addEventListener('input', () => {
+        const a = fp.body.querySelector('#autosave');
+        a.textContent = '저장 중…';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => a.textContent = `자동 저장됨 · ${new Date().toLocaleTimeString()}`, 400);
+      });
+
+      const tabs = fp.body.querySelectorAll('#ctx-tabs button');
+      const pane = fp.body.querySelector('#ctx-pane');
+      function renderCtx(kind) {
+        tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.ctx === kind));
+        pane.innerHTML = '';
+        if (kind === 'note') renderCtxNote(pane, date);
+        else if (kind === 'quiz') renderCtxQuiz(pane, sid, date);
+        else renderCtxWrong(pane, sid);
+      }
+      tabs.forEach((t) => t.addEventListener('click', () => renderCtx(t.dataset.ctx)));
+      renderCtx('note');
+    }
+
+    // ===== 컨텍스트 1: 오늘의 AI 노트 — 풀 마크다운 프리뷰 (스크린샷 톤) =====
+    function renderCtxNote(pane, date) {
+      const note = MOCK.aiNotes[date];
+      if (!note) {
+        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-sticky-note-line"></i></div><h4>오늘의 AI 노트를 준비 중이에요</h4></div>';
+        return;
+      }
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <span style="font-size: 18px; font-weight: 700; color: var(--lk-color-fg-strong); letter-spacing: -0.01em;" data-slot="d"></span>
+          <span class="tag tag-small tag-weak-enabled">요약노트</span>
+        </div>
+        <div class="aimote-summary" style="margin: 12px 0;">
+          <div class="lbl"><i class="ri-icon ri-play-fill"></i> 금일 학습 요약</div>
+          <div class="body" data-slot="sum" style="font-size: 12.5px; line-height: 1.7;"></div>
+        </div>
+        <div class="md-view" data-slot="body" style="font-size: 13px;"></div>
+      `;
+      wrap.querySelector('[data-slot="d"]').textContent = `${UI.fmtDate(date, { compact: true })} 요약노트`;
+      wrap.querySelector('[data-slot="sum"]').textContent = note.summary;
+      wrap.querySelector('[data-slot="body"]').innerHTML = UI.md(note.body || '');
+      pane.appendChild(wrap);
+    }
+
+    // ===== 컨텍스트 2: 오늘의 퀴즈 결과 =====
+    function renderCtxQuiz(pane, sid, date) {
+      const quiz = MOCK.quizzes[date];
+      const attempt = MOCK.attempts[sid]?.[date];
+      if (!quiz) {
+        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-list-check-2"></i></div><h4>오늘의 퀴즈가 없어요</h4></div>';
+        return;
+      }
+      if (!attempt?.submitted) {
+        pane.innerHTML = `<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-list-check-2"></i></div><h4>오늘 퀴즈를 아직 풀지 않았어요</h4><p>퀴즈를 풀고 결과를 확인해보세요.</p></div>`;
+        return;
+      }
+      const wrap = document.createElement('div');
+      const wrongCount = attempt.wrongIds?.length || 0;
+      wrap.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <span style="font-size: 16px; font-weight: 700; color: var(--lk-color-fg-strong);" data-slot="t"></span>
+          <span class="tag tag-small tag-weak-success" data-slot="st"></span>
+        </div>
+        <div class="row" style="gap: 24px; padding: 14px; background: var(--lk-color-bg-primary-weak); border-radius: 10px; margin-bottom: 16px;">
+          <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">점수</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="score"></div></div>
+          <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">정답률</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="rate"></div></div>
+          <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">오답 수</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="wc"></div></div>
+        </div>
+        <div class="card-meta" style="margin-bottom: 10px;"><strong>오답 문항 요약</strong></div>
+        <div id="wlist" class="col" style="gap: 8px;"></div>
+      `;
+      wrap.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[date]?.title || '오늘의 퀴즈';
+      wrap.querySelector('[data-slot="st"]').textContent = '제출 완료';
+      wrap.querySelector('[data-slot="score"]').textContent = `${attempt.score} / 10`;
+      wrap.querySelector('[data-slot="rate"]').textContent = `${attempt.score * 10}%`;
+      wrap.querySelector('[data-slot="wc"]').textContent = `${wrongCount}건`;
+      const wl = wrap.querySelector('#wlist');
+      if (wrongCount === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding: 14px; background: var(--lk-color-bg-lightgreen); color: var(--lk-color-light-green-700); border-radius: 8px; font-size: 12.5px;';
+        empty.textContent = '🎉 오답 없이 모두 맞혔어요!';
+        wl.appendChild(empty);
+      } else {
+        (MOCK.wrongNotes[sid] || []).filter((w) => w.date === date).slice(0, 5).forEach((w, i) => {
+          const it = document.createElement('div');
+          it.style.cssText = 'background: var(--lk-color-bg-normal); border-radius: 8px; padding: 10px 12px;';
+          it.innerHTML = `<div style="font-size: 11px; font-weight: 700; color: var(--lk-color-fg-primary); margin-bottom: 4px;">문항 ${i + 1}</div><div style="font-size: 12.5px; line-height: 1.5;" data-slot="s"></div><div style="font-size: 11px; color: var(--lk-color-fg-neutral); margin-top: 6px;">정답: <strong data-slot="a"></strong></div>`;
+          it.querySelector('[data-slot="s"]').textContent = w.stem;
+          it.querySelector('[data-slot="a"]').textContent = w.choices[w.answer];
+          wl.appendChild(it);
+        });
+      }
+      pane.appendChild(wrap);
+    }
+
+    // ===== 컨텍스트 3: 오답노트 (전체 누적) =====
+    function renderCtxWrong(pane, sid) {
+      const list = (MOCK.wrongNotes[sid] || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+      if (list.length === 0) {
+        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-check-double-line"></i></div><h4>오답이 아직 없어요</h4><p>퀴즈를 응시하면 자동 누적됩니다.</p></div>';
+        return;
+      }
+      const head = document.createElement('div');
+      head.innerHTML = `<div class="card-meta" style="margin-bottom: 12px;">전체 누적 · 총 <strong>${list.length}</strong>건</div>`;
+      pane.appendChild(head);
+      list.slice(0, 30).forEach((w) => {
+        const it = document.createElement('div');
+        it.style.cssText = 'background: var(--lk-color-bg-normal); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer;';
+        it.addEventListener('mouseenter', () => { it.style.background = 'var(--lk-color-bg-primary-weak)'; });
+        it.addEventListener('mouseleave', () => { it.style.background = 'var(--lk-color-bg-normal)'; });
+        it.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--lk-color-fg-primary);" data-slot="dm"></span>
+            ${w.bookmarked ? '<span class="tag tag-small tag-weak-warning">📌</span>' : ''}
+            <i class="ri-icon ri-arrow-right-s-line" style="margin-left: auto; color: var(--lk-color-fg-assistive);"></i>
+          </div>
+          <div style="font-size: 12.5px; line-height: 1.5;" data-slot="s"></div>
+          <div style="font-size: 11px; color: var(--lk-color-fg-neutral); margin-top: 6px;">정답: <strong data-slot="a"></strong></div>
+        `;
+        it.querySelector('[data-slot="dm"]').textContent = `${UI.fmtDate(w.date, { short: true })} · ${MOCK.aiNotes[w.date]?.title || '퀴즈'}`;
+        it.querySelector('[data-slot="s"]').textContent = w.stem;
+        it.querySelector('[data-slot="a"]').textContent = w.choices[w.answer];
+        it.addEventListener('click', () => openWrongDetailModal(w));
+        pane.appendChild(it);
+      });
+    }
+
+    function openWrongDetailModal(w) {
+      const node = UI.openModal(`
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span class="card-meta" data-slot="dm"></span>
+          ${w.bookmarked ? '<span class="tag tag-small tag-weak-warning">📌 책갈피</span>' : ''}
+          <button class="btn btn-small btn-ghost-neutral" id="close" style="margin-left: auto;"><i class="ri-icon ri-close-line"></i></button>
+        </div>
+        <h3 class="card-title" style="font-size: 16px; line-height: 1.5; margin: 0 0 16px;" data-slot="stem"></h3>
+        <ul style="list-style: none; padding: 0; margin: 0 0 16px;" data-slot="ch"></ul>
+        <div style="background: var(--lk-color-bg-normal); padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.7; color: var(--lk-color-fg-neutral);">
+          <strong>해설:</strong> <span data-slot="ex"></span>
+        </div>
+        ${w.memo ? `<div style="background: var(--lk-color-bg-yellow); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; color: var(--lk-color-yellow-700); margin-top: 10px;">📝 <span data-slot="memo"></span></div>` : ''}
+      `);
+      node.querySelector('[data-slot="dm"]').textContent = `${UI.fmtDate(w.date)} · ${MOCK.aiNotes[w.date]?.title || '퀴즈'}`;
+      node.querySelector('[data-slot="stem"]').textContent = w.stem;
+      const ul = node.querySelector('[data-slot="ch"]');
+      w.choices.forEach((c, ci) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 6px;';
+        if (ci === w.answer) { li.style.background = 'var(--lk-color-bg-lightgreen)'; li.textContent = `${ci + 1}. ${c}   ✓ 정답`; }
+        else if (ci === w.userPick) { li.style.background = 'var(--lk-color-bg-red)'; li.textContent = `${ci + 1}. ${c}   ✗ 내 선택`; }
+        else { li.style.background = 'var(--lk-color-bg-normal)'; li.textContent = `${ci + 1}. ${c}`; }
+        ul.appendChild(li);
+      });
+      node.querySelector('[data-slot="ex"]').textContent = w.explanation;
+      if (w.memo) node.querySelector('[data-slot="memo"]').textContent = w.memo;
+      node.querySelector('#close').addEventListener('click', () => node.remove());
+    }
+
+    // ============================================================
+    // 매니저뷰 — 학생 × 주차 히트맵
+    // ============================================================
+    function renderManager() {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">학생 × 주차 히트맵 (최근 6개월)</h3>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">3색 — 미작성·임시·작성. 셀 클릭 시 본문 상세</p>
+          </div>
+          <div id="legend"></div>
+        </div>
+        <div class="heatmap-scroll" id="heat" style="margin-top: 16px;"></div>
+      `;
+      const legend = UI.renderLegend([
+        { color: 'var(--lk-color-bg-normal)', label: '미작성' },
+        { color: 'var(--lk-color-primary-200)', label: '임시', pattern: 'stripe' },
+        { color: 'var(--lk-color-primary-500)', label: '작성' },
+      ]);
+      card.querySelector('#legend').appendChild(legend);
+
+      const flatDays = weeks.flatMap((w) => w.days);
+      const heat = UI.renderHeatmap({
+        rows: MOCK.students,
+        cols: flatDays,
+        rowLabel: (s) => s.name,
+        colLabel: (d) => {
+          const dt = new Date(d);
+          if (dt.getDay() !== 1) return '';
+          return `${dt.getMonth() + 1}/${dt.getDate()}`;
+        },
+        cellLevel: (s, d) => {
+          const status = tilStatusOn(s.id, d);
+          return { ...statusToHeat(status), title: `${s.name} ${d}: ${status}` };
+        },
+        onCell: (s, d) => openManagerDetail(s, d, getTilForDate(s.id, d)),
+      });
+      card.querySelector('#heat').appendChild(heat);
+      root.appendChild(card);
+    }
+
+    function openManagerDetail(s, d, t) {
+      const fp = UI.openFullPage({ backLabel: 'TIL' });
+      fp.body.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="card-meta" data-slot="m"></span>
+        </div>
+        <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 24px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="n"></h1>
+        <div id="body"></div>
+      `;
+      fp.body.querySelector('[data-slot="m"]').textContent = UI.fmtDate(d);
+      fp.body.querySelector('[data-slot="n"]').textContent = `${s.name}의 TIL`;
+      const bodyWrap = fp.body.querySelector('#body');
+      if (!t) {
+        bodyWrap.innerHTML = '<div class="empty"><div class="icon"><i class="ri-icon ri-file-list-line"></i></div><h4>이 날 작성된 TIL이 없어요</h4></div>';
+      } else {
+        bodyWrap.innerHTML = `<div class="row" style="margin-bottom: 12px; gap: 6px;"><span class="tag tag-small ${t.status === 'temp' ? 'tag-weak-warning' : 'tag-weak-success'}">${t.status === 'temp' ? '임시' : '작성'}</span></div><div class="md-view" style="max-width: 760px;" id="md"></div>`;
+        bodyWrap.querySelector('#md').innerHTML = UI.md(t.body || '');
+      }
+    }
+  </script>
+</body>
+</html>
