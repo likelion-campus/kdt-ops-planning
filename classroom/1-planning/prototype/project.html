@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>프로젝트 — 프로토타입 v2</title>
+  <title>프로젝트 — 프로토타입 v2.3</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -213,10 +213,9 @@
         </div>
         <div class="inline-error hide" id="vid-err">YouTube 또는 Vimeo 링크만 등록 가능해요</div>
 
-        <div class="divider"></div>
-        <div class="field"><label class="row" style="gap: 8px; cursor: pointer;"><input type="checkbox" id="pub" /> 외부 발행 — 기본 OFF</label><span class="text-mute" style="font-size: 11px;">켜면 외부 공개 링크가 생성됩니다.</span></div>
+        <div class="banner banner-info" style="margin-top: 20px;"><i class="ri-icon ri-information-line"></i><span>외부 공유는 제출 후 <strong>제출 프로젝트 리스트 → 내 제출본 → 외부 공유하기</strong>에서 할 수 있어요.</span></div>
 
-        <div class="row row-end" style="margin-top: 24px; gap: 8px;" id="actions"></div>
+        <div class="row row-end" style="margin-top: 16px; gap: 8px;" id="actions"></div>
       `;
       card.querySelector('#t').value = prev?.title || `${p.round} 프로젝트`;
       card.querySelector('#ol').value = prev?.oneLiner || '';
@@ -319,34 +318,28 @@
     }
 
     function openShareDialog(s) {
-      const shareUrl = s.published
-        ? `https://likelion-classroom.app/share/${s.studentId}-${Date.now()}`
-        : null;
+      // 외부 공유 = 외부 발행 동작 (제출 폼 토글 제거됨 — 공유 시점에 공개 링크 생성)
+      const shareUrl = `https://likelion-classroom.app/share/${s.studentId}-${s.title.length}`;
       const node = UI.openModal(`
         <h3 class="card-title">외부 공유하기</h3>
-        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">하이퍼링크를 복사해 외부에 공유하세요. (외부 발행 토글이 OFF인 경우 발행 후 링크가 생성됩니다.)</p>
-        ${shareUrl ? `
-          <div style="background: var(--lk-color-bg-normal); padding: 14px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 13px; font-family: ui-monospace, monospace; flex: 1; overflow: hidden; text-overflow: ellipsis;">${shareUrl}</span>
-            <button class="btn btn-small btn-solid-primary" id="copy">복사</button>
-          </div>
-          <div class="row" style="gap: 8px; margin-top: 14px; flex-wrap: wrap;">
-            <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-twitter-x-line"></i> X</button>
-            <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-linkedin-line"></i> LinkedIn</button>
-            <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-facebook-line"></i> Facebook</button>
-            <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-kakao-talk-line"></i> 카카오톡</button>
-          </div>
-        ` : `
-          <div class="banner banner-info"><i class="ri-icon ri-information-line"></i><span>외부 발행이 꺼져 있어요. 먼저 제출 폼에서 외부 발행을 켜주세요.</span></div>
-        `}
+        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">기본 비공개예요. 아래 링크를 복사하면 <strong>외부 공개 링크가 생성</strong>되어 누구나 열람할 수 있어요.</p>
+        <div style="background: var(--lk-color-bg-normal); padding: 14px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 13px; font-family: ui-monospace, monospace; flex: 1; overflow: hidden; text-overflow: ellipsis;" data-slot="url"></span>
+          <button class="btn btn-small btn-solid-primary" id="copy">복사</button>
+        </div>
+        <div class="row" style="gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-twitter-x-line"></i> X</button>
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-linkedin-line"></i> LinkedIn</button>
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-facebook-line"></i> Facebook</button>
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-kakao-talk-line"></i> 카카오톡</button>
+        </div>
         <div class="row row-end" style="margin-top: 16px;">
           <button class="btn btn-outline-neutral" id="close">닫기</button>
         </div>
       `);
+      node.querySelector('[data-slot="url"]').textContent = shareUrl;
       node.querySelector('#close').addEventListener('click', () => node.remove());
-      if (shareUrl) {
-        node.querySelector('#copy').addEventListener('click', () => UI.toast('링크가 복사되었어요', 'success'));
-      }
+      node.querySelector('#copy').addEventListener('click', () => { s.published = true; UI.toast('외부 공개 링크가 생성되어 복사되었어요', 'success'); });
     }
 
     function renderFeedbackPane(pane, p, mine) {

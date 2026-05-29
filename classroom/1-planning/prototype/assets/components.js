@@ -370,6 +370,7 @@
         if (level && typeof level === 'object') {
           if (level.level !== undefined) cell.setAttribute('data-level', level.level);
           if (level.pattern) cell.setAttribute('data-pattern', level.pattern);
+          if (level.excellent) cell.setAttribute('data-excellent', 'true');
           if (level.title) cell.title = level.title;
         } else {
           cell.setAttribute('data-level', level == null ? '0' : level);
@@ -499,6 +500,108 @@
     return wrap;
   }
 
+  // ===== Likelion Multi-Select (최대 N개 · 칩 트리거 · lk-select 톤) =====
+  /**
+   * options: [{ value, label, sub?, score?, disabled? }]
+   * max: 최대 선택 수 (도달 시 미선택 옵션 disabled + 안내)
+   * returns: HTMLElement (wrapper). ele.values (배열 get/set), opts.onChange(values)
+   */
+  function multiSelect(opts) {
+    const { options = [], values = [], placeholder = '선택', max = Infinity, rich = false, onChange } = opts;
+    const wrap = document.createElement('div');
+    wrap.className = 'lk-select lk-multiselect';
+    let _values = values.slice();
+    let _open = false;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'lk-select-trigger';
+    wrap.appendChild(trigger);
+
+    const menu = document.createElement('div');
+    menu.className = 'lk-select-menu';
+    menu.style.display = 'none';
+    wrap.appendChild(menu);
+
+    function repaintTrigger() {
+      trigger.innerHTML = '';
+      if (_values.length === 0) {
+        const span = document.createElement('span');
+        span.className = 'placeholder';
+        span.textContent = placeholder;
+        trigger.appendChild(span);
+      } else {
+        const chips = document.createElement('span');
+        chips.className = 'lk-chips';
+        _values.forEach((v) => {
+          const o = options.find((x) => x.value === v);
+          if (!o) return;
+          const chip = document.createElement('span');
+          chip.className = 'lk-chip';
+          const t = document.createElement('span'); t.textContent = o.label; chip.appendChild(t);
+          const x = document.createElement('i'); x.className = 'ri-icon ri-close-line';
+          x.addEventListener('click', (e) => { e.stopPropagation(); _values = _values.filter((y) => y !== v); repaintTrigger(); if (_open) paintMenu(); if (onChange) onChange(_values.slice()); });
+          chip.appendChild(x);
+          chips.appendChild(chip);
+        });
+        trigger.appendChild(chips);
+      }
+      const cnt = document.createElement('span');
+      cnt.className = 'lk-multiselect-count';
+      cnt.textContent = `${_values.length} / ${max === Infinity ? '∞' : max}`;
+      trigger.appendChild(cnt);
+    }
+    function open() { _open = true; menu.style.display = ''; trigger.classList.add('is-open'); paintMenu(); }
+    function close() { _open = false; menu.style.display = 'none'; trigger.classList.remove('is-open'); }
+    function paintMenu() {
+      menu.innerHTML = '';
+      const atMax = _values.length >= max;
+      options.forEach((o) => {
+        const checked = _values.includes(o.value);
+        const blocked = (atMax && !checked) || o.disabled;
+        const it = document.createElement('div');
+        it.className = 'lk-select-option lk-multiselect-option' + (rich ? ' lk-select-option-rich' : '') + (checked ? ' is-selected' : '') + (blocked ? ' is-disabled' : '');
+        const box = document.createElement('span');
+        box.className = 'lk-check' + (checked ? ' is-on' : '');
+        box.innerHTML = checked ? '<i class="ri-icon ri-check-line"></i>' : '';
+        it.appendChild(box);
+        const txt = document.createElement('span');
+        txt.className = 'lk-multiselect-label';
+        if (rich) {
+          const top = document.createElement('div'); top.className = 'row';
+          const t = document.createElement('span'); t.className = 'title'; t.textContent = o.label; top.appendChild(t);
+          if (o.score != null) { const sc = document.createElement('span'); sc.className = 'score'; sc.textContent = o.score; top.appendChild(sc); }
+          txt.appendChild(top);
+          if (o.sub) { const s = document.createElement('div'); s.className = 'sub'; s.textContent = o.sub; txt.appendChild(s); }
+        } else {
+          txt.textContent = o.label;
+        }
+        it.appendChild(txt);
+        if (!blocked) {
+          it.addEventListener('click', () => {
+            if (checked) _values = _values.filter((y) => y !== o.value);
+            else if (_values.length < max) _values.push(o.value);
+            repaintTrigger(); paintMenu();
+            if (onChange) onChange(_values.slice());
+          });
+        }
+        menu.appendChild(it);
+      });
+      if (max !== Infinity) {
+        const hint = document.createElement('div');
+        hint.className = 'lk-multiselect-hint';
+        hint.textContent = _values.length >= max ? `최대 ${max}개까지 선택했어요 · 변경하려면 먼저 해제하세요` : `최대 ${max}개까지 선택할 수 있어요`;
+        menu.appendChild(hint);
+      }
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); _open ? close() : open(); });
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
+
+    Object.defineProperty(wrap, 'values', { get: () => _values.slice(), set: (v) => { _values = (v || []).slice(); repaintTrigger(); }, configurable: true });
+    repaintTrigger();
+    return wrap;
+  }
+
   // ===== Demo state toggle (프로토타입용) =====
   function demoStateToggle(options, current, onChange) {
     const wrap = document.createElement('div');
@@ -524,7 +627,7 @@
     button, tag, toast,
     openSlide, closeSlide, openModal,
     openFullPage, closeFullPage, closeAllFullPages,
-    select, demoStateToggle,
+    select, multiSelect, demoStateToggle,
     md, fmtDate, relTime,
     renderHeatmap, renderLegend, emptyCard, banner,
     getView, setView, loadState, saveState,
