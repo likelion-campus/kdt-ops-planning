@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440" />
+  <title>클래스룸 프로토타입 v2 — 허브</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="./assets/tokens.css" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script src="./assets/mock-data.js"></script>
+  <script src="./assets/components.js"></script>
+</head>
+<body>
+  <script>
+    const { root, view } = UI.renderShell(null);
+    UI.renderPageHead(root, {
+      title: '클래스룸 v2 프로토타입',
+      subtitle: 'PRD v1.2.1 §4 디테일 깊이 우선 시연 · 학생뷰/매니저뷰 토글 + 빈상태·에러 케이스 포함',
+    });
+    const _hub = document.createElement('div');
+    _hub.innerHTML = `
+      <section class="card">
+        <h3 class="card-title">📌 시작하기</h3>
+        <p class="text-mute" style="margin: 12px 0 20px; line-height: 1.7;">
+          PRD v1.2.1 §4 디테일을 깊이 우선으로 시연하는 프로토타입입니다. <br/>
+          좌측 LNB에서 메뉴를 선택하세요. 우상단 토글로 학생뷰/매니저뷰 전환.
+        </p>
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          <a href="ai-note.html" class="date-card"><strong>AI 노트</strong><br/><span class="text-mute" style="font-size:12px;">자동 생성된 학습 노트 · 와이드 카드 리스트</span></a>
+          <a href="ai-quiz.html" class="date-card"><strong>AI 퀴즈</strong><br/><span class="text-mute" style="font-size:12px;">학생 3탭(오늘·오답·보충) / 매니저 3탭(Draft·현황·보충) · 자작 퀴즈 등록</span></a>
+          <a href="til.html" class="date-card"><strong>TIL</strong><br/><span class="text-mute" style="font-size:12px;">활동 기록 5×26주차 + 작성 폼 우측 3탭 컨텍스트</span></a>
+          <a href="project.html" class="date-card"><strong>프로젝트</strong><br/><span class="text-mute" style="font-size:12px;">기초·심화·파이널·기타 + 문제·제출·수업 제출본 3탭</span></a>
+        </div>
+        <p class="text-mute" style="margin-top: 16px; font-size: 12px;">※ 회의 §2 — 실습 메뉴는 폐지되었습니다 (자율 운영 + AI 노트·Alex 통합)</p>
+      </section>
+
+      <section class="card" style="margin-top: 24px;">
+        <h3 class="card-title">🧪 데모 상태 토글</h3>
+        <p class="text-mute" style="margin: 12px 0 16px; font-size: 13px;">URL 쿼리 <code>?state=empty</code> 또는 <code>?state=error</code> 로 빈상태·에러 케이스를 시연할 수 있습니다.</p>
+        <div class="row" style="flex-wrap: wrap; gap: 8px;">
+          <a class="btn btn-small btn-outline-neutral" href="ai-note.html?state=empty">AI 노트 빈상태</a>
+          <a class="btn btn-small btn-outline-neutral" href="ai-quiz.html?state=empty">AI 퀴즈 빈상태</a>
+          <a class="btn btn-small btn-outline-neutral" href="ai-quiz.html?state=error">AI 퀴즈 에러</a>
+          <a class="btn btn-small btn-outline-neutral" href="til.html?state=empty">TIL 빈상태</a>
+          <a class="btn btn-small btn-outline-neutral" href="project.html?state=empty">프로젝트 빈상태</a>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top: 24px;">
+        <h3 class="card-title">📚 참조</h3>
+        <ul class="md-view">
+          <li><a href="./blueprint-classroom-prototype-v2.md">설계서 (SSOT)</a></li>
+          <li><a href="../prd/PRD-classroom-detail-v1.2.md">PRD v1.2.1</a></li>
+          <li><a href="./checklists/prd-match.md">PRD 대조 체크리스트</a></li>
+          <li><a href="./README.md">README</a></li>
+        </ul>
+      </section>
+    `;
+    root.appendChild(_hub);
+  </script>
+</body>
+</html>

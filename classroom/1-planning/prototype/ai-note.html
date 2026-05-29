@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>AI 노트 — 프로토타입 v2</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="./assets/tokens.css" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script src="./assets/mock-data.js"></script>
+  <script src="./assets/components.js"></script>
+</head>
+<body>
+  <script>
+    const { root, view } = UI.renderShell('ai-note');
+    const _isMgr = view === 'manager';
+
+    const search = document.createElement('div');
+    search.className = 'search-field';
+    search.innerHTML = '<i class="ri-icon ri-search-line"></i><input type="search" placeholder="제목(으)로 검색" />';
+
+    UI.renderPageHead(root, {
+      title: 'AI 노트',
+      subtitle: _isMgr ? '강의 중 자동 생성된 학습 노트 · 매니저가 본문을 수정·배포할 수 있어요' : '강의 중 자동 생성된 학습 노트 · 클릭하면 본문 + 마크다운 복사',
+      actions: [search],
+    });
+
+    const noteDates = Object.keys(MOCK.aiNotes).sort().reverse();
+
+    if (UI.stateFlag === 'empty' || noteDates.length === 0) {
+      root.appendChild(UI.emptyCard({
+        icon: 'ri-sticky-note-line',
+        title: '아직 AI 노트가 없어요',
+        body: '강의가 시작되면 자동으로 생성됩니다.',
+      }));
+    } else {
+      const list = document.createElement('div');
+      list.className = 'note-list';
+      noteDates.forEach((d) => {
+        const note = MOCK.aiNotes[d];
+        const card = document.createElement('article');
+        card.className = 'note-list-card';
+        card.innerHTML = `
+          <div class="body-col">
+            <div class="meta">
+              <i class="ri-icon ri-book-2-line"></i>
+              <span data-slot="d"></span>
+            </div>
+            <div class="title" data-slot="t"></div>
+            <p class="preview" data-slot="p"></p>
+          </div>
+          <div class="right-col">
+            <span class="tag tag-small tag-weak-enabled">읽기</span>
+          </div>
+        `;
+        card.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
+        card.querySelector('[data-slot="t"]').textContent = note.title;
+        card.querySelector('[data-slot="p"]').textContent = note.summary;
+        card.addEventListener('click', () => openNoteDetail(d));
+        list.appendChild(card);
+      });
+      root.appendChild(list);
+
+      const pg = document.createElement('div');
+      pg.className = 'pagination';
+      pg.innerHTML = `
+        <span class="pg"><i class="ri-icon ri-arrow-left-s-line"></i></span>
+        <span class="pg is-active">1</span>
+        <span class="pg">2</span>
+        <span class="pg">3</span>
+        <span class="pg"><i class="ri-icon ri-arrow-right-s-line"></i></span>
+      `;
+      const pgWrap = document.createElement('div');
+      pgWrap.style.cssText = 'display:flex; justify-content:center; margin-top: 24px;';
+      pgWrap.appendChild(pg);
+      root.appendChild(pgWrap);
+    }
+
+    // ===========================================================
+    // AI 노트 상세 — 스크린샷 톤
+    // ===========================================================
+    function openNoteDetail(d) {
+      const note = MOCK.aiNotes[d];
+      const fp = UI.openFullPage({ backLabel: 'AI 노트' });
+
+      if (_isMgr) {
+        const editBtn = UI.button({ label: '본문 수정', icon: 'ri-edit-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openNoteEdit(d) });
+        fp.actions.appendChild(editBtn);
+      }
+      const pdfBtn = UI.button({ label: 'PDF 다운로드', icon: 'ri-file-download-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('PDF 다운로드를 시작했어요', 'success') });
+      const copyBtn = UI.button({ label: '마크다운 복사', icon: 'ri-file-copy-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('마크다운이 복사되었어요 (메타데이터 미포함)', 'success') });
+      fp.actions.appendChild(pdfBtn);
+      fp.actions.appendChild(copyBtn);
+
+      // 헤더: 큰 날짜 제목 (스크린샷 톤)
+      fp.body.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <h1 style="font-size: 22px; font-weight: 700; margin: 0; color: var(--lk-color-fg-strong); letter-spacing: -0.01em;" data-slot="dlabel"></h1>
+          <span class="tag tag-small tag-weak-enabled">AI 자동 생성</span>
+        </div>
+        <div class="aimote-summary">
+          <div class="lbl"><i class="ri-icon ri-play-fill"></i> 금일 학습 요약</div>
+          <div class="body" data-slot="summary"></div>
+        </div>
+        <div class="md-view" data-slot="body" style="max-width: 880px;"></div>
+      `;
+      fp.body.querySelector('[data-slot="dlabel"]').textContent = `${UI.fmtDate(d, { compact: true }).replace(/\./g, '.')} (${['일','월','화','수','목','금','토'][new Date(d).getDay()]}) AI 노트`;
+      fp.body.querySelector('[data-slot="summary"]').textContent = note.summary;
+      fp.body.querySelector('[data-slot="body"]').innerHTML = UI.md(note.body || '');
+    }
+
+    // ===========================================================
+    // 매니저 — 본문 수정 모드 (좌 에디터 / 우 프리뷰)
+    // ===========================================================
+    function openNoteEdit(d) {
+      const note = MOCK.aiNotes[d];
+      const fp = UI.openFullPage({ backLabel: 'AI 노트' });
+      fp.actions.appendChild(UI.button({ label: '발행 (수정 반영)', icon: 'ri-send-plane-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => { UI.toast(`${UI.fmtDate(d)} AI 노트 수정 사항이 발행되었어요 (학생 알림)`, 'success'); UI.closeFullPage(); UI.closeFullPage(); openNoteDetail(d); } }));
+
+      fp.body.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <span class="tag tag-small tag-weak-warning">매니저 편집 모드</span>
+          <span class="card-meta" data-slot="d"></span>
+        </div>
+        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px; color: var(--lk-color-fg-strong);" data-slot="t"></h1>
+        <p class="text-mute" style="font-size: 13px; margin: 0 0 20px;">좌측에서 마크다운 본문을 수정하면 우측에 즉시 프리뷰됩니다. 자동 저장 후 [발행]으로 학생에게 반영합니다.</p>
+
+        <div class="field" style="max-width: 720px; margin-bottom: 20px;">
+          <label>제목</label>
+          <input type="text" id="title-input" />
+        </div>
+
+        <div class="editor-split">
+          <div>
+            <div class="editor-toolbar">
+              <button title="굵게"><i class="ri-icon ri-bold"></i></button>
+              <button title="기울임"><i class="ri-icon ri-italic"></i></button>
+              <span class="sep"></span>
+              <button title="제목"><i class="ri-icon ri-heading"></i></button>
+              <button title="인용"><i class="ri-icon ri-double-quotes-l"></i></button>
+              <button title="목록"><i class="ri-icon ri-list-check-2"></i></button>
+              <span class="sep"></span>
+              <button title="링크"><i class="ri-icon ri-link"></i></button>
+              <button title="이미지"><i class="ri-icon ri-image-line"></i></button>
+              <button title="테이블"><i class="ri-icon ri-table-line"></i></button>
+              <button title="코드"><i class="ri-icon ri-code-line"></i></button>
+            </div>
+            <textarea class="md-source" id="src" style="border-radius: 0 0 12px 12px;"></textarea>
+          </div>
+          <div class="md-preview">
+            <div class="aimote-summary" style="margin-top: 0;">
+              <div class="lbl"><i class="ri-icon ri-play-fill"></i> 금일 학습 요약</div>
+              <div class="body" id="prev-summary"></div>
+            </div>
+            <div class="md-view" id="prev-body"></div>
+          </div>
+        </div>
+      `;
+      fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
+      fp.body.querySelector('[data-slot="t"]').textContent = '본문 수정';
+      fp.body.querySelector('#title-input').value = note.title;
+      const src = fp.body.querySelector('#src');
+      src.value = note.body || '';
+      const prevBody = fp.body.querySelector('#prev-body');
+      const prevSummary = fp.body.querySelector('#prev-summary');
+      prevSummary.textContent = note.summary;
+      prevBody.innerHTML = UI.md(src.value);
+      src.addEventListener('input', () => { prevBody.innerHTML = UI.md(src.value); });
+    }
+  </script>
+</body>
+</html>

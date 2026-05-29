@@ -1,0 +1,186 @@
+/* likelion-design tokens — fetched via mcp__likelion-docs__get_design_tokens on 2026-05-28
+ * Source: @likelion-design/docs-mcp. Brand primary = #FF6000 (primary-500).
+ * Naming: --lk-{category}-{name} (semantic) or --lk-color-{family}-{step} (primitive).
+ */
+
+:root {
+  /* ===== PRIMITIVE COLORS ===== */
+
+  /* Basic */
+  --lk-color-basic-white: #FFFFFF;
+  --lk-color-basic-black: #000000;
+
+  /* Primary (Orange — KDT brand) */
+  --lk-color-primary-50:  #FFEFE5;
+  --lk-color-primary-100: #FFDFCC;
+  --lk-color-primary-200: #FFBF99;
+  --lk-color-primary-300: #FFA066;
+  --lk-color-primary-400: #FF8033;
+  --lk-color-primary-500: #FF6000;
+  --lk-color-primary-600: #CC4D00;
+  --lk-color-primary-700: #993A00;
+  --lk-color-primary-800: #662600;
+  --lk-color-primary-900: #4D1D00;
+
+  /* Gray */
+  --lk-color-gray-50:  #F9FAFB;
+  --lk-color-gray-100: #F3F4F6;
+  --lk-color-gray-200: #E5E7EA;
+  --lk-color-gray-300: #D1D6DC;
+  --lk-color-gray-400: #B1B8C0;
+  --lk-color-gray-500: #8A95A0;
+  --lk-color-gray-600: #6B7583;
+  --lk-color-gray-700: #4E5967;
+  --lk-color-gray-800: #333D4B;
+  --lk-color-gray-850: #262F3C;
+  --lk-color-gray-900: #191F28;
+  --lk-color-gray-950: #191C1F;
+
+  /* Red */
+  --lk-color-red-50:  #FDF0F3;
+  --lk-color-red-100: #FFCCD8;
+  --lk-color-red-300: #FFA5B4;
+  --lk-color-red-500: #F64C4C;
+  --lk-color-red-600: #E12337;
+  --lk-color-red-700: #AD1625;
+
+  /* Yellow */
+  --lk-color-yellow-50:  #FFF8E4;
+  --lk-color-yellow-100: #FFEEBF;
+  --lk-color-yellow-300: #FFD456;
+  --lk-color-yellow-500: #FFB700;
+  --lk-color-yellow-700: #AA7900;
+
+  /* Green */
+  --lk-color-green-50:  #E4FAF5;
+  --lk-color-green-100: #C4F8EB;
+  --lk-color-green-300: #7EDDCD;
+  --lk-color-green-500: #0DA796;
+  --lk-color-green-700: #006D5D;
+
+  /* Light Green (positive state) */
+  --lk-color-light-green-50:  #F2FDE3;
+  --lk-color-light-green-200: #C7EC93;
+  --lk-color-light-green-500: #79B116;
+  --lk-color-light-green-700: #2D660A;
+
+  /* Blue */
+  --lk-color-blue-50:  #E5F5FF;
+  --lk-color-blue-100: #CCEBFF;
+  --lk-color-blue-300: #80C6FB;
+  --lk-color-blue-500: #3D94FF;
+  --lk-color-blue-700: #045CA9;
+
+  /* Purple */
+  --lk-color-purple-50:  #F9EFFF;
+  --lk-color-purple-300: #D7AAFF;
+  --lk-color-purple-500: #AF79DD;
+  --lk-color-purple-700: #734098;
+
+  /* ===== SEMANTIC: FOREGROUND (text / icon) ===== */
+  --lk-color-fg-primary:          #FF6000;
+  --lk-color-fg-pressed:          #CC4D00;
+  --lk-color-fg-primary-inverted: #FFA066;
+  --lk-color-fg-strong:           #191F28;
+  --lk-color-fg-normal:           #333D4B;
+  --lk-color-fg-neutral:          #4E5967;
+  --lk-color-fg-alternative:      #6B7583;
+  --lk-color-fg-assistive:        #8A95A0;
+  --lk-color-fg-disabled:         #B1B8C0;
+  --lk-color-fg-white:            #FFFFFF;
+  --lk-color-fg-black:            #000000;
+  --lk-color-fg-yellow:           #FFB700;
+  --lk-color-fg-lightgreen:       #79B116;
+  --lk-color-fg-green:            #0DA796;
+  --lk-color-fg-blue:             #3D94FF;
+  --lk-color-fg-purple:           #AF79DD;
+  --lk-color-fg-red:              #F64C4C;
+
+  /* ===== SEMANTIC: BACKGROUND ===== */
+  --lk-color-bg-normal:                #F3F4F6;
+  --lk-color-bg-normal-hovered:        #F9FAFB;
+  --lk-color-bg-normal-alternative:    #E5E7EA;
+  --lk-color-bg-normal-assistive:      #F9FAFB;
+  --lk-color-bg-disabled:              #F3F4F6;
+  --lk-color-bg-disabled-dark:         #E5E7EA;
+  --lk-color-bg-inverted:              #191C1F;
+  --lk-color-bg-inverted-hovered:      #191F28;
+  --lk-color-bg-primary:               #FF6000;
+  --lk-color-bg-primary-hovered:       #CC4D00;
+  --lk-color-bg-primary-disabled:      rgba(255, 96, 0, 0.24);
+  --lk-color-bg-primary-weak:          #FFEFE5;
+  --lk-color-bg-lightgreen:            #F2FDE3;
+  --lk-color-bg-yellow:                #FFF8E4;
+  --lk-color-bg-green:                 #E4FAF5;
+  --lk-color-bg-blue:                  #E5F5FF;
+  --lk-color-bg-purple:                #F9EFFF;
+  --lk-color-bg-red:                   #FDF0F3;
+  --lk-color-bg-white:                 #FFFFFF;
+  --lk-color-bg-black:                 #000000;
+  --lk-color-bg-weak-primary:          rgba(255, 96, 0, 0.08);
+  --lk-color-bg-weak-primary-hovered:  rgba(255, 96, 0, 0.16);
+  --lk-color-bg-dim:                   rgba(0, 0, 0, 0.5);
+
+  /* ===== SEMANTIC: BORDER ===== */
+  --lk-color-border-primary:         #FF6000;
+  --lk-color-border-strong:          #333D4B;
+  --lk-color-border-normal:          #D1D6DC;
+  --lk-color-border-weak:            #E5E7EA;
+  --lk-color-border-white:           #FFFFFF;
+  --lk-color-border-black:           #000000;
+  --lk-color-border-inverted:        #4E5967;
+  --lk-color-border-inverted-strong: #6B7583;
+
+  /* ===== SEMANTIC: STATE / INFO ===== */
+  --lk-color-state-danger:   #E12337;
+  --lk-color-state-success:  #79B116;
+  --lk-color-state-warning:  #FFB700;
+  --lk-color-state-info:     #3D94FF;
+
+  /* ===== STYLE / GRADIENTS ===== */
+  --lk-color-gradient-primary: linear-gradient(90deg, #FFA066 0%, #FF6000 97.86%);
+
+  /* ===== SPACING (primitive — pixel scale) ===== */
+  --lk-spacing-0_5: 2px;
+  --lk-spacing-1:   4px;
+  --lk-spacing-2:   8px;
+  --lk-spacing-2_5: 10px;
+  --lk-spacing-3:   12px;
+  --lk-spacing-4:   16px;
+  --lk-spacing-5:   20px;
+  --lk-spacing-6:   24px;
+  --lk-spacing-8:   32px;
+  --lk-spacing-10:  40px;
+  --lk-spacing-12:  48px;
+  --lk-spacing-16:  64px;
+  --lk-spacing-20:  80px;
+  --lk-spacing-25:  100px;
+
+  /* ===== RADIUS (local — not yet provided by MCP) ===== */
+  --lk-radius-xs: 4px;
+  --lk-radius-sm: 6px;
+  --lk-radius-md: 8px;
+  --lk-radius-lg: 12px;
+  --lk-radius-xl: 16px;
+  --lk-radius-full: 9999px;
+
+  /* ===== HEATMAP SCALE — 색 + 명도 + 패턴 함께 사용 (PRD §7 색약 대응) ===== */
+  --lk-heat-0: var(--lk-color-gray-100);   /* 미작성/미응시 */
+  --lk-heat-1: var(--lk-color-primary-100);
+  --lk-heat-2: var(--lk-color-primary-300);
+  --lk-heat-3: var(--lk-color-primary-500);
+  --lk-heat-4: var(--lk-color-primary-700);
+  --lk-heat-danger: var(--lk-color-red-500);  /* 보충 퀴즈 하루 10건 등 경고 셀 */
+}
+
+/* Pretendard via CDN (로드 실패 시 system-ui로 fallback) */
+:root {
+  --lk-font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, "Apple SD Gothic Neo", "Noto Sans KR", Roboto, "Helvetica Neue", "Segoe UI", sans-serif;
+}
+
+html, body {
+  font-family: var(--lk-font-family);
+  color: var(--lk-color-fg-normal);
+  background: var(--lk-color-bg-normal);
+}

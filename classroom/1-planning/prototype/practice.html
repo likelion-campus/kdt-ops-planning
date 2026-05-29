@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>실습 — 프로토타입 v2</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="./assets/tokens.css" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script src="./assets/mock-data.js"></script>
+  <script src="./assets/components.js"></script>
+</head>
+<body>
+  <script>
+    const { root, view } = UI.renderShell('practice');
+    UI.renderPageHead(root, {
+      title: '실습',
+      subtitle: '강사가 직접 등록한 실습 문제만 노출 · 마감 시간 없음',
+    });
+
+    if (view === 'trainee') renderTrainee(); else renderManager();
+
+    function renderTrainee() {
+      const sid = MOCK.activeStudentId;
+      const today = MOCK.meta.today;
+
+      const todayList = MOCK.practices[today] || [];
+      const todayCard = document.createElement('div');
+      todayCard.className = 'card';
+      todayCard.style.marginBottom = '24px';
+      if (UI.stateFlag === 'empty' || todayList.length === 0) {
+        todayCard.innerHTML = `
+          <div class="card-meta" data-slot="d"></div>
+          <div class="card-title" style="margin-top: 4px;">오늘의 실습</div>
+          <div class="empty" style="margin-top: 16px;">
+            <h4>오늘은 실습 문제가 없어요</h4>
+            <p>강사가 발행하면 카드가 푸시되어 표시됩니다.</p>
+          </div>
+        `;
+        todayCard.querySelector('[data-slot="d"]').textContent = UI.fmtDate(today);
+      } else {
+        todayCard.innerHTML = `
+          <div class="card-meta" data-slot="d"></div>
+          <div class="card-title" style="margin-top: 4px;">오늘의 실습 (${todayList.length}건)</div>
+          <div id="today-list" style="margin-top: 16px; display: grid; gap: 8px;"></div>
+        `;
+        todayCard.querySelector('[data-slot="d"]').textContent = UI.fmtDate(today);
+        const list = todayCard.querySelector('#today-list');
+        todayList.forEach((p) => list.appendChild(traineePracticeItem(p, sid)));
+      }
+      root.appendChild(todayCard);
+
+      const pastTitle = document.createElement('h3');
+      pastTitle.className = 'card-title';
+      pastTitle.style.cssText = 'font-size: 14px; margin-bottom: 12px;';
+      pastTitle.textContent = '과거 실습';
+      root.appendChild(pastTitle);
+
+      const grid = document.createElement('div');
+      grid.className = 'date-grid';
+      const past = MOCK.days.filter((d) => d !== today && (MOCK.practices[d] || []).length > 0).sort().reverse().slice(0, 12);
+      past.forEach((d) => {
+        const ps = MOCK.practices[d];
+        const submitted = ps.filter((p) => MOCK.practiceSubmissions[sid]?.[p.id]?.submitted).length;
+        const allSubmitted = submitted === ps.length;
+        const card = document.createElement('div');
+        card.className = 'date-card';
+        card.innerHTML = `
+          <div class="spread">
+            <div>
+              <div class="card-meta" data-slot="d"></div>
+              <div class="card-title" style="font-size: 14px; margin-top: 4px;">실습 ${ps.length}건</div>
+            </div>
+            <span class="tag ${allSubmitted ? 'tag-weak-success' : 'tag-weak-warning'}">${submitted}/${ps.length} 제출</span>
+          </div>
+        `;
+        card.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d, { short: true });
+        card.addEventListener('click', () => openDayDetail(d, ps, sid));
+        grid.appendChild(card);
+      });
+      root.appendChild(grid);
+    }
+
+    function traineePracticeItem(p, sid) {
+      const sub = MOCK.practiceSubmissions[sid]?.[p.id];
+      const item = document.createElement('div');
+      item.style.cssText = 'border: 1px solid var(--lk-color-border-weak); border-radius: 8px; padding: 14px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px;';
+      const title = document.createElement('div');
+      title.innerHTML = `
+        <div class="card-title" style="font-size: 14px;" data-slot="t"></div>
+        <p class="text-mute" style="font-size: 12px; margin-top: 4px;" data-slot="b"></p>
+        ${p.updatedAt ? `<span class="tag tag-weak-warning" style="margin-top: 6px;">수정됨 · ${UI.relTime(p.updatedAt)}</span>` : ''}
+      `;
+      title.querySelector('[data-slot="t"]').textContent = p.title;
+      title.querySelector('[data-slot="b"]').textContent = p.body;
+      const status = document.createElement('div');
+      const tag = sub?.submitted
+        ? (sub.score != null
+          ? { cls: 'tag-weak-success', label: `${sub.score}점 · 채점` }
+          : { cls: 'tag-weak-enabled', label: '제출 완료' })
+        : { cls: 'tag-weak-neutral', label: '미제출' };
+      status.innerHTML = `<span class="tag ${tag.cls}" data-slot="s"></span>`;
+      status.querySelector('[data-slot="s"]').textContent = tag.label;
+      item.appendChild(title); item.appendChild(status);
+      item.addEventListener('click', () => openSubmit(p, sid, sub));
+      return item;
+    }
+
+    function openDayDetail(d, ps, sid) {
+      UI.openSlide(`
+        <div class="spread" style="margin-bottom: 16px;">
+          <div>
+            <div class="card-meta" data-slot="d"></div>
+            <h3 class="card-title" style="margin-top: 4px;">실습 ${ps.length}건</h3>
+          </div>
+          <button class="btn btn-small btn-ghost-neutral" id="close">닫기</button>
+        </div>
+        <div id="list" class="col"></div>
+      `);
+      const panel = document.querySelector('.slide-panel');
+      panel.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
+      const list = panel.querySelector('#list');
+      ps.forEach((p) => list.appendChild(traineePracticeItem(p, sid)));
+      panel.querySelector('#close').addEventListener('click', UI.closeSlide);
+    }
+
+    function openSubmit(p, sid, prev) {
+      const node = UI.openModal(`
+        <div class="card-meta" data-slot="meta"></div>
+        <h3 class="card-title" style="margin-top: 6px;" data-slot="t"></h3>
+        <p class="text-mute" style="font-size: 13px; margin: 12px 0; line-height: 1.6;" data-slot="b"></p>
+        <div class="divider"></div>
+        <div class="card-meta" style="margin-bottom: 6px;"><strong>평가 기준</strong></div>
+        <p class="text-mute" style="font-size: 12px; margin-bottom: 16px;" data-slot="c"></p>
+        ${prev?.score != null ? `
+          <div style="background: var(--lk-color-bg-lightgreen); padding: 14px; border-radius: 8px; margin-bottom: 16px;">
+            <div class="card-meta">채점 결과</div>
+            <div class="card-title" style="font-size: 18px; margin-top: 4px;">${prev.score}점</div>
+            <p style="font-size: 13px; margin-top: 8px;" data-slot="cm"></p>
+          </div>` : ''}
+        ${prev?.submitted ? `
+          <div class="field"><label>제출한 텍스트</label><textarea readonly data-slot="text"></textarea></div>
+        ` : `
+          <div class="field"><label>제출 텍스트<span class="req">*</span></label><textarea placeholder="실습 결과를 정리해서 입력하세요"></textarea></div>
+          <div class="field-row">
+            <div class="field"><label>URL (선택)</label><input type="url" id="url" placeholder="https://..." /></div>
+            <div class="field"><label>파일/이미지 (선택, 최대 30MB)</label><input type="text" placeholder="파일 선택…" disabled /></div>
+          </div>
+          <div class="inline-error hide" id="url-err">잘못된 URL 입니다</div>
+        `}
+        <div class="row row-end" style="margin-top: 16px; gap: 8px;">
+          <button class="btn btn-outline-neutral" id="cancel">닫기</button>
+          ${prev?.submitted ? '' : '<button class="btn btn-solid-primary" id="submit">제출하기</button>'}
+        </div>
+      `);
+      node.querySelector('[data-slot="meta"]').textContent = `${p.title} · ${p.criteria ? '평가 기준 있음' : ''}`;
+      node.querySelector('[data-slot="t"]').textContent = p.title;
+      node.querySelector('[data-slot="b"]').textContent = p.body;
+      node.querySelector('[data-slot="c"]').textContent = p.criteria;
+      if (prev?.comment) node.querySelector('[data-slot="cm"]').textContent = prev.comment;
+      if (prev?.text) node.querySelector('[data-slot="text"]').value = prev.text;
+      node.querySelector('#cancel').addEventListener('click', () => node.remove());
+      const sub = node.querySelector('#submit');
+      if (sub) sub.addEventListener('click', () => {
+        const url = node.querySelector('#url')?.value;
+        if (url && !/^https?:\/\//.test(url)) {
+          node.querySelector('#url-err').classList.remove('hide');
+          return;
+        }
+        node.remove();
+        UI.toast('제출 완료 — 마감 시간 없음, 언제든 다시 제출 가능합니다', 'success');
+      });
+    }
+
+    function renderManager() {
+      const tabs = ['publish', 'grade'];
+      const labels = { publish: '실습 발행', grade: '채점' };
+      const st = UI.loadState();
+      const active = st.practiceTab || 'publish';
+      const tabsEl = document.createElement('div');
+      tabsEl.className = 'tabs';
+      tabs.forEach((t) => {
+        const el = document.createElement('div');
+        el.className = 'tab' + (active === t ? ' is-active' : '');
+        el.textContent = labels[t];
+        el.addEventListener('click', () => { UI.saveState({ practiceTab: t }); location.reload(); });
+        tabsEl.appendChild(el);
+      });
+      root.appendChild(tabsEl);
+      const body = document.createElement('section');
+      body.style.marginTop = '20px';
+      root.appendChild(body);
+
+      if (active === 'publish') renderPublish(body);
+      else renderGrade(body);
+    }
+
+    function renderPublish(body) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.marginBottom = '20px';
+      card.innerHTML = `
+        <div class="card-row">
+          <div class="card-title">새 실습 문제 작성</div>
+          <span class="text-mute" style="font-size: 12px;">예약 발행 또는 즉시 발행</span>
+        </div>
+        <div style="margin-top: 16px;">
+          <div class="field"><label>제목<span class="req">*</span></label><input type="text" placeholder="예: pandas groupby 실전" /></div>
+          <div class="field"><label>설명<span class="req">*</span></label><textarea placeholder="문제 본문을 입력하세요"></textarea></div>
+          <div class="field"><label>평가 기준</label><textarea style="min-height: 80px;" placeholder="채점 기준이 있다면 입력하세요"></textarea></div>
+          <div class="field-row">
+            <div class="field"><label>발행 시각 (예약)</label><input type="datetime-local" /></div>
+            <div class="field"><label>캠프파이어 공지 채널</label>
+              <select><option>운영 알림 (공개)</option><option>매니저 알림</option><option>채널 별도 등록</option><option>공지 안 함</option></select></div>
+          </div>
+          <div class="field"><label>공지 메시지 (옵션)</label><input type="text" placeholder="예: 오늘 실습 1건 발행되었습니다 — 마감 시간 없음" /></div>
+        </div>
+        <div class="row row-end" style="gap: 8px; margin-top: 16px;">
+          <button class="btn btn-outline-neutral" id="schedule">예약 발행</button>
+          <button class="btn btn-solid-primary" id="now">즉시 발행</button>
+        </div>
+      `;
+      card.querySelector('#schedule').addEventListener('click', () => UI.toast('예약 발행 등록됨 — 지정 시간에 자동 공개됩니다', 'success'));
+      card.querySelector('#now').addEventListener('click', () => UI.toast('즉시 발행 + 캠프파이어 공지 발송 완료', 'success'));
+      body.appendChild(card);
+
+      // 발행 이력
+      const head = document.createElement('h3');
+      head.className = 'card-title';
+      head.style.cssText = 'font-size: 14px; margin-bottom: 12px;';
+      head.textContent = '최근 발행 이력';
+      body.appendChild(head);
+
+      const grid = document.createElement('div');
+      grid.className = 'date-grid';
+      const past = MOCK.days.slice(-10).reverse().filter((d) => (MOCK.practices[d] || []).length > 0);
+      past.forEach((d) => {
+        (MOCK.practices[d] || []).forEach((p) => {
+          const c = document.createElement('div');
+          c.className = 'date-card';
+          c.innerHTML = `
+            <div class="card-meta" data-slot="d"></div>
+            <div class="card-title" style="font-size: 14px; margin-top: 4px;" data-slot="t"></div>
+            <div class="row" style="margin-top: 10px; gap: 6px;">
+              <span class="tag tag-weak-success">발행됨</span>
+              ${p.updatedAt ? `<span class="tag tag-weak-warning">수정됨 ${UI.relTime(p.updatedAt)}</span>` : ''}
+              ${p.campfireChannel ? `<span class="tag tag-weak-progressing">공지: ${p.campfireChannel}</span>` : ''}
+            </div>
+          `;
+          c.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d, { short: true });
+          c.querySelector('[data-slot="t"]').textContent = p.title;
+          grid.appendChild(c);
+        });
+      });
+      body.appendChild(grid);
+    }
+
+    function renderGrade(body) {
+      // 날짜 셀렉터 + 학생×문제 표
+      const targetDate = MOCK.days.slice(-3, -2)[0]; // 그저께
+      const ps = MOCK.practices[targetDate] || [];
+
+      const head = document.createElement('div');
+      head.className = 'card-row';
+      head.style.marginBottom = '16px';
+      head.innerHTML = `
+        <div>
+          <div class="card-title">채점 — <span data-slot="d"></span></div>
+          <p class="text-mute" style="font-size: 12px; margin-top: 4px;">제출자 = 색상 / 미제출 = 회색. 셀 클릭 시 상세. 점수·코멘트는 옵션.</p>
+        </div>
+        <select id="date-sel" style="padding: 6px 12px; border: 1px solid var(--lk-color-border-normal); border-radius: 6px;"></select>
+      `;
+      head.querySelector('[data-slot="d"]').textContent = UI.fmtDate(targetDate);
+      const sel = head.querySelector('#date-sel');
+      MOCK.days.slice(-14).reverse().forEach((d) => {
+        const o = document.createElement('option');
+        o.value = d; o.textContent = UI.fmtDate(d, { short: true });
+        if (d === targetDate) o.selected = true;
+        sel.appendChild(o);
+      });
+      body.appendChild(head);
+
+      if (ps.length === 0) {
+        body.appendChild(UI.emptyCard({ title: '이 날에 발행된 실습이 없어요', body: '다른 날짜를 선택해주세요.' }));
+        return;
+      }
+
+      // 표
+      const table = document.createElement('table');
+      table.className = 'grade-table';
+      const colNames = ['학생', ...ps.map((p, i) => `문제 ${i + 1}`)];
+      const trH = document.createElement('tr');
+      colNames.forEach((c, i) => {
+        const th = document.createElement('th');
+        th.className = i === 0 ? 'row-head' : '';
+        th.textContent = c;
+        trH.appendChild(th);
+      });
+      const thead = document.createElement('thead');
+      thead.appendChild(trH);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      MOCK.students.forEach((s) => {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td');
+        tdName.className = 'row-head';
+        tdName.style.textAlign = 'left';
+        tdName.style.fontWeight = '600';
+        tdName.textContent = s.name;
+        tr.appendChild(tdName);
+        ps.forEach((p) => {
+          const td = document.createElement('td');
+          const sub = MOCK.practiceSubmissions[s.id]?.[p.id];
+          if (sub?.submitted) {
+            td.className = 'submitted';
+            td.textContent = sub.score != null ? `${sub.score}` : '✓';
+            td.title = sub.submittedAt;
+            td.addEventListener('click', () => openGradeDetail(s, p, sub));
+          } else {
+            td.className = 'empty';
+            td.textContent = '—';
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'card';
+      wrap.style.padding = '0';
+      wrap.style.overflowX = 'auto';
+      wrap.appendChild(table);
+      body.appendChild(wrap);
+    }
+
+    function openGradeDetail(s, p, sub) {
+      const node = UI.openModal(`
+        <div class="spread" style="margin-bottom: 12px;">
+          <div>
+            <div class="card-meta" data-slot="t"></div>
+            <h3 class="card-title" style="margin-top: 4px;" data-slot="n"></h3>
+          </div>
+          <button class="btn btn-small btn-ghost-neutral" id="close">닫기</button>
+        </div>
+        <div class="field"><label>제출 텍스트</label><textarea readonly style="min-height: 120px;" data-slot="text"></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>점수 (옵션)</label><input type="text" data-slot="sc" /></div>
+          <div class="field"><label>제출 시각</label><input type="text" disabled data-slot="time" /></div>
+        </div>
+        <div class="field"><label>코멘트 (옵션)</label><textarea style="min-height: 80px;" data-slot="cm"></textarea></div>
+        <div class="row row-end" style="margin-top: 12px; gap: 8px;">
+          <button class="btn btn-outline-neutral" id="reminder-off">채점 의무 X (PRD §9)</button>
+          <button class="btn btn-solid-primary" id="save">저장 + 학생 DM</button>
+        </div>
+      `);
+      node.querySelector('[data-slot="t"]').textContent = p.title;
+      node.querySelector('[data-slot="n"]').textContent = `${s.name} 제출`;
+      node.querySelector('[data-slot="text"]').value = sub.text || '';
+      node.querySelector('[data-slot="sc"]').value = sub.score ?? '';
+      node.querySelector('[data-slot="time"]').value = sub.submittedAt;
+      node.querySelector('[data-slot="cm"]').value = sub.comment || '';
+      node.querySelector('#close').addEventListener('click', () => node.remove());
+      node.querySelector('#save').addEventListener('click', () => {
+        node.remove();
+        UI.toast(`${s.name}에게 채점 결과 DM이 발송되었어요`, 'success');
+      });
+    }
+  </script>
+</body>
+</html>
