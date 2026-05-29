@@ -2,8 +2,12 @@ version: 1
 owner: be-classroom-lead
 
 terms:
+  해당수업:
+    description: "Classroom 도메인에서 학생·매니저가 함께 속해 있는 단위 수업. Campfire 도메인의 Cohort(동일 기수 그룹)와 같은 대상을 가리키지만, Classroom 본문·UI·정책 문서에서는 'cohort' 대신 '해당 수업'으로 표기한다 (학생·매니저가 일상 언어로 부르는 호칭에 맞춤). 기술 컬럼명(예: cohort_id)은 backend 단일 진실(shared/glossary.yml)을 따른다."
+    aliases: ["해당 수업", "수업"]
+    parent_term: Cohort
   Lecture:
-    description: "1회차 강의 단위. Cohort에 속한다."
+    description: "1회차 강의 단위. 해당 수업(Cohort)에 속한다."
     entity: Lecture
   Session:
     description: "Lecture 안의 라이브/녹화 슬롯. 입장 가능 시간 구간을 가진다."
