@@ -221,6 +221,16 @@
       questions: SAMPLE_QUIZ(TODAY).questions.slice(0, 5).map((q, i) => ({ ...q, id: `${TODAY}-m-q${i + 1}`, stem: '강사 직접 작성 — ' + q.stem })),
     });
   }
+  // 발행 후 텍스트 수정 데모 — 특정 과거 발행본에 "수정됨 · 시각" 표시
+  // (정답·보기 번호는 잠금 / 문제·보기·해설 텍스트만 수정 가능 — POL-CR-03 §1.1)
+  if (QUIZZES['2026-05-27']) {
+    const editedAt = '2026-05-27T10:15';
+    const set0 = QUIZZES['2026-05-27'].sets[0];
+    set0.editedAt = editedAt;
+    if (set0.questions[0]) set0.questions[0].editedAt = editedAt;
+    if (set0.questions[2]) set0.questions[2].editedAt = editedAt;
+    // QUIZZES[d].questions 는 set0.questions 와 동일 참조이므로 함께 반영됨
+  }
 
   // ---------- 응시 ----------
   const ATTEMPTS = {};
@@ -295,12 +305,17 @@
       const count = [5, 10, 15][i % 3];
       const solved = rr > 0.25;
       const correct = solved ? Math.round(count * (0.45 + s.baseActivity * 0.45)) : 0;
+      // 푼 날짜 — 생성일로부터 0~2일 뒤 (히트맵 "푼 날짜 기준" 집계용)
+      const solvedAt = solved
+        ? SUPP_TARGET_DAYS[Math.min(SUPP_TARGET_DAYS.length - 1, createdIdx + (seed % 3))] + 'T19:30'
+        : null;
       SUPP_SESSIONS[s.id].push({
         id: `supp-${s.id}-${i}`,
         createdAt,
         targetDate,
         count,
         solved,
+        solvedAt,
         correct,
         rate: solved ? correct / count : null,
         wrongFocus: i % 2 === 0,
@@ -323,6 +338,19 @@
       SUPPLEMENTARY[s.id][d].sumScore += set.rate || 0;
     });
     Object.values(SUPPLEMENTARY[s.id]).forEach((agg) => { agg.avgScore = agg.sets ? agg.sumScore / agg.sets : 0; });
+  });
+
+  // 매니저 히트맵용 — "푼 날짜" 기준 일별 풀이 횟수(세트=회) 집계. Max 10회.
+  const SUPP_SOLVED_DAILY = {}; // sid -> { 'YYYY-MM-DD': { plays, sumRate } }
+  STUDENTS.forEach((s) => {
+    SUPP_SOLVED_DAILY[s.id] = {};
+    SUPP_SESSIONS[s.id].forEach((set) => {
+      if (!set.solved || !set.solvedAt) return;
+      const d = set.solvedAt.slice(0, 10);
+      if (!SUPP_SOLVED_DAILY[s.id][d]) SUPP_SOLVED_DAILY[s.id][d] = { plays: 0, sumRate: 0 };
+      SUPP_SOLVED_DAILY[s.id][d].plays += 1;
+      SUPP_SOLVED_DAILY[s.id][d].sumRate += set.rate || 0;
+    });
   });
 
   // ---------- 실습 ----------
@@ -398,12 +426,15 @@
       if (status === 'none') { TILS[s.id][d] = { status }; return; }
       const tpl = TIL_SAMPLES[i % TIL_SAMPLES.length];
       const editCount = status === 'written' && r() < 0.3 ? 1 : 0;
+      // 우수 TIL — 매니저가 마크 (데모: written 중 일부). 색약 대응 위해 색 + 별 아이콘 동시.
+      const excellent = status === 'written' && r() < 0.12;
       TILS[s.id][d] = {
         status,
         title: `${d} TIL`,
         body: `# 오늘 배운것\n${tpl.ld}\n\n# 막힌것\n${tpl.stuck}\n\n# 내일 할 것\n${tpl.next}`,
         updatedAt: d + (status === 'temp' ? 'T17:30' : 'T18:00'),
         editCount,
+        excellent,
       };
     });
   });
@@ -616,8 +647,10 @@
     attempts: ATTEMPTS,
     wrongNotes: WRONG_NOTES,
     supplementary: SUPPLEMENTARY,
+    suppSolvedDaily: SUPP_SOLVED_DAILY,
     suppSessions: SUPP_SESSIONS,
     suppDailyLimit: 1000,
+    suppDailySetLimit: 10,
     practices: PRACTICES,
     practiceSubmissions: PRACTICE_SUBMISSIONS,
     tils: TILS,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=1440" />
-  <title>클래스룸 프로토타입 v2 — 허브</title>
+  <title>클래스룸 프로토타입 v2.3 — 허브</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -15,8 +15,8 @@
   <script>
     const { root, view } = UI.renderShell(null);
     UI.renderPageHead(root, {
-      title: '클래스룸 v2 프로토타입',
-      subtitle: 'PRD v1.2.1 §4 디테일 깊이 우선 시연 · 학생뷰/매니저뷰 토글 + 빈상태·에러 케이스 포함',
+      title: '클래스룸 v2.3 프로토타입',
+      subtitle: '2026-05-29 신규 스펙 반영 · 학생뷰/매니저뷰 토글 + 빈상태·에러 케이스 포함',
     });
     const _hub = document.createElement('div');
     _hub.innerHTML = `
@@ -28,8 +28,8 @@
         </p>
         <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
           <a href="ai-note.html" class="date-card"><strong>AI 노트</strong><br/><span class="text-mute" style="font-size:12px;">자동 생성된 학습 노트 · 와이드 카드 리스트</span></a>
-          <a href="ai-quiz.html" class="date-card"><strong>AI 퀴즈</strong><br/><span class="text-mute" style="font-size:12px;">학생 3탭(오늘·오답·보충) / 매니저 3탭(Draft·현황·보충) · 자작 퀴즈 등록</span></a>
-          <a href="til.html" class="date-card"><strong>TIL</strong><br/><span class="text-mute" style="font-size:12px;">활동 기록 5×26주차 + 작성 폼 우측 3탭 컨텍스트</span></a>
+          <a href="ai-quiz.html" class="date-card"><strong>AI 퀴즈</strong><br/><span class="text-mute" style="font-size:12px;">학생 3탭 · 보충 다중 날짜(최대 5)·하루 10회 한도 / 매니저 보충 히트맵(푼 날짜·Max 10) · 단일 재발행 · 수정됨 배지</span></a>
+          <a href="til.html" class="date-card"><strong>TIL</strong><br/><span class="text-mute" style="font-size:12px;">활동 기록 주 7일×26주차(주말 점선) · 날짜 셀렉트 작성/수정 통합 · 우수 TIL ★ · 외부 복사/PDF</span></a>
           <a href="project.html" class="date-card"><strong>프로젝트</strong><br/><span class="text-mute" style="font-size:12px;">기초·심화·파이널·기타 + 문제·제출·수업 제출본 3탭</span></a>
         </div>
         <p class="text-mute" style="margin-top: 16px; font-size: 12px;">※ 회의 §2 — 실습 메뉴는 폐지되었습니다 (자율 운영 + AI 노트·Alex 통합)</p>

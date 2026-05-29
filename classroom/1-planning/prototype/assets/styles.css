@@ -410,6 +410,30 @@ html, body {
 .lk-select-option-rich .row .score { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--lk-color-fg-primary); }
 .lk-select-option-rich .sub { font-size: 12px; color: var(--lk-color-fg-alternative); }
 
+/* ===== Likelion Multi-Select (칩 트리거 + 체크박스 메뉴) ===== */
+.lk-multiselect .lk-select-trigger { height: auto; min-height: 44px; padding: 7px 56px 7px 12px; }
+.lk-multiselect .lk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lk-multiselect .lk-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--lk-color-bg-primary-weak); color: var(--lk-color-fg-pressed);
+  border-radius: 999px; padding: 3px 6px 3px 10px; font-size: 12.5px; font-weight: 600;
+}
+.lk-multiselect .lk-chip i { font-size: 14px; cursor: pointer; opacity: 0.7; border-radius: 999px; padding: 1px; }
+.lk-multiselect .lk-chip i:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+.lk-multiselect-count { position: absolute; right: 36px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: var(--lk-color-fg-alternative); }
+.lk-multiselect-option { align-items: flex-start; }
+.lk-multiselect-option.is-disabled { opacity: 0.4; cursor: not-allowed; }
+.lk-multiselect-option.is-disabled:hover { background: transparent; }
+.lk-multiselect-option .lk-multiselect-label { flex: 1; }
+.lk-check {
+  flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px;
+  border: 1.5px solid var(--lk-color-border-normal); border-radius: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--lk-color-fg-white);
+}
+.lk-check.is-on { background: var(--lk-color-fg-primary); border-color: var(--lk-color-fg-primary); }
+.lk-multiselect-hint { font-size: 11px; color: var(--lk-color-fg-assistive); padding: 8px 12px 4px; border-top: 1px solid var(--lk-color-border-weak); margin-top: 4px; }
+
 /* ===== Demo state toggle (학생뷰 AI 퀴즈 등 시연용) ===== */
 .demo-state-toggle {
   display: inline-flex;
@@ -634,6 +658,25 @@ html, body {
   background-image: repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,0.15) 3px 4px);
   border-radius: inherit;
 }
+/* 주말(비학습일) — 점선 보더 + 옅은 회색 (작성 없는 주말 셀에만 적용) */
+.heat-cell[data-pattern="weekend"] {
+  background: var(--lk-color-bg-white);
+  border: 1px dashed var(--lk-color-border-normal);
+  cursor: default;
+}
+/* 우수 TIL — 오렌지 풀(작성) 유지 + 별 오버레이 + 진한 보더 (색약 대응: 색 + 아이콘) */
+.heat-cell[data-excellent] {
+  background: var(--lk-color-primary-500);
+  border: 1.5px solid var(--lk-color-yellow-500);
+  box-shadow: 0 0 0 1px var(--lk-color-yellow-500);
+}
+.heat-cell[data-excellent]::before {
+  content: "\2605"; /* ★ */
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; line-height: 1; color: var(--lk-color-yellow-500);
+  text-shadow: 0 0 1px rgba(0,0,0,0.5);
+}
 
 .heat-legend {
   display: inline-flex; gap: 16px; align-items: center;
@@ -742,16 +785,17 @@ html, body {
   padding: 4px 0;
 }
 .til-heatmap-row-labels {
-  display: grid; grid-template-rows: repeat(5, 16px);
+  display: grid; grid-template-rows: repeat(7, 16px);
   gap: 4px;
   margin-right: 8px;
   font-size: 10px; color: var(--lk-color-fg-assistive);
   align-items: center;
 }
+.til-heatmap-row-labels .is-weekend { color: var(--lk-color-fg-disabled); }
 .til-heatmap-grid {
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(5, 16px);
+  grid-template-rows: repeat(7, 16px);
   gap: 4px;
 }
 .til-heatmap-grid .heat-cell { width: 16px; height: 16px; border-radius: 4px; }

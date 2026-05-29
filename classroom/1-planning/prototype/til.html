@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>TIL — 프로토타입 v2</title>
+  <title>TIL — 프로토타입 v2.3</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -25,12 +25,14 @@
     function fmtISO(d) { return d.toISOString().slice(0, 10); }
 
     const WEEK_COUNT = 26;
-    const WEEKDAY_LABELS = ['월', '화', '수', '목', '금'];
+    // 주 7일(월~일) — 주말은 비학습일(점선/회색) 패턴으로 시각화
+    const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+    const WEEKEND_ROWS = [5, 6]; // 토·일
     const weeks = [];
     for (let w = WEEK_COUNT - 1; w >= 0; w--) {
       const monday = weekStart(MOCK.meta.today, w);
       const days = [];
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
         days.push(fmtISO(d));
@@ -49,17 +51,40 @@
       if (r < student.baseActivity) return 'temp';
       return 'none';
     }
+    // 주말 자율 작성 — 드물게(활동률 비례). 결정론적 해시.
+    function weekendWrote(studentId, date) {
+      const student = MOCK.students.find((s) => s.id === studentId);
+      if (!student) return false;
+      let h = 0; const str = 'wk' + studentId + date;
+      for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+      return ((Math.abs(h) % 1000) / 1000) < student.baseActivity * 0.18;
+    }
     function tilStatusOn(studentId, date) {
-      if (!MOCK.isLearningDay(date)) return 'holiday';
       const mock = MOCK.tils[studentId]?.[date];
-      if (mock) return mock.status;
+      if (mock && mock.status !== 'none') return mock.status; // 명시 작성(자율 포함)
+      if (!MOCK.isLearningDay(date)) {
+        // 주말/휴일 — 자율 작성한 경우만 written, 아니면 비학습일
+        if (new Date(date) <= new Date(MOCK.meta.today) && weekendWrote(studentId, date)) return 'written';
+        return 'weekend';
+      }
+      if (mock) return mock.status; // 'none'
       if (new Date(date) <= new Date(MOCK.meta.today)) return pseudoTilStatus(studentId, date);
       return 'future';
     }
     function statusToHeat(status) {
       if (status === 'written') return { level: 4 };
       if (status === 'temp')    return { level: 2, pattern: 'stripe' };
+      if (status === 'weekend') return { level: 0, pattern: 'weekend' };
       return { level: 0 };
+    }
+    // 우수 TIL 여부 — mock 우선, 없으면 결정론적 pseudo
+    function isExcellent(studentId, date) {
+      const m = MOCK.tils[studentId]?.[date];
+      if (m && typeof m.excellent === 'boolean') return m.excellent;
+      if (tilStatusOn(studentId, date) !== 'written') return false;
+      let h = 0; const str = 'ex' + studentId + date;
+      for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+      return ((Math.abs(h) % 1000) / 1000) < 0.1;
     }
 
     function getTilForDate(sid, date) {
@@ -67,7 +92,7 @@
       if (m && m.status !== 'none') return m;
       const status = tilStatusOn(sid, date);
       if (status === 'written' || status === 'temp') {
-        return { status, title: `${UI.fmtDate(date, { short: true })} TIL`, body: '# 오늘 배운것\n오늘 배운 내용을 정리합니다.\n\n# 막힌것\n특정 개념에서 막힌 부분.\n\n# 내일 할 것\n복습 + 추가 학습 계획', updatedAt: date + 'T18:00', editCount: 0 };
+        return { status, title: `${UI.fmtDate(date, { short: true })} TIL`, body: '# 오늘 배운것\n오늘 배운 내용을 정리합니다.\n\n# 막힌것\n특정 개념에서 막힌 부분.\n\n# 내일 할 것\n복습 + 추가 학습 계획', updatedAt: date + 'T18:00', editCount: 0, excellent: isExcellent(sid, date) };
       }
       return null;
     }
@@ -80,7 +105,7 @@
     UI.renderPageHead(root, {
       title: _isMgr ? '해당 수업 TIL' : '나의 TIL',
       subtitle: _isMgr ? '학생 × 주차 히트맵 · 셀 클릭 시 본문 상세' : '매일 느낀점을 정리해보세요',
-      actions: _isMgr ? [] : [UI.button({ label: '작성하기', icon: 'ri-edit-line', type: 'outline', color: 'primary', onClick: () => openTraineeEdit(MOCK.meta.today, MOCK.tils[MOCK.activeStudentId]?.[MOCK.meta.today]) })],
+      actions: _isMgr ? [] : [UI.button({ label: '작성하기', icon: 'ri-edit-line', type: 'outline', color: 'primary', onClick: () => openDateSelectThenEdit() })],
     });
 
     if (view === 'trainee') renderTrainee(); else renderManager();
@@ -99,7 +124,7 @@
         <div class="card-head">
           <div>
             <h3 class="card-title">활동 기록</h3>
-            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">최근 6개월 · 평일 5일 × 26주차</p>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">최근 6개월 · 주 7일(월~일) × 26주차 · 주말은 비학습일(점선)</p>
           </div>
           <div id="heat-legend"></div>
         </div>
@@ -113,13 +138,16 @@
         { color: 'var(--lk-color-bg-normal)', label: '미작성' },
         { color: 'var(--lk-color-primary-200)', label: '임시', pattern: 'stripe' },
         { color: 'var(--lk-color-primary-500)', label: '작성' },
+        { color: 'var(--lk-color-primary-500)', label: '★ 우수' },
+        { color: 'var(--lk-color-bg-white)', label: '주말(비학습일)' },
       ]);
       heatCard.querySelector('#heat-legend').appendChild(legend);
 
       const rowLabels = heatCard.querySelector('#row-labels');
-      WEEKDAY_LABELS.forEach((lbl) => {
+      WEEKDAY_LABELS.forEach((lbl, ri) => {
         const el = document.createElement('div');
         el.textContent = lbl;
+        if (WEEKEND_ROWS.includes(ri)) el.className = 'is-weekend';
         rowLabels.appendChild(el);
       });
 
@@ -132,12 +160,15 @@
           const heat = statusToHeat(status);
           cell.setAttribute('data-level', String(heat.level));
           if (heat.pattern) cell.setAttribute('data-pattern', heat.pattern);
-          const lbl = status === 'written' ? '작성' : status === 'temp' ? '임시' : status === 'holiday' ? '휴일' : status === 'future' ? '미래' : '미작성';
+          const excellent = status === 'written' && isExcellent(sid, d);
+          if (excellent) cell.setAttribute('data-excellent', 'true');
+          const lbl = excellent ? '★ 우수' : status === 'written' ? '작성' : status === 'temp' ? '임시' : status === 'weekend' ? '주말(비학습일)' : status === 'future' ? '미래' : '미작성';
           cell.title = `${d} · ${lbl}`;
           if (status === 'written' || status === 'temp') {
             cell.style.cursor = 'pointer';
             cell.addEventListener('click', () => openTilDetail(d, getTilForDate(sid, d)));
-          } else if (new Date(d) <= new Date(MOCK.meta.today) && MOCK.isLearningDay(d)) {
+          } else if (new Date(d) <= new Date(MOCK.meta.today) && status !== 'future') {
+            // 평일 미작성 + 주말 자율 작성 모두 클릭 시 작성 진입
             cell.style.cursor = 'pointer';
             cell.addEventListener('click', () => openTraineeEdit(d, null));
           }
@@ -182,7 +213,7 @@
           icon: 'ri-quill-pen-line',
           title: '매일 느낀점을 정리해보세요',
           body: '하루 한 줄도 좋아요.',
-          cta: { label: '작성하기', onClick: () => openTraineeEdit(MOCK.meta.today, null) },
+          cta: { label: '작성하기', onClick: () => openDateSelectThenEdit() },
         }));
         return;
       }
@@ -223,8 +254,13 @@
     function openTilDetail(date, t) {
       if (!t) { openTraineeEdit(date, null); return; }
       const fp = UI.openFullPage({ backLabel: 'TIL' });
-      const editBtn = UI.button({ label: '수정', icon: 'ri-edit-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => { UI.closeFullPage(); openTraineeEdit(date, t); } });
-      fp.actions.appendChild(editBtn);
+      const isMgr = view === 'manager';
+      // 발행 후 외부 공유 — 학생 본인만 (비공개 기본값 · 명시적 외부 복사 시에만 공개 URL 생성)
+      if (!isMgr) {
+        fp.actions.appendChild(UI.button({ label: '외부 복사', icon: 'ri-share-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openTilShareDialog(date, t) }));
+        fp.actions.appendChild(UI.button({ label: 'PDF 다운로드', icon: 'ri-file-download-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('PDF 다운로드를 시작했어요', 'success') }));
+        fp.actions.appendChild(UI.button({ label: '수정', icon: 'ri-edit-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => { UI.closeFullPage(); openTraineeEdit(date, t); } }));
+      }
 
       fp.body.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
@@ -237,6 +273,85 @@
       fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(date);
       fp.body.querySelector('[data-slot="title"]').textContent = t.title;
       fp.body.querySelector('[data-slot="body"]').innerHTML = UI.md(t.body || '');
+    }
+
+    // ===== TIL 외부 공유 다이얼로그 — 명시적 외부 복사 시에만 공개 URL 생성 =====
+    function openTilShareDialog(date, t) {
+      const shareUrl = `https://likelion-classroom.app/til/${MOCK.activeStudentId}-${date}`;
+      const node = UI.openModal(`
+        <h3 class="card-title">외부 복사</h3>
+        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">TIL은 기본 비공개예요. 외부 복사를 누르면 <strong>공개 URL이 생성·복사</strong>되어 외부에 공유할 수 있어요.</p>
+        <div style="background: var(--lk-color-bg-normal); padding: 14px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 13px; font-family: ui-monospace, monospace; flex: 1; overflow: hidden; text-overflow: ellipsis;" data-slot="url"></span>
+          <button class="btn btn-small btn-solid-primary" id="copy">복사</button>
+        </div>
+        <div class="row" style="gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-file-copy-line"></i> 마크다운 복사</button>
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-twitter-x-line"></i> X</button>
+          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-linkedin-line"></i> LinkedIn</button>
+        </div>
+        <div class="row row-end" style="margin-top: 16px;"><button class="btn btn-outline-neutral" id="close">닫기</button></div>
+      `);
+      node.querySelector('[data-slot="url"]').textContent = shareUrl;
+      node.querySelector('#copy').addEventListener('click', () => UI.toast('공개 링크가 생성되어 복사되었어요', 'success'));
+      node.querySelector('#close').addEventListener('click', () => node.remove());
+    }
+
+    // ============================================================
+    // TIL 작성 진입 — 날짜 셀렉트 우선 (작성/수정 통합 분기)
+    // ============================================================
+    function openDateSelectThenEdit() {
+      const sid = MOCK.activeStudentId;
+      const today = MOCK.meta.today;
+      const fp = UI.openFullPage({ backLabel: 'TIL' });
+
+      // 최근 21일(오늘 이하) — 날짜 + 작성 상태 + 🏆(우수)
+      const days = weeks.flatMap((w) => w.days).filter((d) => new Date(d) <= new Date(today)).sort().reverse().slice(0, 21);
+      const opts = days.map((d) => {
+        const status = tilStatusOn(sid, d);
+        const statusLabel = status === 'written' ? '작성됨' : status === 'temp' ? '임시' : '미작성';
+        const weekend = !MOCK.isLearningDay(d);
+        return {
+          value: d,
+          label: `${UI.fmtDate(d, { short: true })}${weekend ? ' · 주말' : ''}`,
+          sub: statusLabel,
+          score: (status === 'written' && isExcellent(sid, d)) ? '🏆' : '',
+        };
+      });
+      const defaultVal = opts.find((o) => o.value === today)?.value || opts[0]?.value;
+
+      fp.body.innerHTML = `
+        <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 12px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;">TIL 작성</h1>
+        <p class="text-mute" style="margin: 0 0 24px; font-size: 14px;">날짜를 선택하면 그 날의 작성 상태에 따라 <strong>새 글 작성</strong> 또는 <strong>수정</strong>으로 이어져요.</p>
+        <div class="card" style="max-width: 560px;">
+          <div class="field"><label>날짜 선택 (작성 상태 · 🏆 우수 함께 표시)</label><div id="date-sel"></div></div>
+          <div class="banner banner-info" style="margin: 4px 0 8px;"><i class="ri-icon ri-information-line"></i><span data-slot="mode"></span></div>
+          <div class="row row-end" style="margin-top: 8px; gap: 8px;" id="actions"></div>
+        </div>
+      `;
+      const modeEl = fp.body.querySelector('[data-slot="mode"]');
+      let actBtn;
+      function refresh(v) {
+        const status = tilStatusOn(sid, v);
+        const isEdit = status === 'written' || status === 'temp';
+        modeEl.textContent = isEdit
+          ? `이 날은 이미 ${status === 'temp' ? '임시저장' : '작성'}된 TIL이 있어요 — 수정 모드로 열려요.`
+          : '이 날은 아직 작성 전이에요 — 새 글 작성 모드로 열려요.';
+        if (actBtn) actBtn.querySelector('span').textContent = isEdit ? '수정하기' : '새 글 작성';
+      }
+      const sel = UI.select({ options: opts, value: defaultVal, rich: true, onChange: (v) => refresh(v) });
+      fp.body.querySelector('#date-sel').appendChild(sel);
+
+      const actions = fp.body.querySelector('#actions');
+      actions.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => UI.closeFullPage() }));
+      actBtn = UI.button({ label: '새 글 작성', icon: 'ri-edit-line', type: 'solid', color: 'primary', onClick: () => {
+        const d = sel.value;
+        const existing = getTilForDate(sid, d);
+        UI.closeFullPage();
+        openTraineeEdit(d, existing && existing.status !== 'none' ? existing : null);
+      } });
+      actions.appendChild(actBtn);
+      refresh(defaultVal);
     }
 
     // ============================================================
@@ -470,7 +585,7 @@
         <div class="card-head">
           <div>
             <h3 class="card-title">학생 × 주차 히트맵 (최근 6개월)</h3>
-            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">3색 — 미작성·임시·작성. 셀 클릭 시 본문 상세</p>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">주 7일(월~일) · 미작성·임시·작성·★우수, 주말은 점선. 셀 클릭 시 본문 상세 + 우수 마크</p>
           </div>
           <div id="legend"></div>
         </div>
@@ -480,6 +595,8 @@
         { color: 'var(--lk-color-bg-normal)', label: '미작성' },
         { color: 'var(--lk-color-primary-200)', label: '임시', pattern: 'stripe' },
         { color: 'var(--lk-color-primary-500)', label: '작성' },
+        { color: 'var(--lk-color-primary-500)', label: '★ 우수' },
+        { color: 'var(--lk-color-bg-white)', label: '주말' },
       ]);
       card.querySelector('#legend').appendChild(legend);
 
@@ -495,7 +612,7 @@
         },
         cellLevel: (s, d) => {
           const status = tilStatusOn(s.id, d);
-          return { ...statusToHeat(status), title: `${s.name} ${d}: ${status}` };
+          return { ...statusToHeat(status), excellent: status === 'written' && isExcellent(s.id, d), title: `${s.name} ${d}: ${status === 'written' && isExcellent(s.id, d) ? '우수' : status}` };
         },
         onCell: (s, d) => openManagerDetail(s, d, getTilForDate(s.id, d)),
       });
@@ -505,6 +622,26 @@
 
     function openManagerDetail(s, d, t) {
       const fp = UI.openFullPage({ backLabel: 'TIL' });
+      // 우수 TIL 마크 — 작성된 TIL에만 (매니저 액션)
+      let excellent = !!t && isExcellent(s.id, d);
+      let markBtn = null;
+      function refreshMark() {
+        if (!markBtn) return;
+        markBtn.querySelector('span').textContent = excellent ? '우수 해제' : '우수 TIL 마크';
+        const i = markBtn.querySelector('i'); if (i) i.className = `ri-icon ${excellent ? 'ri-star-fill' : 'ri-star-line'}`;
+      }
+      if (t) {
+        markBtn = UI.button({ label: excellent ? '우수 해제' : '우수 TIL 마크', icon: excellent ? 'ri-star-fill' : 'ri-star-line', type: excellent ? 'solid' : 'outline', color: 'primary', size: 'medium', onClick: () => {
+          excellent = !excellent;
+          // mock 엔트리면 영속화
+          if (MOCK.tils[s.id]?.[d]) MOCK.tils[s.id][d].excellent = excellent;
+          refreshMark();
+          const tag = fp.body.querySelector('#excellent-tag');
+          if (tag) tag.style.display = excellent ? '' : 'none';
+          UI.toast(excellent ? `${s.name}의 TIL을 우수로 표시했어요 (히트맵 ★ 노출)` : '우수 표시를 해제했어요', 'success');
+        } });
+        fp.actions.appendChild(markBtn);
+      }
       fp.body.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
           <span class="card-meta" data-slot="m"></span>
@@ -518,7 +655,7 @@
       if (!t) {
         bodyWrap.innerHTML = '<div class="empty"><div class="icon"><i class="ri-icon ri-file-list-line"></i></div><h4>이 날 작성된 TIL이 없어요</h4></div>';
       } else {
-        bodyWrap.innerHTML = `<div class="row" style="margin-bottom: 12px; gap: 6px;"><span class="tag tag-small ${t.status === 'temp' ? 'tag-weak-warning' : 'tag-weak-success'}">${t.status === 'temp' ? '임시' : '작성'}</span></div><div class="md-view" style="max-width: 760px;" id="md"></div>`;
+        bodyWrap.innerHTML = `<div class="row" style="margin-bottom: 12px; gap: 6px;"><span class="tag tag-small ${t.status === 'temp' ? 'tag-weak-warning' : 'tag-weak-success'}">${t.status === 'temp' ? '임시' : '작성'}</span><span class="tag tag-small tag-weak-warning" id="excellent-tag" style="display: ${excellent ? '' : 'none'};">★ 우수 TIL</span></div><div class="md-view" style="max-width: 760px;" id="md"></div>`;
         bodyWrap.querySelector('#md').innerHTML = UI.md(t.body || '');
       }
     }

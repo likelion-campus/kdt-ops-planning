@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>AI 퀴즈 — 프로토타입 v2</title>
+  <title>AI 퀴즈 — 프로토타입 v2.3</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -266,10 +266,29 @@
       return card;
     }
 
-    // ===== 보충 퀴즈 탭 — 6개월 스크롤 + 풀이상태/정답률 =====
+    // ===== 보충 퀴즈 탭 — 6개월 스크롤 + 풀이상태/정답률 + 하루 10회 한도 =====
     function renderSuppTab(body) {
       const sid = MOCK.activeStudentId;
       const sessions = MOCK.suppSessions[sid] || [];
+      const limit = MOCK.suppDailySetLimit; // 하루 10회 (세트 단위)
+
+      // 데모: 오늘 생성 횟수 상태 토글 (여유 / 한도 임박 / 오늘 한도 초과)
+      const st = UI.loadState();
+      const limitDemo = st.suppLimitDemo || 'normal';
+      const base = { normal: 2, near: limit - 1, over: limit }[limitDemo];
+      const madeToday = Math.min(limit, base + (st.suppMadeExtra || 0));
+      const remaining = Math.max(0, limit - madeToday);
+      const atLimit = remaining === 0;
+
+      body.appendChild(UI.demoStateToggle(
+        [
+          { value: 'normal', label: '여유 있음' },
+          { value: 'near', label: `한도 임박 (${limit - 1}/${limit})` },
+          { value: 'over', label: '오늘 한도 초과' },
+        ],
+        limitDemo,
+        (v) => { UI.saveState({ suppLimitDemo: v, suppMadeExtra: 0 }); location.reload(); }
+      ));
 
       const intro = document.createElement('div');
       intro.className = 'card';
@@ -280,13 +299,29 @@
             <h3 class="card-title">보충 퀴즈 만들기</h3>
             <p class="text-mute" style="font-size: 13px; margin-top: 6px;">누적 오답 기반으로 추가 문제를 생성합니다 · 오답노트 상태에 영향 X</p>
           </div>
-          <span id="create-btn"></span>
+          <div class="row" style="gap: 12px; align-items: center;">
+            <span class="tag tag-small ${atLimit ? 'tag-weak-error' : remaining <= 2 ? 'tag-weak-warning' : 'tag-weak-neutral'}" data-slot="cnt"></span>
+            <span id="create-btn"></span>
+          </div>
         </div>
       `;
-      intro.querySelector('#create-btn').appendChild(
-        UI.button({ label: '+ 보충 퀴즈 생성', type: 'solid', color: 'primary', size: 'medium', onClick: () => openSuppCreate() })
-      );
+      intro.querySelector('[data-slot="cnt"]').textContent = `오늘 ${madeToday} / ${limit}회`;
+      const createBtnWrap = intro.querySelector('#create-btn');
+      if (atLimit) {
+        createBtnWrap.appendChild(UI.button({ label: '오늘은 쉬어요', icon: 'ri-cup-line', type: 'solid', color: 'neutral', size: 'medium', disabled: true, onClick: () => {} }));
+      } else {
+        createBtnWrap.appendChild(UI.button({ label: '+ 보충 퀴즈 생성', type: 'solid', color: 'primary', size: 'medium', onClick: () => openSuppCreate(remaining) }));
+      }
       body.appendChild(intro);
+
+      // 한도 초과 — "오늘 쉬세요" 친근한 빈상태
+      if (atLimit) {
+        body.appendChild(UI.emptyCard({
+          icon: 'ri-cup-line',
+          title: '오늘은 충분히 했어요 — 잠깐 쉬어가요 ☕',
+          body: `하루 보충 퀴즈는 ${limit}회까지 만들 수 있어요. 내일 다시 도전해보세요!`,
+        }));
+      }
 
       const head = document.createElement('div');
       head.className = 'section-head';
@@ -335,8 +370,9 @@
     // ============================================================
     // 보충 퀴즈 생성 — 풍부한 날짜 select (날짜·핵심 개념·점수)
     // ============================================================
-    function openSuppCreate() {
+    function openSuppCreate(remaining) {
       const sid = MOCK.activeStudentId;
+      const limit = MOCK.suppDailySetLimit;
       const fp = UI.openFullPage({ backLabel: 'AI 퀴즈' });
 
       // 응시 이력 있는 날짜만 옵션으로
@@ -349,29 +385,47 @@
           score: `${a.score} / 10`,
         };
       });
+      // 디폴트 — 최근 5일(응시한 날) 오답 중심
+      const recent5 = opts.slice(0, 5).map((o) => o.value);
+      const recent5Labels = opts.slice(0, 5).map((o) => UI.fmtDate(o.value, { short: true })).join(' · ');
 
       fp.body.innerHTML = `
         <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 12px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;">보충 퀴즈 생성</h1>
-        <p class="text-mute" style="margin: 0 0 24px; font-size: 14px;">누적 오답을 기반으로 추가 문제를 생성합니다 · 결과는 보충 퀴즈 탭에만 누적됩니다</p>
+        <p class="text-mute" style="margin: 0 0 20px; font-size: 14px;">누적 오답을 기반으로 추가 문제를 생성합니다 · 결과는 보충 퀴즈 탭에만 누적됩니다</p>
+        <div class="banner banner-info" style="max-width: 600px;"><i class="ri-icon ri-magic-line"></i><span data-slot="default-info"></span></div>
         <div class="card" style="max-width: 600px;">
-          <div class="field"><label>대상 날짜 (그날 배운 핵심 개념과 점수 함께 표시)</label><div id="date-sel"></div></div>
+          <div class="field">
+            <label>대상 날짜 <span class="text-mute" style="font-weight: 400;">· 직접 선택 (최대 5일) · 미선택 시 기본값 적용</span></label>
+            <div id="date-sel"></div>
+            <span class="text-mute" style="font-size: 11px; margin-top: 6px; display: block;">날짜를 직접 고르면 기본값 대신 선택한 날짜의 오답으로 구성돼요.</span>
+          </div>
           <div class="field"><label class="row" style="gap: 8px; cursor: pointer;"><input type="checkbox" id="wf" checked /> 오답 중심으로 생성</label></div>
           <div class="field"><label>문제 수</label><div id="count-sel"></div></div>
-          <div class="row row-end" style="margin-top: 8px;" id="actions"></div>
+          <div class="row spread" style="margin-top: 8px; align-items: center;">
+            <span class="text-mute" style="font-size: 12px;" data-slot="remain"></span>
+            <div class="row" style="gap: 8px;" id="actions"></div>
+          </div>
         </div>
       `;
-      const dateWrap = fp.body.querySelector('#date-sel');
-      const dateSel = UI.select({ options: opts, value: opts[0]?.value, placeholder: '날짜를 선택하세요', rich: true });
-      dateWrap.appendChild(dateSel);
+      fp.body.querySelector('[data-slot="default-info"]').textContent = `기본값: 최근 5일 오답 중심으로 자동 구성돼요 (${recent5Labels}).`;
+      fp.body.querySelector('[data-slot="remain"]').textContent = `오늘 ${limit - (remaining ?? limit)} / ${limit}회 생성 · 남은 ${remaining ?? limit}회`;
 
-      const countWrap = fp.body.querySelector('#count-sel');
+      const dateSel = UI.multiSelect({ options: opts, values: [], placeholder: '미선택 — 최근 5일 기본값', max: 5, rich: true });
+      fp.body.querySelector('#date-sel').appendChild(dateSel);
+
       const countSel = UI.select({ options: [{ value: 5, label: '5문제' }, { value: 10, label: '10문제' }, { value: 15, label: '15문제' }], value: 10 });
-      countWrap.appendChild(countSel);
+      fp.body.querySelector('#count-sel').appendChild(countSel);
 
       const actions = fp.body.querySelector('#actions');
       actions.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => UI.closeFullPage() }));
       actions.appendChild(UI.button({ label: '생성하고 풀기', type: 'solid', color: 'primary', icon: 'ri-play-circle-line', onClick: () => {
-        UI.toast('보충 퀴즈가 생성되었어요', 'success');
+        const picked = dateSel.values;
+        const targets = picked.length ? picked : recent5;
+        if (targets.length === 0) { UI.toast('응시 이력이 있는 날짜가 없어요', 'danger'); return; }
+        // 하루 10회 한도 — 생성 1회 차감
+        const cur = UI.loadState();
+        UI.saveState({ suppMadeExtra: (cur.suppMadeExtra || 0) + 1 });
+        UI.toast(`보충 퀴즈가 생성되었어요 (${picked.length ? picked.length + '개 날짜 선택' : '최근 5일 기본값'})`, 'success');
         UI.closeFullPage();
         const today = MOCK.meta.today;
         if (MOCK.quizzes[today]?.status === 'published') openTaking(today);
@@ -485,10 +539,15 @@
       const quiz = MOCK.quizzes[date] || { questions: ctx?.questions || [] };
       const fp = UI.openFullPage({ backLabel: ctx?.backLabel || 'AI 퀴즈' });
 
+      // 발행 후 매니저가 텍스트를 수정한 경우 — "수정됨 · 시각" 배지 (응시 완료 학생도 확인)
+      const editedTimes = (ctx?.questions || quiz.questions || []).map((q) => q.editedAt).filter(Boolean).sort();
+      const latestEdit = editedTimes[editedTimes.length - 1] || null;
+
       fp.body.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
           <span class="card-meta" data-slot="d"></span>
           ${ctx?.kind === 'supp' ? '<span class="tag tag-small tag-weak-neutral">보충 퀴즈</span>' : '<span class="tag tag-small tag-weak-enabled">오늘의 퀴즈</span>'}
+          ${latestEdit ? `<span class="tag tag-small tag-weak-warning"><i class="ri-icon ri-pencil-line"></i> 수정됨 · ${UI.relTime(latestEdit)}</span>` : ''}
         </div>
         <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 24px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
         <div class="row" style="gap: 32px; margin-bottom: 24px;">
@@ -515,7 +574,10 @@
         card.innerHTML = `
           <div class="spread" style="margin-bottom: 12px;">
             <div class="card-meta">문항 ${i + 1} / ${total.length}</div>
-            <span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span>
+            <div class="row" style="gap: 6px;">
+              ${q.editedAt ? `<span class="tag tag-small tag-weak-warning"><i class="ri-icon ri-pencil-line"></i> 수정됨 · ${UI.relTime(q.editedAt)}</span>` : ''}
+              <span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span>
+            </div>
           </div>
           <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 14px; line-height: 1.5;" data-slot="stem"></h4>
           <ul style="list-style: none; padding: 0; margin: 0 0 14px;" data-slot="ch"></ul>
@@ -650,6 +712,16 @@
 
       const setActions = card.querySelector('#set-actions');
       setActions.appendChild(UI.button({ label: '세트 편집', icon: 'ri-edit-line', type: 'outline', color: 'neutral', size: 'small', onClick: () => openSetEditor({ date, set }) }));
+      // 단일 재발행 — 세트 단위 (자동 생성 오류 세트 재생성·재발행 / 발행 후 정정)
+      setActions.appendChild(UI.button({ label: '재발행', icon: 'ri-refresh-line', type: 'outline', color: 'primary', size: 'small', onClick: () => openRepublishConfirm({
+        scope: 'set', label: set.title, onConfirm: () => {
+          const now = new Date().toISOString();
+          set.editedAt = now;
+          (set.questions || []).forEach((qq) => { qq.editedAt = now; });
+          body.innerHTML = ''; renderMgrToday(body);
+          UI.toast(`"${set.title}" 세트가 재발행됐어요 — 응시 결과 재집계`, 'success');
+        },
+      }) }));
       if (set.source !== 'auto') {
         setActions.appendChild(UI.button({ label: '삭제', icon: 'ri-delete-bin-line', type: 'ghost', color: 'neutral', size: 'small', onClick: () => {
           if (confirm(`"${set.title}" 세트를 삭제할까요?`)) {
@@ -702,6 +774,13 @@
       item.querySelector('[data-slot="ex"]').textContent = q.explanation;
       const acts = item.querySelector('#q-actions');
       acts.appendChild(UI.button({ label: '수정', icon: 'ri-edit-line', type: 'ghost', color: 'neutral', size: 'small', onClick: () => openQuestionEditor({ set, question: q, onSave: () => { body.innerHTML = ''; renderMgrToday(body); } }) }));
+      acts.appendChild(UI.button({ label: '이 문항만 재발행', icon: 'ri-refresh-line', type: 'ghost', color: 'primary', size: 'small', onClick: () => openRepublishConfirm({
+        scope: 'question', label: `문항 ${i + 1} · ${set.title}`, onConfirm: () => {
+          q.editedAt = new Date().toISOString();
+          body.innerHTML = ''; renderMgrToday(body);
+          UI.toast(`문항 ${i + 1}이 재발행됐어요 — 해당 문항 응시 결과 무효화`, 'success');
+        },
+      }) }));
       acts.appendChild(UI.button({ label: '삭제', icon: 'ri-delete-bin-line', type: 'ghost', color: 'neutral', size: 'small', onClick: () => {
         if (confirm(`문항 ${i + 1}을 삭제할까요?`)) {
           const arr = set.questions;
@@ -794,6 +873,29 @@
       } }));
     }
 
+    // ============================================================
+    // 단일 재발행 (세트/문항) — 응시 invalidation·재집계 안내 confirm
+    // ============================================================
+    function openRepublishConfirm({ scope, label, onConfirm }) {
+      const isQ = scope === 'question';
+      const node = UI.openModal(`
+        <h3 class="card-title">${isQ ? '이 문항만 재발행' : '세트 재발행'}</h3>
+        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;" data-slot="ctx"></p>
+        <div class="banner banner-error" style="margin-bottom: 4px;">
+          <i class="ri-icon ri-error-warning-line"></i>
+          <span>${isQ
+            ? '이 문항에 대한 <strong>기존 응시 결과가 무효화</strong>되고, 학생 점수·오답률이 재집계됩니다. 학생뷰에는 <strong>수정됨 · 시각</strong> 배지가 노출됩니다.'
+            : '이 세트의 <strong>전체 응시 결과가 무효화</strong>되고 재집계됩니다. 자동 생성 오류 세트는 재생성 후 재발행됩니다.'}</span>
+        </div>
+        <p class="text-mute" style="font-size: 12px; margin: 12px 0 0;">정답·보기 번호는 잠금 유지 — 텍스트(문제·보기·해설)만 반영됩니다.</p>
+        <div class="row row-end" style="margin-top: 20px; gap: 8px;" id="acts"></div>
+      `);
+      node.querySelector('[data-slot="ctx"]').textContent = `대상: ${label}`;
+      const acts = node.querySelector('#acts');
+      acts.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+      acts.appendChild(UI.button({ label: isQ ? '문항 재발행' : '세트 재발행', icon: 'ri-refresh-line', type: 'solid', color: 'primary', onClick: () => { node.remove(); if (onConfirm) onConfirm(); } }));
+    }
+
     function openPtimeEdit(set) {
       const fp = UI.openFullPage({ backLabel: '오늘의 Draft' });
       const initial = set?.scheduledAt ? set.scheduledAt.slice(11, 16) : '08:30';
@@ -850,6 +952,16 @@
 
     function openPublishedDetail(targetDate, set) {
       const fp = UI.openFullPage({ backLabel: '발행된 퀴즈' });
+      if (set) {
+        fp.actions.appendChild(UI.button({ label: '세트 재발행', icon: 'ri-refresh-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openRepublishConfirm({
+          scope: 'set', label: set.title, onConfirm: () => {
+            const now = new Date().toISOString();
+            set.editedAt = now;
+            (set.questions || []).forEach((qq) => { qq.editedAt = now; });
+            UI.toast(`"${set.title}" 재발행됨 — 응시 결과 재집계 · 학생뷰 수정됨 배지 노출`, 'success');
+          },
+        }) }));
+      }
       const submitted = MOCK.students.filter((s) => MOCK.attempts[s.id]?.[targetDate]?.submitted).length;
       const total = MOCK.students.length;
       const avg = MOCK.students.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[targetDate]?.score || 0), 0) / total;
@@ -939,11 +1051,19 @@
         <div class="card-head">
           <div>
             <h3 class="card-title">보충 퀴즈 사용 현황</h3>
-            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">매니저는 발행·생성 트리거 없음 · 셀 클릭 시 학생의 보충 퀴즈 풀이 리스트 확인</p>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">집계 기준 <strong>학생이 보충 퀴즈를 푼 날짜</strong> · 하루 최대 <strong>10회</strong>(=가장 붉음) · 셀 클릭 시 그날 푼 세트 리스트</p>
           </div>
+          <div id="supp-legend"></div>
         </div>
         <div class="heatmap-scroll" id="heat" style="margin-top: 16px;"></div>
       `;
+      card.querySelector('#supp-legend').appendChild(UI.renderLegend([
+        { color: 'var(--lk-color-bg-normal)', label: '0회' },
+        { color: 'var(--lk-color-primary-100)', label: '1–2' },
+        { color: 'var(--lk-color-primary-200)', label: '3–5' },
+        { color: 'var(--lk-color-primary-400)', label: '6–8' },
+        { color: 'var(--lk-color-primary-500)', label: '9–10회 (Max)' },
+      ]));
       const cols = MOCK.days.slice(-14);
       const heat = UI.renderHeatmap({
         rows: MOCK.students,
@@ -951,13 +1071,11 @@
         rowLabel: (s) => s.name,
         colLabel: (c) => `${new Date(c).getMonth() + 1}/${new Date(c).getDate()}`,
         cellLevel: (s, d) => {
-          const n = MOCK.supplementary[s.id]?.[d]?.count || 0;
+          // 푼 날짜 기준 풀이 횟수(회) — Max 10
+          const n = Math.min(10, MOCK.suppSolvedDaily[s.id]?.[d]?.plays || 0);
           if (n === 0) return { level: 0 };
-          if (n >= 30) return { level: 'danger', title: `${s.name} ${d}: ${n}문제` };
-          if (n >= 20) return { level: 4 };
-          if (n >= 10) return { level: 3 };
-          if (n >= 5) return { level: 2 };
-          return { level: 1, title: `${s.name} ${d}: ${n}문제` };
+          const lvl = n >= 9 ? 4 : n >= 6 ? 3 : n >= 3 ? 2 : 1;
+          return { level: lvl, title: `${s.name} ${d}: ${n}회 풀이` };
         },
         onCell: (s, d) => openMgrSuppDetail(s, d),
       });
@@ -968,8 +1086,8 @@
     // 매니저 보충 퀴즈 셀 클릭: 학생의 보충 퀴즈 풀이 리스트
     function openMgrSuppDetail(student, date) {
       const fp = UI.openFullPage({ backLabel: '보충 사용 현황' });
-      // 해당 날짜에 생성된 학생의 보충 세트 목록
-      const sets = (MOCK.suppSessions[student.id] || []).filter((set) => set.createdAt.slice(0, 10) === date);
+      // 해당 날짜에 학생이 "푼" 보충 세트 목록 (집계 기준 = 푼 날짜)
+      const sets = (MOCK.suppSessions[student.id] || []).filter((set) => set.solved && set.solvedAt?.slice(0, 10) === date);
 
       fp.body.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
@@ -987,19 +1105,18 @@
         <div id="list" class="note-list"></div>
       `;
       fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(date);
-      fp.body.querySelector('[data-slot="cnt"]').textContent = `${sets.length}세트`;
-      fp.body.querySelector('[data-slot="n"]').textContent = `${student.name} · 보충 퀴즈 풀이 현황`;
+      fp.body.querySelector('[data-slot="cnt"]').textContent = `${sets.length}회 풀이`;
+      fp.body.querySelector('[data-slot="n"]').textContent = `${student.name} · 이 날 푼 보충 퀴즈`;
 
       // KPI
       const total = sets.reduce((sum, s) => sum + s.count, 0);
-      const solvedSets = sets.filter((s) => s.solved);
-      const avgRate = solvedSets.length ? solvedSets.reduce((sum, s) => sum + (s.rate || 0), 0) / solvedSets.length : 0;
+      const avgRate = sets.length ? sets.reduce((sum, s) => sum + (s.rate || 0), 0) / sets.length : 0;
       const kpi = fp.body.querySelector('#kpi');
       [
-        { label: '총 문제 수', value: `${total}`, sub: '오늘 생성 합계' },
-        { label: '풀이 완료 세트', value: `${solvedSets.length} / ${sets.length}`, sub: '응시 비율' },
-        { label: '평균 정답률', value: `${Math.round(avgRate * 100)}%`, sub: '완료 세트 기준' },
-        { label: '학생 풀이 상태', value: sets.length === 0 ? '미생성' : (solvedSets.length === sets.length ? '전부 완료' : '진행 중'), sub: '오늘 기준' },
+        { label: '푼 횟수', value: `${sets.length}회`, sub: `Max ${MOCK.suppDailySetLimit}회` },
+        { label: '총 문제 수', value: `${total}`, sub: '푼 세트 합계' },
+        { label: '평균 정답률', value: `${Math.round(avgRate * 100)}%`, sub: '이 날 푼 세트 기준' },
+        { label: '학습 강도', value: sets.length >= 8 ? '높음' : sets.length >= 4 ? '보통' : sets.length >= 1 ? '낮음' : '없음', sub: '푼 횟수 기준' },
       ].forEach((s) => {
         const c = document.createElement('div');
         c.className = 'kpi';
@@ -1012,22 +1129,20 @@
 
       const list = fp.body.querySelector('#list');
       if (sets.length === 0) {
-        list.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '이 날 생성한 보충 퀴즈가 없어요' }));
+        list.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '이 날 푼 보충 퀴즈가 없어요' }));
         return;
       }
       sets.forEach((set) => {
         const row = document.createElement('div');
         row.className = 'quiz-row';
-        const statusTag = set.solved
-          ? { cls: 'tag-weak-success', label: `정답률 ${Math.round(set.rate * 100)}%` }
-          : { cls: 'tag-weak-neutral', label: '미응시' };
+        const statusTag = { cls: 'tag-weak-success', label: `정답률 ${Math.round(set.rate * 100)}%` };
         row.innerHTML = `
           <div class="quiz-date"><i class="ri-icon ri-calendar-line"></i><span data-slot="d"></span></div>
           <div class="quiz-title" data-slot="t"></div>
           <span class="tag tag-small tag-weak-neutral" data-slot="cnt"></span>
           <span class="tag tag-small ${statusTag.cls}" data-slot="st"></span>
         `;
-        row.querySelector('[data-slot="d"]').textContent = UI.relTime(set.createdAt);
+        row.querySelector('[data-slot="d"]').textContent = UI.relTime(set.solvedAt);
         row.querySelector('[data-slot="t"]').textContent = `${set.topic} (대상: ${UI.fmtDate(set.targetDate, { short: true })})`;
         row.querySelector('[data-slot="cnt"]').textContent = `${set.count}문제`;
         row.querySelector('[data-slot="st"]').textContent = statusTag.label;
