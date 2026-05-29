@@ -198,7 +198,7 @@
           id: `${d}-set-auto`,
           title: `${MOCK_TOPIC_FOR(d)} 데일리 퀴즈`,
           source: 'auto',
-          status: failed ? 'generation_failed' : (isToday ? 'draft' : 'published'),
+          status: failed ? 'generation_failed' : (isToday ? 'scheduled' : 'published'),
           publishedAt: (isToday || failed) ? null : d + 'T08:30',
           scheduledAt: isToday ? d + 'T08:30' : null,
           questions: baseQuiz.questions,

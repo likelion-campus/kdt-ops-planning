@@ -602,7 +602,7 @@
     // ============================================================
     function renderManager() {
       const tabs = [
-        { key: 'today', label: '오늘의 Draft' },
+        { key: 'today', label: '퀴즈 발행하기' },
         { key: 'published', label: '발행된 퀴즈' },
         { key: 'supp', label: '보충 퀴즈 사용 현황' },
       ];
@@ -629,13 +629,14 @@
       else renderMgrSupp(body);
     }
 
+    // 퀴즈 발행하기 탭 — 발행 대기 슬롯 리스트 (요약) → 클릭 시 편집/발행 폼
     function renderMgrToday(body) {
       const today = MOCK.meta.today;
       const q = MOCK.quizzes[today];
 
       const policy = document.createElement('div');
       policy.className = 'banner banner-info';
-      policy.innerHTML = `<i class="ri-icon ri-information-line"></i><span>정책 — 매일 <strong>08:30</strong> 자동 생성 1세트가 발행됩니다. 강사가 추가 퀴즈(문항 묶음)를 만들어서 발행할 수도 있어요.</span>`;
+      policy.innerHTML = `<i class="ri-icon ri-information-line"></i><span>정책 — 매일 <strong>08:30</strong> 자동 생성 1세트가 발행됩니다. 강사가 추가 퀴즈를 만들어 <strong>예약·즉시 발행</strong>할 수 있어요. 발행하면 <strong>발행된 퀴즈</strong> 탭으로 이동합니다.</span>`;
       body.appendChild(policy);
 
       if (q?.status === 'generation_failed') {
@@ -645,11 +646,294 @@
       const head = document.createElement('div');
       head.className = 'section-head';
       head.style.margin = '20px 0 12px';
-      head.innerHTML = `<h3>${UI.fmtDate(today)} · 오늘의 Draft 퀴즈 세트</h3><span id="new-set-btn"></span>`;
-      head.querySelector('#new-set-btn').appendChild(UI.button({ label: '+ 새 퀴즈 추가', icon: 'ri-add-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openSetEditor({ date: today, set: null }) }));
+      head.innerHTML = `<h3>${UI.fmtDate(today)} · 발행 대기 퀴즈</h3><span id="new-set-btn"></span>`;
+      head.querySelector('#new-set-btn').appendChild(UI.button({ label: '새 퀴즈 추가', icon: 'ri-add-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => {
+        const newSet = { id: `${today}-set-manual-${Date.now()}`, title: '새 퀴즈', source: 'manual', status: 'draft', publishedAt: null, scheduledAt: `${today}T08:30`, questions: [] };
+        if (!MOCK.quizzes[today]) MOCK.quizzes[today] = { sets: [] };
+        if (!MOCK.quizzes[today].sets) MOCK.quizzes[today].sets = [];
+        MOCK.quizzes[today].sets.push(newSet);
+        openDraftEditor(today, newSet, () => { body.innerHTML = ''; renderMgrToday(body); });
+      } }));
       body.appendChild(head);
 
-      (q?.sets || []).forEach((set, idx) => body.appendChild(buildSetCard(today, set, idx)));
+      const drafts = (q?.sets || []).filter((s) => s.status !== 'published');
+      if (drafts.length === 0) {
+        body.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '발행 대기 중인 퀴즈가 없어요', body: '상단 [새 퀴즈 추가]로 만들거나, 발행된 퀴즈 탭에서 발행본을 확인하세요.' }));
+        return;
+      }
+      const list = document.createElement('div');
+      list.className = 'note-list';
+      drafts.forEach((set) => list.appendChild(buildSlotRow(today, set, body)));
+      body.appendChild(list);
+    }
+
+    // 요약 슬롯 행 — 상태(임시저장/예약발행/생성실패)·예약 일시·이름·문항수. 클릭 시 편집/발행 폼.
+    function buildSlotRow(date, set, body) {
+      const row = document.createElement('div');
+      row.className = 'quiz-row';
+      row.style.cursor = 'pointer';
+      const st = slotState(set);
+      const srcTag = set.source === 'auto' ? { cls: 'tag-weak-progressing', label: '자동 생성' } : { cls: 'tag-weak-enabled', label: '강사 작성' };
+      const sched = set.status === 'scheduled' && set.scheduledAt
+        ? `예약 ${set.scheduledAt.slice(5, 10).replace('-', '/')} ${set.scheduledAt.slice(11, 16)}`
+        : '임시저장';
+      row.innerHTML = `
+        <div class="quiz-date"><i class="ri-icon ${set.status === 'scheduled' ? 'ri-calendar-check-line' : 'ri-draft-line'}"></i><span data-slot="sch"></span></div>
+        <div class="quiz-title" data-slot="t"></div>
+        <span class="tag tag-small ${srcTag.cls}" data-slot="src"></span>
+        <span class="tag tag-small tag-weak-neutral" data-slot="qc"></span>
+        <span class="tag tag-small ${st.cls}" data-slot="st"></span>
+        <i class="ri-icon ri-arrow-right-s-line" style="color: var(--lk-color-fg-assistive);"></i>
+      `;
+      row.querySelector('[data-slot="sch"]').textContent = sched;
+      row.querySelector('[data-slot="t"]').textContent = set.title;
+      row.querySelector('[data-slot="src"]').textContent = srcTag.label;
+      row.querySelector('[data-slot="qc"]').textContent = `${set.questions.length}문항`;
+      row.querySelector('[data-slot="st"]').textContent = st.label;
+      row.addEventListener('click', () => openDraftEditor(date, set, () => { body.innerHTML = ''; renderMgrToday(body); }));
+      return row;
+    }
+
+    function slotState(set) {
+      if (set.status === 'published') return { cls: 'tag-weak-success', label: '발행됨' };
+      if (set.status === 'generation_failed') return { cls: 'tag-weak-error', label: '생성 실패' };
+      if (set.status === 'scheduled') return { cls: 'tag-weak-warning', label: '예약발행' };
+      return { cls: 'tag-weak-neutral', label: '임시저장' };
+    }
+
+    // 데모용 AI 퀴즈/문항 생성 시뮬레이터 (정적 프로토타입 — 실제 호출 없음)
+    function genQuestions(n, label) {
+      return Array.from({ length: n }, (_, i) => ({
+        id: `q-${Date.now()}-${i}`,
+        stem: `${label} 관련 문항 ${i + 1} — 핵심 개념으로 옳은 것은?`,
+        choices: ['보기 A', '보기 B', '보기 C', '보기 D'],
+        answer: i % 4,
+        explanation: `${label} 개념과 연결해 이해하세요. (AI 생성 해설)`,
+      }));
+    }
+
+    // 편집/발행 폼 — 상단 고정 액션(AI 퀴즈 생성·임시저장·예약발행·즉시발행) + 문항 인라인 편집
+    function openDraftEditor(date, set, onChange) {
+      const published = set.status === 'published';
+      const fp = UI.openFullPage({ backLabel: published ? '발행된 퀴즈' : '퀴즈 발행하기' });
+      const reopen = () => { UI.closeFullPage(); openDraftEditor(date, set, onChange); };
+
+      // ===== 상단 고정 액션바 =====
+      if (!published) {
+        fp.actions.appendChild(UI.button({ label: 'AI 퀴즈 생성', icon: 'ri-magic-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openAiGenerate(set, false, () => renderQs()) }));
+        fp.actions.appendChild(UI.button({ label: '임시저장', icon: 'ri-save-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => { set.title = titleEl.value || set.title; set.status = 'draft'; renderSchedRow(); UI.toast('임시저장됐어요 — 예약/발행 전까지 임시저장 상태예요', 'success'); if (onChange) onChange(); } }));
+        fp.actions.appendChild(UI.button({ label: '예약발행', icon: 'ri-calendar-check-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => { if (!validQuiz()) return; set.title = titleEl.value || set.title; openSchedulePopup(set, date, () => { renderSchedRow(); if (onChange) onChange(); }); } }));
+        fp.actions.appendChild(UI.button({ label: '즉시발행', icon: 'ri-send-plane-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => doPublish() }));
+      } else {
+        fp.actions.appendChild(UI.button({ label: 'AI 퀴즈 생성', icon: 'ri-magic-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openAiGenerate(set, true, () => { const now = new Date().toISOString(); set.editedAt = now; set.questions.forEach((qq) => qq.editedAt = now); renderQs(); }) }));
+        fp.actions.appendChild(UI.button({ label: '전체 재발행', icon: 'ri-refresh-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openRepublishConfirm({ scope: 'set', label: set.title, onConfirm: () => { const now = new Date().toISOString(); set.editedAt = now; set.questions.forEach((qq) => qq.editedAt = now); UI.toast(`"${set.title}" 전체 재발행됨 — 응시 결과 재집계`, 'success'); } }) }));
+      }
+
+      fp.body.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <span class="card-meta" data-slot="d"></span>
+          <span class="tag tag-small" data-slot="state"></span>
+          <span class="tag tag-small ${set.source === 'auto' ? 'tag-weak-progressing' : 'tag-weak-enabled'}">${set.source === 'auto' ? '자동 생성' : '강사 작성'}</span>
+        </div>
+        <input type="text" id="title" style="width:100%; max-width:620px; font-size:24px; font-weight:700; border:1px solid var(--lk-color-border-normal); border-radius:10px; padding:10px 14px; letter-spacing:-0.01em;" />
+        <p class="text-mute" style="font-size:12px; margin:10px 0 16px;">발행 이후에는 텍스트(문제·보기·해설)만 수정 — 정답·보기 번호 잠금</p>
+        <div id="sched-row"></div>
+        <div class="section-head" style="margin:24px 0 12px;"><h3>문항 (<span data-slot="qc"></span>)</h3><span id="add-q"></span></div>
+        <div id="qlist" class="col" style="gap:14px; max-width:820px;"></div>
+      `;
+      const titleEl = fp.body.querySelector('#title');
+      titleEl.value = set.title || '';
+      fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(date);
+
+      function paintState() { const s = slotState(set); const el = fp.body.querySelector('[data-slot="state"]'); el.className = 'tag tag-small ' + s.cls; el.textContent = s.label; }
+      const schedRow = fp.body.querySelector('#sched-row');
+      function renderSchedRow() {
+        paintState();
+        schedRow.innerHTML = '';
+        // 예약발행일시는 "예약발행"된 경우에만 표시
+        if (set.status === 'scheduled' && set.scheduledAt) {
+          const box = document.createElement('div'); box.className = 'banner banner-info'; box.style.maxWidth = '620px';
+          box.innerHTML = `<i class="ri-icon ri-calendar-check-line"></i><span>예약 발행: <strong>${set.scheduledAt.slice(0, 10).replace(/-/g, '.')} ${set.scheduledAt.slice(11, 16)}</strong></span><div class="actions"></div>`;
+          box.querySelector('.actions').appendChild(UI.button({ label: '변경', type: 'outline', color: 'primary', size: 'small', onClick: () => openSchedulePopup(set, date, () => { renderSchedRow(); if (onChange) onChange(); }) }));
+          schedRow.appendChild(box);
+        } else if (published && set.publishedAt) {
+          const box = document.createElement('div'); box.className = 'banner banner-info'; box.style.maxWidth = '620px';
+          box.innerHTML = `<i class="ri-icon ri-checkbox-circle-line"></i><span>발행 시각: <strong>${UI.relTime(set.publishedAt)}</strong></span>`;
+          schedRow.appendChild(box);
+        }
+      }
+      renderSchedRow();
+
+      const qcEl = fp.body.querySelector('[data-slot="qc"]');
+      const qlist = fp.body.querySelector('#qlist');
+      function renderQs() {
+        qlist.innerHTML = '';
+        qcEl.textContent = String(set.questions.length);
+        set.questions.forEach((qq, i) => qlist.appendChild(buildQuestionForm(set, qq, i, published, renderQs)));
+        if (set.questions.length === 0) {
+          const e = document.createElement('p');
+          e.className = 'text-mute';
+          e.style.cssText = 'font-size:13px; padding:16px; text-align:center; border:1px dashed var(--lk-color-border-normal); border-radius:10px;';
+          e.textContent = '아직 문항이 없어요. 상단 [AI 퀴즈 생성] 또는 아래 [문항 추가]로 시작하세요.';
+          qlist.appendChild(e);
+        }
+      }
+      fp.body.querySelector('#add-q').appendChild(UI.button({ label: '문항 추가', icon: 'ri-add-line', type: 'outline', color: 'primary', size: 'small', onClick: () => { set.questions.push({ id: `q-${Date.now()}`, stem: '', choices: ['', '', '', ''], answer: 0, explanation: '' }); renderQs(); } }));
+      renderQs();
+
+      function validQuiz() {
+        if (set.questions.length === 0) { UI.toast('문항을 1개 이상 추가해주세요', 'danger'); return false; }
+        if (set.questions.some((qq) => !qq.stem || qq.choices.some((c) => !c) || !qq.explanation)) { UI.toast('빈 문항이 있어요 — 문제·보기·해설을 모두 채워주세요', 'danger'); return false; }
+        return true;
+      }
+      function doPublish() {
+        set.title = titleEl.value || set.title;
+        if (!validQuiz()) return;
+        set.status = 'published';
+        set.publishedAt = new Date().toISOString();
+        UI.closeFullPage();
+        UI.toast(`"${set.title}" 발행됨 — 학생 알림 발송 · '발행된 퀴즈' 탭으로 이동`, 'success');
+        if (onChange) onChange();
+      }
+    }
+
+    // AI 퀴즈 생성 팝업 — 퀴즈 전체 문항을 새로 생성(덮어쓰기). AI 노트 기반 / 입력 기반.
+    function openAiGenerate(set, published, onDone) {
+      let mode = 'note';
+      const noteDates = Object.keys(MOCK.aiNotes).sort().reverse();
+      const node = UI.openModal(`
+        <h3 class="card-title">AI 퀴즈 생성</h3>
+        <div class="banner banner-error" style="margin:10px 0 14px;"><i class="ri-icon ri-error-warning-line"></i><span>현재 세트의 <strong>모든 문항을 새로 생성</strong>합니다. 이미 작성된 문항이 있으면 <strong>덮어쓰기</strong>돼요${published ? ' — 발행본은 응시 결과가 재집계됩니다' : ''}.</span></div>
+        <div class="tabs-round" id="mode" style="margin-bottom:14px;">
+          <button class="tab is-active" data-m="note">AI 노트 기반</button>
+          <button class="tab" data-m="input">입력 기반</button>
+        </div>
+        <div id="pane"></div>
+        <div class="field" style="max-width:200px; margin-top:12px;"><label>생성할 문항 수</label><div id="cnt"></div></div>
+        <div class="row row-end" style="margin-top:16px; gap:8px;" id="acts"></div>
+      `);
+      const pane = node.querySelector('#pane');
+      function renderPane() {
+        pane.innerHTML = '';
+        if (mode === 'note') {
+          const wrap = document.createElement('div');
+          wrap.style.cssText = 'max-height:240px; overflow-y:auto; border:1px solid var(--lk-color-border-weak); border-radius:10px; padding:10px;';
+          const h = document.createElement('div'); h.className = 'card-meta'; h.style.marginBottom = '6px'; h.textContent = '기반으로 삼을 AI 노트 선택 (복수 가능)'; wrap.appendChild(h);
+          noteDates.forEach((d) => {
+            const lab = document.createElement('label'); lab.className = 'row'; lab.style.cssText = 'gap:8px; padding:6px 4px; cursor:pointer; align-items:center;';
+            const cb = document.createElement('input'); cb.type = 'checkbox'; cb.dataset.note = d; lab.appendChild(cb);
+            const sp = document.createElement('span'); sp.style.fontSize = '13px'; sp.textContent = `${UI.fmtDate(d, { short: true })} · ${MOCK.aiNotes[d].title}`; lab.appendChild(sp);
+            wrap.appendChild(lab);
+          });
+          pane.appendChild(wrap);
+        } else {
+          const ta = document.createElement('textarea'); ta.id = 'concept'; ta.placeholder = '문항으로 만들 개념/주제를 입력하세요 (예: pandas merge vs join 차이)'; ta.style.minHeight = '90px'; ta.style.width = '100%';
+          pane.appendChild(ta);
+        }
+      }
+      node.querySelectorAll('#mode button').forEach((b) => b.addEventListener('click', () => { node.querySelectorAll('#mode button').forEach((x) => x.classList.remove('is-active')); b.classList.add('is-active'); mode = b.dataset.m; renderPane(); }));
+      renderPane();
+      const cntSel = UI.select({ options: [{ value: 5, label: '5문항' }, { value: 10, label: '10문항' }, { value: 15, label: '15문항' }], value: 10 });
+      node.querySelector('#cnt').appendChild(cntSel);
+      const acts = node.querySelector('#acts');
+      acts.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+      acts.appendChild(UI.button({ label: '생성 (덮어쓰기)', icon: 'ri-magic-line', type: 'solid', color: 'primary', onClick: () => {
+        const n = cntSel.value || 10;
+        let label;
+        if (mode === 'note') {
+          const picked = Array.from(node.querySelectorAll('[data-note]:checked')).map((c) => c.dataset.note);
+          if (picked.length === 0) { UI.toast('AI 노트를 1개 이상 선택해주세요', 'danger'); return; }
+          label = 'AI 노트 ' + picked.map((d) => MOCK.aiNotes[d].title).slice(0, 2).join(', ') + (picked.length > 2 ? ` 외 ${picked.length - 2}건` : '');
+        } else {
+          const c = (node.querySelector('#concept').value || '').trim();
+          if (!c) { UI.toast('개념/주제를 입력해주세요', 'danger'); return; }
+          label = c;
+        }
+        set.questions = genQuestions(n, label);
+        node.remove();
+        UI.toast(`AI가 ${n}문항을 생성했어요 (${mode === 'note' ? 'AI 노트 기반' : '입력 기반'})`, 'success');
+        if (onDone) onDone();
+      } }));
+    }
+
+    // 예약 발행 팝업 — 일시 지정 (예약발행 시에만 일시 노출)
+    function openSchedulePopup(set, date, onDone) {
+      const node = UI.openModal(`
+        <h3 class="card-title">예약 발행</h3>
+        <p class="text-mute" style="font-size:13px; margin:8px 0 14px;">지정한 일시에 자동 발행됩니다. 발행되면 '발행된 퀴즈' 탭으로 이동해요.</p>
+        <div class="field"><label>예약 발행 일시</label><input type="datetime-local" id="sd" /></div>
+        <p class="hint" style="margin:-2px 0 0;">오전 퀴즈 슬롯(08:30~09:30) 권장 — 학생 알림 분산을 줄여요.</p>
+        <div class="row row-end" style="margin-top:16px; gap:8px;" id="acts"></div>
+      `);
+      node.querySelector('#sd').value = (set.scheduledAt || `${date}T08:30`).slice(0, 16);
+      const acts = node.querySelector('#acts');
+      acts.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+      acts.appendChild(UI.button({ label: '예약 발행', icon: 'ri-calendar-check-line', type: 'solid', color: 'primary', onClick: () => {
+        const v = node.querySelector('#sd').value;
+        if (!v) { UI.toast('일시를 선택해주세요', 'danger'); return; }
+        set.scheduledAt = v; set.status = 'scheduled';
+        node.remove();
+        UI.toast(`예약 발행 설정됨 — ${v.slice(5, 10).replace('-', '/')} ${v.slice(11, 16)}`, 'success');
+        if (onDone) onDone();
+      } }));
+    }
+
+    // 문항별 AI 재발행 팝업 — 입력 개념으로 객관식 1문항 생성(덮어쓰기). 발행본이면 invalidation.
+    function openQuestionRegen(set, q, published, onDone) {
+      const node = UI.openModal(`
+        <h3 class="card-title">AI 문항 생성 (문항별)</h3>
+        <p class="text-mute" style="font-size:13px; margin:8px 0 12px;">입력한 개념에 맞춰 객관식 1문항(문제·보기·정답·해설)을 새로 생성해 <strong>이 문항을 덮어써요</strong>.</p>
+        ${published ? '<div class="banner banner-error" style="margin-bottom:12px;"><i class="ri-icon ri-error-warning-line"></i><span>발행본이라 이 문항의 <strong>응시 결과가 무효화·재집계</strong>되고, 학생뷰에 <strong>수정됨</strong> 배지가 노출돼요.</span></div>' : ''}
+        <div class="field"><label>개념/주제</label><textarea id="concept" style="min-height:80px;" placeholder="예: groupby 후 agg 다중 집계"></textarea></div>
+        <div class="row row-end" style="margin-top:14px; gap:8px;" id="acts"></div>
+      `);
+      const acts = node.querySelector('#acts');
+      acts.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+      acts.appendChild(UI.button({ label: '재생성 (덮어쓰기)', icon: 'ri-magic-line', type: 'solid', color: 'primary', onClick: () => {
+        const c = (node.querySelector('#concept').value || '').trim();
+        if (!c) { UI.toast('개념/주제를 입력해주세요', 'danger'); return; }
+        const g = genQuestions(1, c)[0];
+        q.stem = g.stem; q.choices = g.choices; q.answer = g.answer; q.explanation = g.explanation;
+        if (published) q.editedAt = new Date().toISOString();
+        node.remove();
+        UI.toast(`AI가 문항을 재생성했어요${published ? ' — 응시 결과 재집계' : ''}`, 'success');
+        if (onDone) onDone();
+      } }));
+    }
+
+    // 문항 인라인 편집 블록 (문제·번호 보기·정답·해설 즉시 수정) + AI 문항 생성(문항별)/삭제
+    function buildQuestionForm(set, q, i, published, refresh) {
+      const item = document.createElement('div');
+      item.style.cssText = 'border:1px solid var(--lk-color-border-weak); border-radius:12px; padding:16px; background:var(--lk-color-bg-white);';
+      item.innerHTML = `
+        <div class="spread" style="margin-bottom:12px;">
+          <div class="row" style="gap:6px;">
+            <span class="tag tag-small tag-weak-enabled">문항 ${i + 1}</span>
+            ${q.editedAt ? `<span class="tag tag-small tag-weak-warning"><i class="ri-icon ri-pencil-line"></i> 수정됨 · ${UI.relTime(q.editedAt)}</span>` : ''}
+          </div>
+          <div class="row" style="gap:4px;" id="qa"></div>
+        </div>
+        <div class="field"><label>문제</label><textarea data-f="stem" style="min-height:64px;"></textarea></div>
+        <div class="field"><label>객관식 보기 · 4개</label><div class="col" style="gap:6px;" id="chs"></div></div>
+        <div class="field" style="max-width:200px;"><label>정답${published ? ' (잠금)' : ''}</label><div id="ans"></div></div>
+        <div class="field"><label>해설</label><textarea data-f="ex" style="min-height:64px;"></textarea></div>
+      `;
+      const stem = item.querySelector('[data-f="stem"]'); stem.value = q.stem || ''; stem.addEventListener('input', () => { q.stem = stem.value; });
+      const chs = item.querySelector('#chs');
+      q.choices.forEach((c, ci) => {
+        const rowEl = document.createElement('div'); rowEl.className = 'row'; rowEl.style.cssText = 'gap:8px; align-items:center;';
+        const num = document.createElement('span'); num.textContent = `${ci + 1}.`; num.style.cssText = 'flex:0 0 16px; font-weight:700; color:var(--lk-color-fg-alternative); font-size:13px;';
+        const inp = document.createElement('input'); inp.type = 'text'; inp.value = c || ''; inp.placeholder = '보기 입력'; inp.style.flex = '1'; inp.addEventListener('input', () => { q.choices[ci] = inp.value; });
+        rowEl.appendChild(num); rowEl.appendChild(inp); chs.appendChild(rowEl);
+      });
+      const ansSel = UI.select({ options: [{ value: 0, label: '1번' }, { value: 1, label: '2번' }, { value: 2, label: '3번' }, { value: 3, label: '4번' }], value: q.answer, onChange: (v) => { if (!published) q.answer = v; } });
+      if (published) { ansSel.style.pointerEvents = 'none'; ansSel.style.opacity = '0.6'; }
+      item.querySelector('#ans').appendChild(ansSel);
+      const ex = item.querySelector('[data-f="ex"]'); ex.value = q.explanation || ''; ex.addEventListener('input', () => { q.explanation = ex.value; });
+      const qa = item.querySelector('#qa');
+      qa.appendChild(UI.button({ label: 'AI 문항 생성', icon: 'ri-magic-line', type: 'ghost', color: 'primary', size: 'small', onClick: () => openQuestionRegen(set, q, published, refresh) }));
+      qa.appendChild(UI.button({ label: '삭제', icon: 'ri-delete-bin-line', type: 'ghost', color: 'neutral', size: 'small', onClick: () => { const idx = set.questions.findIndex((x) => x.id === q.id); if (idx >= 0) set.questions.splice(idx, 1); refresh(); UI.toast('문항 삭제됨', 'success'); } }));
+      return item;
     }
 
     // 세트 카드: 제목 + 발행 예정시간 + 발행 버튼들 + 문항 디테일 펼치기
@@ -953,6 +1237,7 @@
     function openPublishedDetail(targetDate, set) {
       const fp = UI.openFullPage({ backLabel: '발행된 퀴즈' });
       if (set) {
+        fp.actions.appendChild(UI.button({ label: '퀴즈 수정·재발행', icon: 'ri-edit-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openDraftEditor(targetDate, set, null) }));
         fp.actions.appendChild(UI.button({ label: '세트 재발행', icon: 'ri-refresh-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openRepublishConfirm({
           scope: 'set', label: set.title, onConfirm: () => {
             const now = new Date().toISOString();
