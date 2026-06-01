@@ -43,26 +43,12 @@ html, body {
   border-bottom: 1px solid var(--lk-color-border-weak);
   display: flex;
   align-items: center;
-  padding: 0 var(--lk-spacing-8);
+  padding: 0 var(--lk-spacing-8) 0 var(--lk-spacing-2);
   gap: var(--lk-spacing-10);
   position: sticky; top: 0; z-index: 30;
 }
-.gnb-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: var(--lk-color-fg-strong); }
-.gnb-brand .logo-mark {
-  width: 28px; height: 22px;
-  display: inline-block; position: relative;
-  color: var(--lk-color-fg-primary);
-}
-.gnb-brand .logo-mark::before {
-  content: "";
-  position: absolute; inset: 0;
-  background: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 24'><path d='M2 4 L10 22 L16 12 L22 22 L30 4' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 24'><path d='M2 4 L10 22 L16 12 L22 22 L30 4' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-}
-.gnb-brand .brand-text { color: var(--lk-color-fg-strong); }
-.gnb-brand .brand-text b { color: var(--lk-color-fg-strong); font-weight: 700; }
+.gnb-brand { display: inline-flex; align-items: center; gap: 8px; }
+.gnb-brand .brand-logo { height: 52px; width: auto; display: block; }
 .gnb-nav { display: inline-flex; gap: var(--lk-spacing-8); align-items: center; }
 .gnb-nav a {
   font-size: 15px; font-weight: 500; color: var(--lk-color-fg-strong);
@@ -121,7 +107,7 @@ html, body {
 .lnb-item .ri-icon { font-size: 18px; color: var(--lk-color-fg-assistive); width: 20px; text-align: center; }
 
 /* ===== Main + page header ===== */
-.main { background: var(--lk-color-bg-white); }
+.main { background: var(--lk-color-bg-white); min-width: 0; }
 .page { padding: var(--lk-spacing-8) var(--lk-spacing-10); }
 .page-head {
   display: flex; align-items: flex-start; justify-content: space-between;
