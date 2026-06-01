@@ -629,6 +629,30 @@
     });
   });
 
+  // s01(김재훈) 데모 고정 — 학생뷰 '내 진행 상태' 케이스 다양화
+  // proj-basic(종료)=피드백 도착 / proj-deep(피드백진행)=제출 완료 / proj-extra(제출진행)=제출 완료(수정하기) / proj-final(제출진행)=미제출
+  (function seedActiveStudent() {
+    const sid = 's01', sname = '김재훈';
+    const mk = (p, fb) => ({
+      studentId: sid, studentName: sname,
+      title: `${sname}의 ${p.round} 프로젝트`,
+      oneLiner: '데이터로 의사결정을 돕는 작은 도구',
+      description: `# 문제 정의\n수업에서 다룬 문제를 확장한 프로젝트입니다.\n\n# 핵심 기능\n- 자동 집계\n- 시각화 대시보드\n\n# Tech Stack\nPython · pandas · streamlit\n\n# 주요 트러블슈팅\n초기 데이터 결측치 처리 전략으로 해결.\n\n# 팀 소개\n${sname}`,
+      mainImage: `https://picsum.photos/seed/${sid}-${p.id}/640/360`,
+      urls: ['https://github.com/sample/' + sid, 'https://figma.com/file/sample'],
+      videoUrl: 'https://youtu.be/dQw4w9WgXcQ', attachments: [], slides: 'https://docs.google.com/presentation/d/sample',
+      submittedAt: p.submitFrom + 'T22:00', published: false, excellent: false, feedback: fb,
+    });
+    const want = { 'proj-basic': '문제 정의가 명확하고 시각화 선택이 적절합니다. 의존성 관리 부분을 보완하면 좋겠어요.', 'proj-deep': null, 'proj-extra': null };
+    Object.keys(want).forEach((pid) => {
+      const p = PROJECTS.find((x) => x.id === pid);
+      if (!p || !PROJECT_SUBMISSIONS[pid]) return;
+      PROJECT_SUBMISSIONS[pid] = PROJECT_SUBMISSIONS[pid].filter((s) => s.studentId !== sid);
+      PROJECT_SUBMISSIONS[pid].unshift(mk(p, want[pid]));
+    });
+    if (PROJECT_SUBMISSIONS['proj-final']) PROJECT_SUBMISSIONS['proj-final'] = PROJECT_SUBMISSIONS['proj-final'].filter((s) => s.studentId !== sid);
+  })();
+
   // ---------- export ----------
   window.MOCK = {
     meta: {
