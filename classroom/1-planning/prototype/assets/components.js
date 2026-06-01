@@ -56,8 +56,7 @@
     gnb.className = 'gnb';
     gnb.innerHTML = `
       <a class="gnb-brand" href="index.html">
-        <span class="logo-mark" aria-hidden="true"></span>
-        <span class="brand-text"><b>멋사</b> 부트캠프</span>
+        <img class="brand-logo" src="assets/logo-mussa-bootcamp.png" alt="멋사 부트캠프" />
       </a>
       <nav class="gnb-nav">
         <a href="#">부트캠프 <span class="chev">▾</span></a>
