@@ -7,14 +7,57 @@ terms:
     aliases: ["해당 수업", "수업"]
     parent_term: Cohort
   Lecture:
-    description: "1회차 강의 단위. 해당 수업(Cohort)에 속한다."
-    entity: Lecture
+    description: "일자별 수업 일정 단위. glob-course `KDTCurriculum`(course_id·date·title·tutor·is_break(휴강)·is_project·is_guest_lecture)에 대응한다. '회차'가 아니라 날짜(date) 기준이며, is_break/date가 AI 퀴즈 발행의 휴강·수업일 판정 출처."
+    aliases: ["수업일", "커리큘럼", "Curriculum"]
+    entity: KDTCurriculum
   Session:
-    description: "Lecture 안의 라이브/녹화 슬롯. 입장 가능 시간 구간을 가진다."
-    entity: Session
+    description: "라이브룸(실시간 수업) 세션. glob-course에 별도 엔티티는 없고, 수업일(KDTCurriculum)과 그 AI 요약(AINote = LiveroomSummary)으로 표현된다."
+    aliases: ["라이브룸 세션"]
   AINote:
-    description: "Trainee가 Session 중 작성하는 AI 보조 학습 노트."
-    entity: AINote
+    description: "해당 수업 × 날짜의 라이브룸(수업) AI 요약 학습 노트. 강의 내용 기반으로 자동 생성되며(학생 작성 아님) 학생은 읽기 전용. AIQuiz·보충 퀴즈 생성의 입력 소스. UI상 '오늘의 AI 노트'로 노출. 백엔드 엔티티/테이블 = LiveroomSummary(`liveroom_summaries`, common DB, 해당 수업×날짜 단위)."
+    aliases: ["AI 노트", "라이브룸 요약", "LiveroomSummary"]
+    entity: LiveroomSummary
   Attendance:
-    description: "Trainee × Session 의 출석 기록."
-    entity: Attendance
+    description: "Trainee × 수업일(attendance_date)의 일별 출결. glob-course `KDTAttendance`(course_id·user_id·status·attendance_date·started_at/ended_at·out_started_at/out_ended_at). Session 단위가 아닌 날짜 단위."
+    aliases: ["출결", "출석"]
+    entity: KDTAttendance
+
+  # ───────── AI 퀴즈 (POL-CR-03 v1.2 기준 · axp-common-python `ai_quiz` 도메인) ─────────
+  AIQuiz:
+    description: "발행 단위가 되는 퀴즈 1개(= 문항 묶음). 해당 수업 × 날짜에 여러 개 존재할 수 있다. 시스템 자동 생성(source=auto, AINote 기반) 또는 매니저 자작(source=manual). 단위 체계는 '퀴즈 > 문항'. 백엔드 테이블 `ai_quiz`(common DB)."
+    aliases: ["AI 퀴즈", "AI 노트 퀴즈", "퀴즈"]
+    entity: AIQuiz
+  QuizQuestion:
+    description: "AIQuiz를 구성하는 문항 1개. 객관식 4지선다 — '문제(stem) + 보기 4개 + 정답 + 해설'. 백엔드 테이블 `ai_quiz_question`."
+    aliases: ["문항"]
+    entity: QuizQuestion
+    parent_term: AIQuiz
+  QuizAttempt:
+    description: "학생 × AIQuiz 1회 응시 기록(재응시 불가). 마지막 문항 제출 시 서버 채점(1문항 1점). 백엔드 테이블 `ai_quiz_attempt` + 채점 상세 `ai_quiz_answer`."
+    aliases: ["응시"]
+    entity: QuizAttempt
+  WrongNote:
+    description: "응시에서 틀린 문항이 자동 누적되는 오답노트(insert-once). 액션은 '메모'·'책갈피'만, 다시 풀기 없음. 보충 퀴즈와 분리(보충 결과가 오답노트에 영향 X). 백엔드 테이블 `ai_quiz_wrong_note`."
+    aliases: ["오답노트"]
+    entity: WrongNote
+  SupplementaryQuiz:
+    description: "학생이 누적 오답 기반으로 직접 생성하는 보충 퀴즈 세트(오답중심·날짜 최대 5일·문제수 5/10/15). 하루 10회(세트) 한도. 결과는 보충 탭 내부에만 누적. 백엔드 테이블 `ai_quiz_supp_set` + `ai_quiz_supp_question`."
+    aliases: ["보충 퀴즈", "보충"]
+    entity: SupplementaryQuiz
+
+  # ───────── 상태·동작 용어 (AI 퀴즈) ─────────
+  임시저장:
+    description: "AIQuiz 제작 중 상태(예약·발행 전). status=draft."
+    aliases: ["draft"]
+  예약발행:
+    description: "발행 일시를 지정해 자동 발행을 대기하는 상태. 자동 생성 퀴즈는 기본 익일 08:30(매니저 조정 가능). status=scheduled."
+    aliases: ["scheduled"]
+  발행:
+    description: "예약발행 일시 도래(휴일 제외) 또는 매니저 즉시발행으로 학생에게 공개된 상태. status=published."
+    aliases: ["발행됨", "published"]
+  AI재생성:
+    description: "매니저가 AI로 문항을 다시 생성해 덮어쓰는 동작. 퀴즈 전체(AI 노트 복수 선택 / 개념·주제 입력 기반) 또는 문항별 단일 재생성."
+    aliases: ["AI 재생성", "AI 퀴즈 생성", "AI 문항 생성"]
+  재발행:
+    description: "발행 후 정답·보기까지 바꾸는 정정 발행(단일 문항 또는 퀴즈). 해당 응시 결과 invalidation·재집계 동반. (텍스트만 수정은 '정답 잠금'이라 재발행 아님 — 수정됨 배지만.) ※ 무효화·재집계 상세는 PRD v1.3 확정 대기."
+    aliases: ["단일 재발행"]
