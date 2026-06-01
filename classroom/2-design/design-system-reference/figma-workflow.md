@@ -6,19 +6,10 @@
 
 ## 0. 사전 셋업 (최초 1회)
 
-### 0-1. Pretendard 폰트
-디자인시스템 본문 폰트가 Pretendard예요. 두 군데 다 등록되어 있어야 합니다.
+### 0-1. Pretendard 폰트 — **추가 작업 불필요** ✅
+워크스페이스에 **클라우드 폰트로 이미 등록**되어 있어요 (2026-06-01, 가희님 등록). 워크스페이스 멤버는 Figma 열자마자 `Pretendard` family 자동 사용 가능. Mac 로컬 설치도 필요 없음.
 
-**(가) 로컬 Mac**
-1. https://github.com/orioncactus/pretendard/releases/latest 에서 static OTF 다운로드
-2. `~/Library/Fonts/`에 9개 `Pretendard-*.otf` 복사 (Variable은 제외)
-3. Figma 데스크탑 앱 완전 재시작
-4. 안 보이면 터미널에서 `sudo atsutil databases -remove && atsutil server -shutdown && atsutil server -ping` 실행 후 재로그인
-
-**(나) Figma 클라우드 폰트** (워크스페이스 전역)
-- 조직 admin이 Figma Org/Enterprise 워크스페이스 Fonts 설정에서 9개 static OTF 업로드.
-- 라이선스는 SIL OFL — 임베드·재배포 자유, 문제 없음.
-- 클라우드 등록 끝나면 `Pretendard` family가 모든 파일·MCP plugin에서 사용 가능.
+> 새로운 워크스페이스/조직으로 옮길 때만: admin이 https://github.com/orioncactus/pretendard/releases/latest 에서 9개 static OTF 다운로드 → Figma 워크스페이스 Fonts 설정 업로드 (SIL OFL 라이선스, 임베드 자유).
 
 ### 0-2. Figma 파일에 멋사 DS 라이브러리 등록
 파일 좌측 Assets 패널 → "+" 클릭 → `멋쟁이사자처럼 Design System` 라이브러리 활성화.
