@@ -1,0 +1,66 @@
+/* ============================================================
+ * storybook-typography-tokens.css
+ * Source: ~/Desktop/glob-storybook/public/manager-tokens.css
+ * (storybook 빌드 시 :root에 동기화되는 토큰 값들)
+ *
+ * globals.css(우리 bundle)에는 컬러/스페이싱만 있고 타이포 값이
+ * 빠져 있어서 이 파일이 그 갭을 메운다.
+ * ============================================================ */
+
+:root {
+  /* Font family */
+  --font-primitive-familly-font-familly: pretendard;
+
+  /* Letter spacing */
+  --font-primitive-letter-spacing-tight:  -0.3px;
+  --font-primitive-letter-spacing-normal: 0px;
+  --font-primitive-letter-spacing-loose:  1px;
+
+  /* Font sizes — Display */
+  --font-primitive-size-display-d1: 52px;
+  --font-primitive-size-display-d2: 44px;
+  --font-primitive-size-display-d3: 32px;
+  --font-primitive-size-display-d4: 27px;
+
+  /* Font sizes — Heading */
+  --font-primitive-size-heading-h1: 35px;
+  --font-primitive-size-heading-h2: 31px;
+  --font-primitive-size-heading-h3: 27px;
+  --font-primitive-size-heading-h4: 23px;
+  --font-primitive-size-heading-h5: 21px;   /* ← H5 정확한 값 */
+  --font-primitive-size-heading-h6: 19px;
+
+  /* Font sizes — Body */
+  --font-primitive-size-body-p1: 17px;
+  --font-primitive-size-body-p2: 15px;
+  --font-primitive-size-body-p3: 13px;
+  --font-primitive-size-body-p4: 12px;
+  --font-primitive-size-body-p5: 11px;
+
+  /* Font weights */
+  --font-primitive-weight-extrabold: 800;
+  --font-primitive-weight-bold:      700;
+  --font-primitive-weight-semibold:  600;
+  --font-primitive-weight-medium:    500;
+  --font-primitive-weight-regular:   400;
+
+  /* Spacing primitive (storybook tokens.json 값 기반 — bridge.css fallback이 필요한 경우 대비) */
+  --spacing-primitive-1:  4px;
+  --spacing-primitive-2:  8px;
+  --spacing-primitive-3:  12px;
+  --spacing-primitive-4:  16px;
+  --spacing-primitive-5:  20px;
+  --spacing-primitive-6:  24px;
+  --spacing-primitive-8:  32px;
+  --spacing-primitive-10: 40px;
+  --spacing-primitive-12: 48px;
+  --spacing-primitive-16: 64px;
+
+  /* Radius primitive */
+  --radius-primitive-xs:   4px;
+  --radius-primitive-sm:   6px;
+  --radius-primitive-md:   8px;
+  --radius-primitive-lg:   12px;
+  --radius-primitive-xl:   16px;
+  --radius-primitive-full: 9999px;
+}

@@ -1,0 +1,353 @@
+/* manager iframe용 - globals.css :root (Storybook 실행 시 자동 반영) */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  /* Boolean Tokens */
+  --Boolean-primitive: 1;
+  /* Color Tokens */
+  /* Primitive Basic */
+  --color-basic-white: #FFFFFF;
+  --color-basic-black: #000000;
+  --color-basic-opacity-neutral-light-0: rgba(255, 255, 255, 0);
+  --color-basic-opacity-neutral-light-2: rgba(255, 255, 255, 0.02);
+  --color-basic-opacity-neutral-light-4: rgba(255, 255, 255, 0.04);
+  --color-basic-opacity-neutral-light-6: rgba(255, 255, 255, 0.06);
+  --color-basic-opacity-neutral-light-8: rgba(255, 255, 255, 0.08);
+  --color-basic-opacity-neutral-light-16: rgba(255, 255, 255, 0.16);
+  --color-basic-opacity-neutral-light-24: rgba(255, 255, 255, 0.24);
+  --color-basic-opacity-neutral-light-48: rgba(255, 255, 255, 0.48);
+  --color-basic-opacity-neutral-light-56: rgba(255, 255, 255, 0.56);
+  --color-basic-opacity-neutral-light-72: rgba(255, 255, 255, 0.72);
+  --color-basic-opacity-neutral-light-80: rgba(255, 255, 255, 0.8);
+  --color-basic-opacity-neutral-light-90: rgba(255, 255, 255, 0.9);
+  --color-basic-opacity-neutral-dark-0: rgba(0, 0, 0, 0);
+  --color-basic-opacity-neutral-dark-2: rgba(0, 0, 0, 0.02);
+  --color-basic-opacity-neutral-dark-4: rgba(0, 0, 0, 0.04);
+  --color-basic-opacity-neutral-dark-6: rgba(0, 0, 0, 0.06);
+  --color-basic-opacity-neutral-dark-8: rgba(0, 0, 0, 0.08);
+  --color-basic-opacity-neutral-dark-16: rgba(0, 0, 0, 0.16);
+  --color-basic-opacity-neutral-dark-24: rgba(0, 0, 0, 0.24);
+  --color-basic-opacity-neutral-dark-48: rgba(0, 0, 0, 0.48);
+  --color-basic-opacity-neutral-dark-56: rgba(0, 0, 0, 0.56);
+  --color-basic-opacity-neutral-dark-72: rgba(0, 0, 0, 0.72);
+  --color-basic-opacity-neutral-dark-80: rgba(0, 0, 0, 0.8);
+  --color-basic-opacity-neutral-dark-90: rgba(0, 0, 0, 0.9);
+  --color-basic-opacity-primary-0: rgba(255, 96, 0, 0);
+  --color-basic-opacity-primary-2: rgba(255, 96, 0, 0.02);
+  --color-basic-opacity-primary-4: rgba(255, 96, 0, 0.04);
+  --color-basic-opacity-primary-6: rgba(255, 96, 0, 0.06);
+  --color-basic-opacity-primary-8: rgba(255, 96, 0, 0.08);
+  --color-basic-opacity-primary-16: rgba(255, 96, 0, 0.16);
+  --color-basic-opacity-primary-24: rgba(255, 96, 0, 0.24);
+  --color-basic-opacity-primary-48: rgba(255, 96, 0, 0.48);
+  --color-basic-opacity-primary-56: rgba(255, 96, 0, 0.56);
+  --color-basic-opacity-primary-72: rgba(255, 96, 0, 0.72);
+  --color-basic-opacity-primary-80: rgba(255, 96, 0, 0.8);
+  --color-basic-opacity-primary-90: rgba(255, 96, 0, 0.9);
+  /* Primitive Blue */
+  --color-blue-50: #E5F5FF;
+  --color-blue-100: #CCEBFF;
+  --color-blue-200: #C0E6FF;
+  --color-blue-300: #80C6FB;
+  --color-blue-400: #6DAAE7;
+  --color-blue-500: #3D94FF;
+  --color-blue-600: #2077E5;
+  --color-blue-700: #045CA9;
+  --color-blue-800: #004875;
+  --color-blue-900: #1D3649;
+  /* Primitive Gray */
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EA;
+  --color-gray-300: #D1D6DC;
+  --color-gray-400: #B1B8C0;
+  --color-gray-500: #8A95A0;
+  --color-gray-600: #6B7583;
+  --color-gray-700: #4E5967;
+  --color-gray-800: #333D4B;
+  --color-gray-850: #262F3C;
+  --color-gray-900: #191F28;
+  --color-gray-950: #191C1F;
+  /* Primitive Green */
+  --color-green-50: #E4FAF5;
+  --color-green-100: #C4F8EB;
+  --color-green-200: #B4EDDE;
+  --color-green-300: #7EDDCD;
+  --color-green-400: #4FC8B8;
+  --color-green-500: #0DA796;
+  --color-green-600: #05806D;
+  --color-green-700: #006D5D;
+  --color-green-800: #005448;
+  --color-green-900: #003C32;
+  /* Primitive Light-green */
+  --color-light-green-50: #F2FDE3;
+  --color-light-green-100: #D7F2B1;
+  --color-light-green-200: #C7EC93;
+  --color-light-green-300: #B0D55C;
+  --color-light-green-400: #89C81B;
+  --color-light-green-500: #79B116;
+  --color-light-green-600: #4A7F05;
+  --color-light-green-700: #2D660A;
+  --color-light-green-800: #144D14;
+  --color-light-green-900: #0A3C02;
+  /* Primitive Pink */
+  --color-pink-50: #FFF3FF;
+  --color-pink-100: #FFD2FF;
+  --color-pink-200: #FFC2FF;
+  --color-pink-300: #FF9EEE;
+  --color-pink-400: #EF81CE;
+  --color-pink-500: #D3689F;
+  --color-pink-600: #C14180;
+  --color-pink-700: #A02C6D;
+  --color-pink-800: #7C1C58;
+  --color-pink-900: #601146;
+  /* Primitive Primary */
+  --color-primary-50: #FFEFE5;
+  --color-primary-100: #FFDFCC;
+  --color-primary-200: #FFBF99;
+  --color-primary-300: #FFA066;
+  --color-primary-400: #FF8033;
+  --color-primary-500: #FF6000;
+  --color-primary-600: #CC4D00;
+  --color-primary-700: #993A00;
+  --color-primary-800: #662600;
+  --color-primary-900: #4D1D00;
+  /* Primitive Purple */
+  --color-purple-50: #F9EFFF;
+  --color-purple-100: #F0D6FF;
+  --color-purple-200: #EAC7FF;
+  --color-purple-300: #D7AAFF;
+  --color-purple-400: #BA8FF7;
+  --color-purple-500: #AF79DD;
+  --color-purple-600: #9855D4;
+  --color-purple-700: #734098;
+  --color-purple-800: #5D327B;
+  --color-purple-900: #412356;
+  /* Primitive Red */
+  --color-red-50: #FDF0F3;
+  --color-red-100: #FFCCD8;
+  --color-red-200: #FFB8C9;
+  --color-red-300: #FFA5B4;
+  --color-red-400: #FF6D6D;
+  --color-red-500: #F64C4C;
+  --color-red-600: #E12337;
+  --color-red-700: #AD1625;
+  --color-red-800: #8C101C;
+  --color-red-900: #6E0A1E;
+  /* Primitive Static */
+  --color-static-black: var(--color-basic-black, #000);
+  --color-static-white: var(--color-basic-white, #FFF);
+  /* Primitive Yellow */
+  --color-yellow-50: #FFF8E4;
+  --color-yellow-100: #FFEEBF;
+  --color-yellow-200: #FFE28E;
+  --color-yellow-300: #FFD456;
+  --color-yellow-400: #FFCA30;
+  --color-yellow-500: #FFB700;
+  --color-yellow-600: #CB9100;
+  --color-yellow-700: #AA7900;
+  --color-yellow-800: #745300;
+  --color-yellow-900: #3C3200;
+  /* Semantic Bg */
+  --color-semantic-bg-normal: var(--color-gray-100);
+  --color-semantic-bg-normal-hovered: var(--color-gray-50);
+  --color-semantic-bg-normal-alternative: var(--color-gray-200);
+  --color-semantic-bg-normal-assistive: var(--color-gray-50);
+  --color-semantic-bg-disabled: var(--color-gray-100);
+  --color-semantic-bg-disabled-dark: var(--color-gray-200);
+  --color-semantic-bg-inverted: var(--color-gray-950);
+  --color-semantic-bg-inverted-hovered: var(--color-gray-900);
+  --color-semantic-bg-primary: var(--color-primary-500);
+  --color-semantic-bg-primary-hovered: var(--color-primary-600);
+  --color-semantic-bg-primary-disabled: var(--color-basic-opacity-primary-24);
+  --color-semantic-bg-primary-weak: var(--color-primary-50);
+  --color-semantic-bg-lightgreen: var(--color-light-green-50);
+  --color-semantic-bg-yellow: var(--color-yellow-50);
+  --color-semantic-bg-green: var(--color-green-50);
+  --color-semantic-bg-blue: var(--color-blue-50);
+  --color-semantic-bg-purple: var(--color-purple-50);
+  --color-semantic-bg-pink: var(--color-pink-50);
+  --color-semantic-bg-red: var(--color-red-50);
+  --color-semantic-bg-white: var(--color-basic-white);
+  --color-semantic-bg-black: var(--color-basic-black);
+  --color-semantic-bg-weak-primary: var(--color-basic-opacity-primary-8);
+  --color-semantic-bg-weak-primary-hovered: var(--color-basic-opacity-primary-16);
+  --color-semantic-bg-weak-neutral-light: var(--color-basic-opacity-neutral-light-8);
+  --color-semantic-bg-weak-neutral-light-hovered: var(--color-basic-opacity-neutral-light-16);
+  --color-semantic-bg-weak-neutral-dark: var(--color-basic-opacity-neutral-dark-8);
+  --color-semantic-bg-weak-neutral-dark-hovered: var(--color-basic-opacity-neutral-dark-16);
+  /* Semantic Border */
+  --color-semantic-border-primary: var(--color-primary-500);
+  --color-semantic-border-strong: var(--color-gray-800);
+  --color-semantic-border-normal: var(--color-gray-300);
+  --color-semantic-border-weak: var(--color-gray-200);
+  --color-semantic-border-white: var(--color-basic-white);
+  --color-semantic-border-black: var(--color-basic-black);
+  --color-semantic-border-inverted: var(--color-gray-700);
+  --color-semantic-border-inverted-strong: var(--color-gray-600);
+  /* Semantic Fg */
+  --color-semantic-fg-primary: var(--color-primary-500);
+  --color-semantic-fg-pressed: var(--color-primary-600);
+  --color-semantic-fg-primary-inverted: var(--color-primary-300);
+  --color-semantic-fg-strong: var(--color-gray-900);
+  --color-semantic-fg-normal: var(--color-gray-800);
+  --color-semantic-fg-neutral: var(--color-gray-700);
+  --color-semantic-fg-alternative: var(--color-gray-600);
+  --color-semantic-fg-assistive: var(--color-gray-500);
+  --color-semantic-fg-disabled: var(--color-gray-400);
+  --color-semantic-fg-yellow: var(--color-yellow-500);
+  --color-semantic-fg-lightgreen: var(--color-light-green-500);
+  --color-semantic-fg-green: var(--color-green-500);
+  --color-semantic-fg-blue: var(--color-blue-500);
+  --color-semantic-fg-purple: var(--color-purple-500);
+  --color-semantic-fg-pink: var(--color-pink-500);
+  --color-semantic-fg-red: var(--color-red-500);
+  --color-semantic-fg-white: var(--color-basic-white);
+  --color-semantic-fg-black: var(--color-basic-black);
+  /* Semantic Info */
+  --color-semantic-info-negative: var(--color-red-600);
+  --color-semantic-info-positive: var(--color-light-green-500);
+  --color-semantic-info-white: var(--color-basic-white);
+  --color-semantic-info-black: var(--color-basic-black);
+  /* Semantic Style */
+  --color-semantic-style-gradation-primary: linear-gradient(90deg, var(--color-primary-300, #FFA066) 0%, var(--color-primary-500, #FF6000) 97.86%);
+  --color-semantic-style-gradation-dark: radial-gradient(50% 50% at 50% 50%, #191F28 0%, #993A00 100%);
+  --color-semantic-style-gradation-black: linear-gradient(90deg, var(--color-basic-opacity-neutral-dark-0, rgba(0, 0, 0, 0.00)) 0%, var(--color-basic-black, #000) 100%);
+  --color-semantic-style-gradation-white: var(--color-static-gradation-white, linear-gradient(90deg, rgba(255, 255, 255, 0.00) 0%, var(--color-basic-white, #FFF) 100%));
+  --color-semantic-style-dim: rgba(0, 0, 0, 0.50);
+  /* Font Tokens */
+  /* Primitive Familly */
+  --font-primitive-familly-font-familly: pretendard;
+  /* Primitive Letter-spacing */
+  --font-primitive-letter-spacing-tight: -0.30000001192092896px;
+  --font-primitive-letter-spacing-normal: 0px;
+  --font-primitive-letter-spacing-loose: 1px;
+  /* Primitive Size */
+  --font-primitive-size-display-d1: 52px;
+  --font-primitive-size-display-d2: 44px;
+  --font-primitive-size-display-d3: 32px;
+  --font-primitive-size-display-d4: 27px;
+  --font-primitive-size-heading-h1: 35px;
+  --font-primitive-size-heading-h2: 31px;
+  --font-primitive-size-heading-h3: 27px;
+  --font-primitive-size-heading-h4: 23px;
+  --font-primitive-size-heading-h5: 21px;
+  --font-primitive-size-heading-h6: 19px;
+  --font-primitive-size-body-p1: 17px;
+  --font-primitive-size-body-p2: 15px;
+  --font-primitive-size-body-p3: 13px;
+  --font-primitive-size-body-p4: 12px;
+  --font-primitive-size-body-p5: 11px;
+  /* Primitive Weight */
+  --font-primitive-weight-extrabold: 800;
+  --font-primitive-weight-bold: 700;
+  --font-primitive-weight-semibold: 600;
+  --font-primitive-weight-medium: 500;
+  --font-primitive-weight-regular: 400;
+  /* Gap Tokens */
+  /* Semantic 0_5 */
+  --gap-semantic-0_5: var(--spacing-primitive-0_5);
+  /* Semantic 1 */
+  --gap-semantic-1: var(--spacing-primitive-1);
+  /* Semantic 10 */
+  --gap-semantic-10: var(--spacing-primitive-10);
+  /* Semantic 12 */
+  --gap-semantic-12: var(--spacing-primitive-12);
+  /* Semantic 16 */
+  --gap-semantic-16: var(--spacing-primitive-16);
+  /* Semantic 2 */
+  --gap-semantic-2: var(--spacing-primitive-2);
+  /* Semantic 20 */
+  --gap-semantic-20: var(--spacing-primitive-20);
+  /* Semantic 25 */
+  --gap-semantic-25: var(--spacing-primitive-25);
+  /* Semantic 3 */
+  --gap-semantic-3: var(--spacing-primitive-3);
+  /* Semantic 4 */
+  --gap-semantic-4: var(--spacing-primitive-4);
+  /* Semantic 5 */
+  --gap-semantic-5: var(--spacing-primitive-5);
+  /* Semantic 6 */
+  --gap-semantic-6: var(--spacing-primitive-6);
+  /* Semantic 8 */
+  --gap-semantic-8: var(--spacing-primitive-8);
+  /* Padding Tokens */
+  /* Semantic 0_5 */
+  --padding-semantic-0_5: var(--spacing-primitive-0_5);
+  /* Semantic 1 */
+  --padding-semantic-1: var(--spacing-primitive-1);
+  /* Semantic 10 */
+  --padding-semantic-10: var(--spacing-primitive-10);
+  /* Semantic 12 */
+  --padding-semantic-12: var(--spacing-primitive-12);
+  /* Semantic 2 */
+  --padding-semantic-2: var(--spacing-primitive-2);
+  /* Semantic 2_5 */
+  --padding-semantic-2_5: var(--spacing-primitive-2_5);
+  /* Semantic 3 */
+  --padding-semantic-3: var(--spacing-primitive-3);
+  /* Semantic 4 */
+  --padding-semantic-4: var(--spacing-primitive-4);
+  /* Semantic 5 */
+  --padding-semantic-5: var(--spacing-primitive-5);
+  /* Semantic 6 */
+  --padding-semantic-6: var(--spacing-primitive-6);
+  /* Semantic 8 */
+  --padding-semantic-8: var(--spacing-primitive-8);
+  /* Radius Tokens */
+  /* Primitive 0_5 */
+  --radius-primitive-0_5: 2px;
+  /* Primitive 1 */
+  --radius-primitive-1: 4px;
+  /* Primitive 1_5 */
+  --radius-primitive-1_5: 6px;
+  /* Primitive 2 */
+  --radius-primitive-2: 8px;
+  /* Primitive 2_5 */
+  --radius-primitive-2_5: 10px;
+  /* Primitive 3 */
+  --radius-primitive-3: 12px;
+  /* Primitive 3_5 */
+  --radius-primitive-3_5: 14px;
+  /* Primitive 4 */
+  --radius-primitive-4: 16px;
+  /* Primitive 5 */
+  --radius-primitive-5: 20px;
+  /* Primitive 6 */
+  --radius-primitive-6: 24px;
+  /* Primitive Full */
+  --radius-primitive-full: 999px;
+  /* Spacing Tokens */
+  /* Primitive 0_5 */
+  --spacing-primitive-0_5: 2px;
+  /* Primitive 1 */
+  --spacing-primitive-1: 4px;
+  /* Primitive 10 */
+  --spacing-primitive-10: 40px;
+  /* Primitive 12 */
+  --spacing-primitive-12: 48px;
+  /* Primitive 16 */
+  --spacing-primitive-16: 64px;
+  /* Primitive 2 */
+  --spacing-primitive-2: 8px;
+  /* Primitive 20 */
+  --spacing-primitive-20: 80px;
+  /* Primitive 25 */
+  --spacing-primitive-25: 100px;
+  /* Primitive 2_5 */
+  --spacing-primitive-2_5: 10px;
+  /* Primitive 3 */
+  --spacing-primitive-3: 12px;
+  /* Primitive 4 */
+  --spacing-primitive-4: 16px;
+  /* Primitive 5 */
+  --spacing-primitive-5: 20px;
+  /* Primitive 6 */
+  --spacing-primitive-6: 24px;
+  /* Primitive 8 */
+  --spacing-primitive-8: 32px;
+}

@@ -17,5 +17,6 @@ Classroom Figma file은 별도. figma-links.yml의 file_root 갱신 필요.
 ## 빠른 진입
 
 1. 캐노니컬 가이드 한 번 읽기 → [../../campfire/2-design/README.md](../../campfire/2-design/README.md)
-2. 본 폴더의 `example-*` 파일 복사해서 시작
-3. PR 시 PR template + glossary-lint + (PRD라면) prd-gate 통과
+2. **시안 작업 절차** (Figma 디폴트 레이아웃·라이브러리 사용·토큰 binding 규약 등): [design-system-reference/figma-workflow.md](design-system-reference/figma-workflow.md) ⭐
+3. **디자인시스템 토큰 참조** (멋사 DS 274개 토큰): [design-system-reference/README.md](design-system-reference/README.md)
+4. PR 시 PR template + glossary-lint + (PRD라면) prd-gate 통과
