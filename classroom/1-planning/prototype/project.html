@@ -25,12 +25,39 @@
     // ============================================================
     // 헬퍼: 단계·종류 태그
     // ============================================================
+    // 전체 단계(시스템) — 날짜 기반 4단계 (POL-CR-03 §6.0)
     function stageTag(p) {
-      // 단계: 제출 진행 중 vs 종료 (2단계만)
       const today = new Date(MOCK.meta.today);
-      const submitEnd = new Date(p.submitTo);
-      if (today <= submitEnd) return { cls: 'tag-weak-enabled', label: '제출 진행' };
-      return { cls: 'tag-weak-neutral', label: '종료' };
+      const sf = new Date(p.submitFrom), st = new Date(p.submitTo), ft = new Date(p.feedbackTo);
+      if (today < sf) return { key: 'scheduled', label: '예정', cls: 'tag-weak-neutral' };
+      if (today <= st) return { key: 'submitting', label: '제출 진행', cls: 'tag-weak-progressing' };
+      if (today <= ft) return { key: 'feedback', label: '피드백 진행', cls: 'tag-weak-warning' };
+      return { key: 'closed', label: '종료', cls: 'tag-weak-neutral' };
+    }
+    function dDay(dateStr) {
+      const diff = Math.round((new Date(dateStr) - new Date(MOCK.meta.today)) / 86400000);
+      if (diff > 0) return `D-${diff}`;
+      if (diff === 0) return 'D-DAY';
+      return null;
+    }
+    function stageWithDday(p, stage) {
+      const dd = stage.key === 'submitting' ? dDay(p.submitTo) : (stage.key === 'scheduled' ? dDay(p.submitFrom) : null);
+      return stage.label + (dd ? ` ${dd}` : '');
+    }
+    // 내 진행 상태(학생 본인) — 제출축+피드백축 결합 (POL-CR-03 §6.0)
+    function myStateTag(p, mine, stage) {
+      if (mine && mine.feedback) return { key: 'feedback_ready', label: '피드백 도착', cls: 'tag-weak-progressing' };
+      if (mine && mine.draft) return { key: 'draft', label: '임시저장', cls: 'tag-weak-neutral' };
+      if (mine) return { key: 'submitted', label: '제출 완료', cls: 'tag-weak-success' };
+      if (stage.key === 'scheduled') return { key: 'not_open', label: '오픈 예정', cls: 'tag-weak-neutral' };
+      if (stage.key === 'submitting') return { key: 'not_submitted', label: '미제출', cls: 'tag-weak-warning' };
+      return { key: 'missed', label: '미제출 마감', cls: 'tag-weak-neutral' };
+    }
+    // 제출 버튼 상태 — 기간 외엔 비활성
+    function submitBtnInfo(p, mine, stage) {
+      if (stage.key === 'submitting') return { label: mine ? '수정하기' : '제출하기', icon: 'ri-upload-cloud-line', disabled: false };
+      if (stage.key === 'scheduled') return { label: '제출 오픈 예정', icon: 'ri-time-line', disabled: true };
+      return mine ? { label: '제출 완료 · 수정 마감', icon: 'ri-check-line', disabled: true } : { label: '제출 기간 종료', icon: 'ri-lock-line', disabled: true };
     }
     function roundTag(p) {
       // 종류 4개: 기초·심화·파이널·기타
@@ -64,15 +91,15 @@
         const stage = stageTag(p);
         const round = roundTag(p);
         const mine = (MOCK.projectSubmissions[p.id] || []).find((s) => s.studentId === sid);
+        const my = myStateTag(p, mine, stage);
         const card = document.createElement('div');
         card.className = 'project-wide-card';
         card.innerHTML = `
           <div class="title-row">
             <span class="tag tag-small ${round.cls}" data-slot="round"></span>
             <span class="tag tag-small ${stage.cls}" data-slot="stage"></span>
-            ${mine ? '<span class="tag tag-small tag-weak-success">내 제출 완료</span>' : ''}
             <span class="title" data-slot="title"></span>
-            <span class="menu"><i class="ri-icon ri-more-2-line"></i></span>
+            <span class="tag ${my.cls}" data-slot="my" style="margin-left:auto;"></span>
           </div>
           <div class="meta-row">
             <div class="meta-pill"><span class="label">제출 기간</span><span data-slot="sf"></span> ~ <span data-slot="st"></span></div>
@@ -80,7 +107,8 @@
           </div>
         `;
         card.querySelector('[data-slot="round"]').textContent = round.label;
-        card.querySelector('[data-slot="stage"]').textContent = stage.label;
+        card.querySelector('[data-slot="stage"]').textContent = stageWithDday(p, stage);
+        card.querySelector('[data-slot="my"]').textContent = my.label;
         card.querySelector('[data-slot="title"]').textContent = p.title;
         card.querySelector('[data-slot="sf"]').textContent = UI.fmtDate(p.submitFrom, { compact: true });
         card.querySelector('[data-slot="st"]').textContent = UI.fmtDate(p.submitTo, { compact: true });
@@ -102,19 +130,18 @@
       const meIdx = subs.findIndex((s) => s.studentId === sid);
       let mine = null;
       if (meIdx >= 0) { mine = subs.splice(meIdx, 1)[0]; subs.unshift(mine); }
-      const closed = stageTag(p).label === '종료';
+      const stage = stageTag(p);
+      const round = roundTag(p);
+      const my = myStateTag(p, mine, stage);
 
       const fp = UI.openFullPage({ backLabel: '프로젝트' });
 
-      // 헤더
+      // 헤더 — 회차 · 전체 단계(보조). 내 진행 상태/제출 버튼은 문제 탭 우측 CTA로 분리.
       const head = document.createElement('div');
-      const stage = stageTag(p);
-      const round = roundTag(p);
       head.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
           <span class="tag tag-small ${round.cls}" data-slot="round"></span>
           <span class="tag tag-small ${stage.cls}" data-slot="stage"></span>
-          ${mine ? '<span class="tag tag-small tag-weak-success">내 제출 완료</span>' : '<span class="tag tag-small tag-weak-neutral">미제출</span>'}
         </div>
         <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="title"></h1>
         <div class="meta-row" style="margin-bottom: 24px;">
@@ -123,7 +150,7 @@
         </div>
       `;
       head.querySelector('[data-slot="round"]').textContent = round.label;
-      head.querySelector('[data-slot="stage"]').textContent = stage.label;
+      head.querySelector('[data-slot="stage"]').textContent = stageWithDday(p, stage);
       head.querySelector('[data-slot="title"]').textContent = p.title;
       head.querySelector('[data-slot="sf"]').textContent = UI.fmtDate(p.submitFrom, { compact: true });
       head.querySelector('[data-slot="st"]').textContent = UI.fmtDate(p.submitTo, { compact: true });
@@ -131,10 +158,9 @@
       head.querySelector('[data-slot="ft"]').textContent = UI.fmtDate(p.feedbackTo, { compact: true });
       fp.body.appendChild(head);
 
-      // 4탭
+      // 3탭 (제출하기는 탭이 아니라 문제 탭 좌측 버튼으로 이동 — POL-CR-03 §6.2)
       const tabs = [
         { key: 'problem', label: '문제', icon: 'ri-file-list-3-line' },
-        { key: 'submit', label: mine ? '프로젝트 수정하기' : '프로젝트 제출하기', icon: 'ri-upload-cloud-line' },
         { key: 'board', label: '제출 프로젝트 리스트', icon: 'ri-group-line', locked: !mine },
         { key: 'feedback', label: '받은 피드백', icon: 'ri-chat-3-line' },
       ];
@@ -161,34 +187,65 @@
 
       function renderPane(key) {
         pane.innerHTML = '';
-        if (key === 'problem') renderProblemPane(pane, p);
-        else if (key === 'submit') renderSubmitPane(pane, p, sid, mine, closed);
+        if (key === 'problem') renderProblemPane(pane, p, {
+          my, stage, btn: submitBtnInfo(p, mine, stage),
+          onSubmit: () => openSubmitForm(p, sid, mine, stage),
+        });
         else if (key === 'board') renderBoardPane(pane, p, sid, mine, subs);
         else renderFeedbackPane(pane, p, mine);
       }
       renderPane('problem');
     }
 
-    function renderProblemPane(pane, p) {
-      const wrap = document.createElement('div');
-      wrap.className = 'card';
-      wrap.style.maxWidth = '880px';
+    // 문제 탭 — cta가 있으면(학생) 좌측 제출 CTA + 우측 설명 2열, 없으면(매니저) 설명만
+    function renderProblemPane(pane, p, cta) {
+      if (!cta) {
+        const wrap = document.createElement('div');
+        wrap.className = 'card';
+        wrap.style.maxWidth = '880px';
+        const md = document.createElement('div');
+        md.className = 'md-view';
+        md.innerHTML = UI.md(p.description);
+        wrap.appendChild(md);
+        pane.appendChild(wrap);
+        return;
+      }
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:grid; grid-template-columns: minmax(0,1fr) 300px; gap:24px; align-items:start;';
+      // 우측에 둘 제출 CTA (DOM 순서상 먼저 만들고, 그리드엔 설명 다음에 append)
+      const left = document.createElement('aside');
+      left.className = 'card';
+      left.style.cssText = 'position:sticky; top:16px;';
+      const dd = stageWithDday(p, cta.stage);
+      left.innerHTML = `
+        <div class="card-meta" style="margin-bottom:8px;">내 진행 상태</div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          <span class="tag ${cta.my.cls}" data-slot="my"></span>
+          <span class="tag tag-small ${cta.stage.cls}" data-slot="stg"></span>
+        </div>
+        <div id="cta-btn"></div>
+      `;
+      left.querySelector('[data-slot="my"]').textContent = cta.my.label;
+      left.querySelector('[data-slot="stg"]').textContent = dd;
+      const b = UI.button({ label: cta.btn.label, icon: cta.btn.icon, type: 'solid', color: 'primary', size: 'medium', disabled: cta.btn.disabled, onClick: cta.onSubmit });
+      b.style.width = '100%';
+      left.querySelector('#cta-btn').appendChild(b);
+      // 좌: 문제 설명 (먼저 배치)
+      const right = document.createElement('div');
+      right.className = 'card';
       const md = document.createElement('div');
       md.className = 'md-view';
       md.innerHTML = UI.md(p.description);
-      wrap.appendChild(md);
-      pane.appendChild(wrap);
+      right.appendChild(md);
+      grid.appendChild(right);  // 좌측 = 설명
+      grid.appendChild(left);   // 우측 = 내 상태 + 제출 버튼
+      pane.appendChild(grid);
     }
 
-    function renderSubmitPane(pane, p, sid, prev, closed) {
-      if (closed && !prev) {
-        pane.appendChild(UI.emptyCard({
-          icon: 'ri-time-line',
-          title: '제출 기간이 종료되었어요',
-          body: '본 회차는 더 이상 제출할 수 없어요.',
-        }));
-        return;
-      }
+    // 제출/수정 폼 — fullpage (제출 진행 기간에만 진입)
+    function openSubmitForm(p, sid, prev, stage) {
+      if (!stage || stage.key !== 'submitting') { UI.toast('지금은 제출 진행 기간이 아니에요', 'danger'); return; }
+      const fp = UI.openFullPage({ backLabel: p.title });
       const placeholder = '# 문제 정의\n\n\n# 핵심 기능\n\n\n# Tech Stack\n\n\n# 주요 트러블슈팅\n\n\n# 팀 소개\n';
 
       const card = document.createElement('div');
@@ -224,9 +281,10 @@
       card.querySelector('#actions').appendChild(UI.button({ label: prev ? '수정 저장' : '제출하기', type: 'solid', color: 'primary', icon: 'ri-upload-cloud-line', onClick: () => {
         const vid = card.querySelector('#vid').value;
         if (vid && !/(youtu\.be|youtube\.com|vimeo\.com)/.test(vid)) { card.querySelector('#vid-err').classList.remove('hide'); return; }
+        UI.closeFullPage();
         UI.toast(`${prev ? '수정 저장' : '제출 완료'} — 클래스 게시판에 공개되었어요`, 'success');
       } }));
-      pane.appendChild(card);
+      fp.body.appendChild(card);
     }
 
     // ===== 수업 제출본 — 본인 맨 앞 + 클릭시 외부 공유 =====
@@ -240,10 +298,7 @@
           <p>본인 제출이 완료되면 같은 수업의 다른 학생 제출본을 열람할 수 있어요.<br/>먼저 본인 프로젝트를 제출해보세요.</p>
           <div id="cta"></div>
         `;
-        lock.querySelector('#cta').appendChild(UI.button({ label: '제출하러 가기', icon: 'ri-upload-cloud-line', type: 'solid', color: 'primary', onClick: () => {
-          const tabs = pane.parentElement.querySelectorAll('.tab');
-          if (tabs[1]) tabs[1].click();
-        } }));
+        lock.querySelector('#cta').appendChild(UI.button({ label: '제출하러 가기', icon: 'ri-upload-cloud-line', type: 'solid', color: 'primary', onClick: () => openSubmitForm(p, sid, null, stageTag(p)) }));
         pane.appendChild(lock);
         return;
       }
@@ -318,28 +373,39 @@
     }
 
     function openShareDialog(s) {
-      // 외부 공유 = 외부 발행 동작 (제출 폼 토글 제거됨 — 공유 시점에 공개 링크 생성)
+      // 외부 공유 토글 ON/OFF + 링크 복사 (SNS 연동 없음)
       const shareUrl = `https://likelion-classroom.app/share/${s.studentId}-${s.title.length}`;
       const node = UI.openModal(`
         <h3 class="card-title">외부 공유하기</h3>
-        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">기본 비공개예요. 아래 링크를 복사하면 <strong>외부 공개 링크가 생성</strong>되어 누구나 열람할 수 있어요.</p>
-        <div style="background: var(--lk-color-bg-normal); padding: 14px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 13px; font-family: ui-monospace, monospace; flex: 1; overflow: hidden; text-overflow: ellipsis;" data-slot="url"></span>
-          <button class="btn btn-small btn-solid-primary" id="copy">복사</button>
+        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">외부 공유를 켜면 공개 링크가 생성돼요. 끄면 링크가 비활성화되어 외부에서 볼 수 없어요.</p>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--lk-color-bg-normal); border-radius:10px;">
+          <div>
+            <div style="font-size:14px; font-weight:600; color:var(--lk-color-fg-strong);">외부 공유</div>
+            <div class="text-mute" style="font-size:12px; margin-top:2px;" data-slot="state"></div>
+          </div>
+          <button id="sw" role="switch" aria-label="외부 공유 토글" style="position:relative; width:46px; height:26px; border-radius:9999px; border:none; cursor:pointer; transition:background .15s; flex:0 0 auto;"><span id="knob" style="position:absolute; top:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:left .15s;"></span></button>
         </div>
-        <div class="row" style="gap: 8px; margin-top: 14px; flex-wrap: wrap;">
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-twitter-x-line"></i> X</button>
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-linkedin-line"></i> LinkedIn</button>
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-facebook-line"></i> Facebook</button>
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-kakao-talk-line"></i> 카카오톡</button>
+        <div id="link-row" style="margin-top:14px; background:var(--lk-color-bg-normal); padding:14px 16px; border-radius:10px; display:flex; align-items:center; gap:12px;">
+          <span style="font-size:13px; font-family:ui-monospace,monospace; flex:1; overflow:hidden; text-overflow:ellipsis;" data-slot="url"></span>
+          <button class="btn btn-small btn-solid-primary" id="copy">링크 복사</button>
         </div>
-        <div class="row row-end" style="margin-top: 16px;">
-          <button class="btn btn-outline-neutral" id="close">닫기</button>
-        </div>
+        <div class="row row-end" style="margin-top:16px;"><button class="btn btn-outline-neutral" id="close">닫기</button></div>
       `);
       node.querySelector('[data-slot="url"]').textContent = shareUrl;
+      const sw = node.querySelector('#sw'), knob = node.querySelector('#knob'), linkRow = node.querySelector('#link-row'), copy = node.querySelector('#copy'), state = node.querySelector('[data-slot="state"]');
+      function render() {
+        const on = !!s.published;
+        sw.style.background = on ? 'var(--lk-color-bg-primary)' : 'var(--lk-color-border-normal)';
+        knob.style.left = on ? '23px' : '3px';
+        state.textContent = on ? '공개 중 — 링크로 누구나 열람 가능' : '비공개 — 링크 비활성화';
+        linkRow.style.opacity = on ? '1' : '0.45';
+        copy.disabled = !on;
+        copy.style.cursor = on ? 'pointer' : 'not-allowed';
+      }
+      render();
+      sw.addEventListener('click', () => { s.published = !s.published; render(); UI.toast(s.published ? '외부 공유를 켰어요 — 링크가 생성됐어요' : '외부 공유를 껐어요', 'success'); });
+      copy.addEventListener('click', () => { if (!s.published) return; UI.toast('링크를 복사했어요', 'success'); });
       node.querySelector('#close').addEventListener('click', () => node.remove());
-      node.querySelector('#copy').addEventListener('click', () => { s.published = true; UI.toast('외부 공개 링크가 생성되어 복사되었어요', 'success'); });
     }
 
     function renderFeedbackPane(pane, p, mine) {
@@ -378,95 +444,103 @@
     // 매니저뷰
     // ============================================================
     function renderManager() {
+      // 단계 정렬 우선순위 — 진행중(제출>피드백)을 위로, 예정·종료는 아래
+      const STAGE_ORDER = { submitting: 0, feedback: 1, scheduled: 2, closed: 3 };
       const list = document.createElement('div');
       list.className = 'project-wide-list';
-      MOCK.projects.forEach((p) => {
+      const sorted = MOCK.projects.slice().sort((a, b) => STAGE_ORDER[stageTag(a).key] - STAGE_ORDER[stageTag(b).key]);
+      sorted.forEach((p) => {
         const subs = MOCK.projectSubmissions[p.id] || [];
         const rate = Math.round(subs.length / MOCK.students.length * 100);
         const stage = stageTag(p);
         const round = roundTag(p);
         const card = document.createElement('div');
         card.className = 'project-wide-card';
+        card.style.cssText = 'display:flex; gap:24px; align-items:stretch; justify-content:space-between;';
         card.innerHTML = `
-          <div class="title-row">
-            <span class="tag tag-small ${round.cls}" data-slot="round"></span>
-            <span class="tag tag-small ${stage.cls}" data-slot="stage"></span>
-            <span class="title" data-slot="title"></span>
-            <span class="menu"><i class="ri-icon ri-more-2-line"></i></span>
+          <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <span class="title" data-slot="title" style="font-size:17px; font-weight:700; color:var(--lk-color-fg-strong);"></span>
+              <span class="tag tag-small ${round.cls}" data-slot="round"></span>
+            </div>
+            <div><span class="tag ${stage.cls}" data-slot="stage"></span></div>
+            <div class="meta-row" style="margin:0;">
+              <div class="meta-pill"><span class="label">제출 기간</span><span data-slot="sf"></span> ~ <span data-slot="st"></span></div>
+              <div class="meta-pill"><span class="label">피드백 기간</span><span data-slot="ff"></span> ~ <span data-slot="ft"></span></div>
+            </div>
           </div>
-          <div class="meta-row">
-            <div class="meta-pill"><span class="label">제출 기간</span><span data-slot="sf"></span> ~ <span data-slot="st"></span></div>
-            <div class="meta-pill"><span class="label">피드백 기간</span><span data-slot="ff"></span> ~ <span data-slot="ft"></span></div>
-            <div class="meta-pill"><span class="label">제출 훈련생</span><span data-slot="sc"></span></div>
-            <div class="meta-pill"><span class="label">제출 비율</span><span data-slot="rate"></span></div>
+          <div style="flex:0 0 200px; border-left:1px solid var(--lk-color-border-weak); padding-left:24px; display:flex; flex-direction:column; justify-content:center; gap:8px;">
+            <div style="display:flex; align-items:baseline; gap:6px;">
+              <span style="font-size:30px; font-weight:800; color:var(--lk-color-fg-primary); line-height:1;" data-slot="rate"></span>
+              <span style="font-size:13px; color:var(--lk-color-fg-alternative);">제출률</span>
+            </div>
+            <div style="height:8px; border-radius:9999px; background:var(--lk-color-bg-normal); overflow:hidden;"><div data-slot="bar" style="height:100%; background:var(--lk-color-bg-primary); border-radius:9999px;"></div></div>
+            <div style="font-size:13px; color:var(--lk-color-fg-neutral);"><i class="ri-icon ri-team-line"></i> 제출 훈련생 <strong data-slot="sc"></strong></div>
           </div>
         `;
         card.querySelector('[data-slot="round"]').textContent = round.label;
-        card.querySelector('[data-slot="stage"]').textContent = stage.label;
+        card.querySelector('[data-slot="stage"]').textContent = stageWithDday(p, stage);
         card.querySelector('[data-slot="title"]').textContent = p.title;
         card.querySelector('[data-slot="sf"]').textContent = UI.fmtDate(p.submitFrom, { compact: true });
         card.querySelector('[data-slot="st"]').textContent = UI.fmtDate(p.submitTo, { compact: true });
         card.querySelector('[data-slot="ff"]').textContent = UI.fmtDate(p.feedbackFrom, { compact: true });
         card.querySelector('[data-slot="ft"]').textContent = UI.fmtDate(p.feedbackTo, { compact: true });
-        card.querySelector('[data-slot="sc"]').textContent = `${subs.length}명 / 전체 ${MOCK.students.length}명`;
         card.querySelector('[data-slot="rate"]').textContent = `${rate}%`;
+        card.querySelector('[data-slot="bar"]').style.width = `${rate}%`;
+        card.querySelector('[data-slot="sc"]').textContent = `${subs.length} / ${MOCK.students.length}명`;
         card.addEventListener('click', () => openManagerDetail(p, subs));
         list.appendChild(card);
       });
       root.appendChild(list);
     }
 
-    // ===== 매니저 상세 — 3탭 (문제 / 제출현황 / 피드백) =====
+    // ===== 매니저 상세 — 2탭 (문제 / 제출현황). 피드백은 제출현황 내부에서 진행 =====
     function openManagerDetail(p, subs) {
       const fp = UI.openFullPage({ backLabel: '프로젝트' });
-      fp.actions.appendChild(UI.button({ label: '회차 수정', icon: 'ri-edit-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('회차 수정 폼 (데모 한계)', 'success') }));
+      fp.actions.appendChild(UI.button({ label: '프로젝트 정보 수정', icon: 'ri-edit-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openProjectEditModal(p) }));
 
       const stage = stageTag(p);
       const round = roundTag(p);
-      const inFB = isInFeedbackPeriod(p);
+      const rate = Math.round(subs.length / MOCK.students.length * 100);
 
+      // 헤더 — 리스트와 동일한 우선순위: 제목+종류 → 단계 → 기간 → 제출현황
       fp.body.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <h1 style="font-size: 26px; font-weight: 700; margin: 0; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="title"></h1>
           <span class="tag tag-small ${round.cls}" data-slot="round"></span>
-          <span class="tag tag-small ${stage.cls}" data-slot="stage"></span>
+          <span class="tag ${stage.cls}" data-slot="stage"></span>
         </div>
-        <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="title"></h1>
-        <div class="meta-row" style="margin-bottom: 32px;">
-          <div class="meta-pill"><span class="label">제출 기간</span><span data-slot="sf"></span> ~ <span data-slot="st"></span></div>
-          <div class="meta-pill"><span class="label">피드백 기간</span><span data-slot="ff"></span> ~ <span data-slot="ft"></span></div>
-          <div class="meta-pill"><span class="label">제출 훈련생</span><span data-slot="sc"></span></div>
-          <div class="meta-pill"><span class="label">제출 비율</span><span data-slot="rate"></span></div>
+        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:28px; padding:14px 18px; background:var(--lk-color-bg-normal); border-radius:12px;">
+          <div style="font-size:13px; color:var(--lk-color-fg-neutral);"><span style="color:var(--lk-color-fg-strong); font-weight:600;">제출 기간</span> <span data-slot="sp"></span></div>
+          <span style="color:var(--lk-color-border-normal);">|</span>
+          <div style="font-size:13px; color:var(--lk-color-fg-neutral);"><span style="color:var(--lk-color-fg-strong); font-weight:600;">피드백 기간</span> <span data-slot="fp"></span></div>
+          <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:22px; font-weight:800; color:var(--lk-color-fg-primary);" data-slot="rate"></span>
+            <span style="font-size:13px; color:var(--lk-color-fg-neutral);">제출 <strong data-slot="sc"></strong></span>
+          </div>
         </div>
 
         <div class="tabs" style="margin-bottom: 24px;">
           <button class="tab is-active" data-mtab="problem"><i class="ri-icon ri-file-list-3-line"></i> 문제</button>
           <button class="tab" data-mtab="board"><i class="ri-icon ri-group-line"></i> 제출현황 (${subs.length})</button>
-          <button class="tab" data-mtab="feedback" ${!inFB ? 'data-locked="true"' : ''}>${!inFB ? '<i class="ri-icon ri-lock-line"></i>' : '<i class="ri-icon ri-chat-3-line"></i>'} 피드백 ${inFB ? '(활성)' : '(피드백 기간만)'}</button>
         </div>
         <div id="mpane"></div>
       `;
       fp.body.querySelector('[data-slot="round"]').textContent = round.label;
-      fp.body.querySelector('[data-slot="stage"]').textContent = stage.label;
+      fp.body.querySelector('[data-slot="stage"]').textContent = stageWithDday(p, stage);
       fp.body.querySelector('[data-slot="title"]').textContent = p.title;
-      fp.body.querySelector('[data-slot="sf"]').textContent = UI.fmtDate(p.submitFrom, { compact: true });
-      fp.body.querySelector('[data-slot="st"]').textContent = UI.fmtDate(p.submitTo, { compact: true });
-      fp.body.querySelector('[data-slot="ff"]').textContent = UI.fmtDate(p.feedbackFrom, { compact: true });
-      fp.body.querySelector('[data-slot="ft"]').textContent = UI.fmtDate(p.feedbackTo, { compact: true });
-      fp.body.querySelector('[data-slot="sc"]').textContent = `${subs.length}명 / 전체 ${MOCK.students.length}명`;
-      fp.body.querySelector('[data-slot="rate"]').textContent = `${Math.round(subs.length / MOCK.students.length * 100)}%`;
+      fp.body.querySelector('[data-slot="sp"]').textContent = `${UI.fmtDate(p.submitFrom, { compact: true })} ~ ${UI.fmtDate(p.submitTo, { compact: true })}`;
+      fp.body.querySelector('[data-slot="fp"]').textContent = `${UI.fmtDate(p.feedbackFrom, { compact: true })} ~ ${UI.fmtDate(p.feedbackTo, { compact: true })}`;
+      fp.body.querySelector('[data-slot="sc"]').textContent = `${subs.length} / ${MOCK.students.length}명`;
+      fp.body.querySelector('[data-slot="rate"]').textContent = `${rate}%`;
 
       const mpane = fp.body.querySelector('#mpane');
       function rmgr(k) {
         mpane.innerHTML = '';
         if (k === 'problem') renderProblemPane(mpane, p);
-        else if (k === 'board') renderMgrBoardPane(mpane, p, subs);
-        else renderMgrFeedbackPane(mpane, p, subs, inFB);
+        else renderMgrBoardPane(mpane, p, subs);
       }
       fp.body.querySelectorAll('[data-mtab]').forEach((b) => b.addEventListener('click', () => {
-        if (b.dataset.mtab === 'feedback' && !inFB) {
-          UI.toast(`피드백 기간(${UI.fmtDate(p.feedbackFrom, { compact: true })} ~ ${UI.fmtDate(p.feedbackTo, { compact: true })})에만 활성화됩니다.`, 'danger');
-          return;
-        }
         fp.body.querySelectorAll('[data-mtab]').forEach((x) => x.classList.remove('is-active'));
         b.classList.add('is-active');
         rmgr(b.dataset.mtab);
@@ -474,112 +548,143 @@
       rmgr('problem');
     }
 
+    // 제출현황 — 필터(전체/피드백 전/피드백 완료) + 썸네일 위 피드백 태그. 카드 클릭 시 제출본+피드백 진행
     function renderMgrBoardPane(pane, p, subs) {
-      const board = document.createElement('div');
-      board.className = 'board-grid';
-      subs.forEach((s) => {
-        const c = document.createElement('div');
-        c.className = 'board-card';
-        c.innerHTML = `
-          <img class="thumb" loading="lazy" alt="" />
-          <div class="body">
-            <div class="row" style="gap: 4px;">
-              ${s.excellent ? '<span class="tag tag-small tag-weak-enabled">우수</span>' : ''}
-              ${s.published ? '<span class="tag tag-small tag-weak-success">외부 발행</span>' : ''}
-            </div>
-            <div class="title" data-slot="t"></div>
-            <div class="meta" data-slot="by"></div>
-          </div>
-        `;
-        c.querySelector('img').src = s.mainImage;
-        c.querySelector('[data-slot="t"]').textContent = s.title;
-        c.querySelector('[data-slot="by"]').textContent = `by ${s.studentName}`;
-        c.addEventListener('click', () => openSubmissionView(s, false));
-        board.appendChild(c);
-      });
-      pane.appendChild(board);
-    }
-
-    function renderMgrFeedbackPane(pane, p, subs, inFB) {
-      if (!inFB) {
-        pane.appendChild(UI.emptyCard({
-          icon: 'ri-lock-line',
-          title: '피드백 기간이 아니에요',
-          body: `${UI.fmtDate(p.feedbackFrom)} ~ ${UI.fmtDate(p.feedbackTo)} 동안 활성화돼요.`,
-        }));
-        return;
-      }
+      let filter = 'all';
+      const need = subs.filter((s) => !s.feedback).length;
+      const done = subs.length - need;
       const head = document.createElement('div');
       head.className = 'section-head';
-      head.style.margin = '0 0 16px';
-      const needCount = subs.filter((s) => !s.feedback).length;
-      const doneCount = subs.length - needCount;
-      head.innerHTML = `<h3>피드백 대상</h3><span class="hint">피드백 필요 ${needCount}건 · 완료 ${doneCount}건</span>`;
+      head.style.margin = '0 0 14px';
+      head.innerHTML = `<h3>제출현황</h3><span class="hint">총 ${subs.length}건 · 피드백 완료 ${done} · 피드백 전 ${need}</span>`;
       pane.appendChild(head);
+
+      const filterRow = document.createElement('div');
+      filterRow.className = 'tabs-round';
+      filterRow.style.marginBottom = '16px';
+      [['all', '전체'], ['need', '피드백 전'], ['done', '피드백 완료']].forEach(([k, label], i) => {
+        const b = document.createElement('button');
+        b.className = 'tab' + (i === 0 ? ' is-active' : '');
+        b.textContent = label;
+        b.addEventListener('click', () => { filter = k; filterRow.querySelectorAll('.tab').forEach((x) => x.classList.remove('is-active')); b.classList.add('is-active'); draw(); });
+        filterRow.appendChild(b);
+      });
+      pane.appendChild(filterRow);
 
       const board = document.createElement('div');
       board.className = 'board-grid';
-      // 피드백 필요 먼저, 그 다음 완료
-      const sorted = subs.slice().sort((a, b) => (a.feedback ? 1 : 0) - (b.feedback ? 1 : 0));
-      sorted.forEach((s) => {
-        const c = document.createElement('div');
-        c.className = 'board-card';
-        c.innerHTML = `
-          <img class="thumb" loading="lazy" alt="" />
-          <div class="body">
-            <div class="row" style="gap: 4px;">
-              ${s.feedback ? '<span class="tag tag-small tag-weak-success">피드백 완료</span>' : '<span class="tag tag-small tag-weak-warning">피드백 필요</span>'}
-            </div>
-            <div class="title" data-slot="t"></div>
-            <div class="meta" data-slot="by"></div>
-          </div>
-        `;
-        c.querySelector('img').src = s.mainImage;
-        c.querySelector('[data-slot="t"]').textContent = s.title;
-        c.querySelector('[data-slot="by"]').textContent = `by ${s.studentName}`;
-        c.addEventListener('click', () => openFeedbackEditor(p, s));
-        board.appendChild(c);
-      });
       pane.appendChild(board);
+
+      function draw() {
+        board.innerHTML = '';
+        const items = subs.filter((s) => filter === 'all' ? true : filter === 'done' ? !!s.feedback : !s.feedback);
+        if (items.length === 0) {
+          board.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '해당하는 제출본이 없어요', body: '다른 필터를 선택해보세요.' }));
+          return;
+        }
+        items.forEach((s) => {
+          const c = document.createElement('div');
+          c.className = 'board-card';
+          c.style.position = 'relative';
+          c.innerHTML = `
+            <span class="tag tag-small ${s.feedback ? 'tag-weak-success' : 'tag-weak-warning'}" style="position:absolute; top:8px; left:8px; z-index:1;">${s.feedback ? '피드백 완료' : '피드백 전'}</span>
+            <img class="thumb" loading="lazy" alt="" />
+            <div class="body">
+              <div class="row" style="gap: 4px;">
+                ${s.excellent ? '<span class="tag tag-small tag-weak-enabled">우수</span>' : ''}
+                ${s.hidden ? '<span class="tag tag-small tag-weak-error">비공개</span>' : (s.published ? '<span class="tag tag-small tag-weak-success">외부 발행</span>' : '')}
+              </div>
+              <div class="title" data-slot="t"></div>
+              <div class="meta" data-slot="by"></div>
+            </div>
+          `;
+          c.querySelector('img').src = s.mainImage;
+          c.querySelector('[data-slot="t"]').textContent = s.title;
+          c.querySelector('[data-slot="by"]').textContent = `by ${s.studentName}`;
+          c.addEventListener('click', () => openMgrSubmission(p, s, draw));
+          board.appendChild(c);
+        });
+      }
+      draw();
     }
 
-    function openFeedbackEditor(p, s) {
-      const fp = UI.openFullPage({ backLabel: '피드백' });
-      fp.actions.appendChild(UI.button({ label: s.feedback ? '피드백 수정 저장' : '피드백 등록', icon: 'ri-send-plane-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => {
-        const val = fp.body.querySelector('#fb-text').value;
-        s.feedback = val;
-        UI.closeFullPage();
-        UI.toast(`${s.studentName}에게 피드백이 ${s.feedback ? '저장' : '등록'}되었어요`, 'success');
-      } }));
+    // 매니저 제출본 상세 — 내용 + 하단 피드백 등록/수정 + 우수/비공개 토글
+    function openMgrSubmission(p, s, onChange) {
+      const fp = UI.openFullPage({ backLabel: p.title });
+      fp.actions.appendChild(UI.button({ label: s.excellent ? '우수 해제' : '우수 마크', icon: 'ri-star-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => { s.excellent = !s.excellent; UI.closeFullPage(); UI.toast(s.excellent ? '우수로 표시했어요' : '우수 표시를 해제했어요', 'success'); if (onChange) onChange(); } }));
+      fp.actions.appendChild(UI.button({ label: s.hidden ? '공개 전환' : '비공개 전환', icon: 'ri-eye-off-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => { s.hidden = !s.hidden; UI.closeFullPage(); UI.toast(s.hidden ? '비공개로 전환했어요' : '다시 공개했어요', 'success'); if (onChange) onChange(); } }));
 
       fp.body.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-          <span class="tag tag-small ${s.feedback ? 'tag-weak-success' : 'tag-weak-warning'}">${s.feedback ? '피드백 완료' : '피드백 필요'}</span>
-          <span class="card-meta">by ${s.studentName} · ${UI.fmtDate(s.submittedAt, { compact: true })}</span>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+          <span class="tag tag-small ${s.feedback ? 'tag-weak-success' : 'tag-weak-warning'}" data-slot="fbtag"></span>
+          ${s.excellent ? '<span class="tag tag-small tag-weak-enabled">우수</span>' : ''}
+          ${s.hidden ? '<span class="tag tag-small tag-weak-error">비공개</span>' : ''}
+          <span class="card-meta" data-slot="by"></span>
         </div>
-        <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 20px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start;">
-          <!-- 좌: 제출본 미리보기 -->
-          <div class="card" style="max-height: 700px; overflow-y: auto;">
-            <div class="card-meta" style="margin-bottom: 12px;">제출본 미리보기</div>
-            <img alt="" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 10px; margin-bottom: 16px;" data-slot="img"/>
-            <p style="font-size: 13px; color: var(--lk-color-fg-neutral); margin: 0 0 12px;" data-slot="ol"></p>
-            <div class="md-view" data-slot="body" style="font-size: 13px;"></div>
+        <h1 style="font-size:26px; font-weight:700; margin:0 0 8px; color:var(--lk-color-fg-strong); letter-spacing:-0.02em;" data-slot="t"></h1>
+        <p class="text-mute" style="font-size:14px; margin:0 0 24px;" data-slot="ol"></p>
+        <img alt="" style="width:100%; max-width:720px; aspect-ratio:16/9; object-fit:cover; border-radius:12px; margin-bottom:24px;" data-slot="img"/>
+        <div class="md-view" data-slot="body" style="max-width:880px;"></div>
+        <div class="divider" style="max-width:880px;"></div>
+        <div class="row" style="gap:10px;">
+          <a class="btn btn-outline-neutral btn-small" data-slot="gh" target="_blank">GitHub 보기</a>
+          <a class="btn btn-outline-neutral btn-small" data-slot="vid" target="_blank">시연 영상 보기</a>
+        </div>
+        <div class="card" style="max-width:880px; margin-top:24px;">
+          <div class="card-head">
+            <div><h3 class="card-title">피드백</h3><p class="text-mute" style="font-size:12px; margin-top:4px;">학생 본인에게만 노출 · 등록 후 수정 가능</p></div>
           </div>
-          <!-- 우: 피드백 작성 -->
-          <div class="card">
-            <h3 class="card-title">피드백 작성</h3>
-            <p class="text-mute" style="font-size: 12px; margin: 8px 0 16px;">본인에게만 노출됩니다. 등록 후 수정도 가능해요.</p>
-            <div class="field"><label>피드백 내용</label><textarea id="fb-text" placeholder="피드백을 작성하세요" style="min-height: 320px;"></textarea></div>
-          </div>
+          <div class="field" style="margin-top:12px;"><label>피드백 내용</label><textarea id="fb-text" placeholder="피드백을 작성하세요" style="min-height:200px;"></textarea></div>
+          <div class="row row-end" id="fb-actions"></div>
         </div>
       `;
+      fp.body.querySelector('[data-slot="fbtag"]').textContent = s.feedback ? '피드백 완료' : '피드백 전';
+      fp.body.querySelector('[data-slot="by"]').textContent = `by ${s.studentName} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
       fp.body.querySelector('[data-slot="t"]').textContent = s.title;
-      fp.body.querySelector('[data-slot="img"]').src = s.mainImage;
       fp.body.querySelector('[data-slot="ol"]').textContent = s.oneLiner;
+      fp.body.querySelector('[data-slot="img"]').src = s.mainImage;
       fp.body.querySelector('[data-slot="body"]').innerHTML = UI.md(s.description);
+      fp.body.querySelector('[data-slot="gh"]').href = (s.urls && s.urls[0]) || '#';
+      fp.body.querySelector('[data-slot="vid"]').href = s.videoUrl || '#';
       fp.body.querySelector('#fb-text').value = s.feedback || '';
+      fp.body.querySelector('#fb-actions').appendChild(UI.button({ label: s.feedback ? '피드백 수정 저장' : '피드백 등록', icon: 'ri-send-plane-line', type: 'solid', color: 'primary', onClick: () => {
+        const val = fp.body.querySelector('#fb-text').value.trim();
+        if (!val) { UI.toast('피드백 내용을 입력해주세요', 'danger'); return; }
+        const wasEmpty = !s.feedback; s.feedback = val;
+        UI.closeFullPage();
+        UI.toast(`${s.studentName}에게 피드백을 ${wasEmpty ? '등록' : '저장'}했어요`, 'success');
+        if (onChange) onChange();
+      } }));
+    }
+
+    // 프로젝트 정보 수정 모달 (등록 시 입력 항목 전체 수정)
+    function openProjectEditModal(p) {
+      const node = UI.openModal(`
+        <h3 class="card-title" style="margin-bottom:16px;">프로젝트 정보 수정</h3>
+        <div class="field"><label>회차 종류</label><div id="round-sel"></div></div>
+        <div class="field"><label>회차명</label><input type="text" id="e-title" /></div>
+        <div class="field"><label>한 줄 소개</label><input type="text" id="e-ol" /></div>
+        <div class="field"><label>문제 설명 · 마크다운</label><textarea id="e-desc" style="min-height:160px; font-family:ui-monospace,monospace;"></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>제출 시작</label><input type="date" id="e-sf" /></div>
+          <div class="field"><label>제출 마감</label><input type="date" id="e-st" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>피드백 시작</label><input type="date" id="e-ff" /></div>
+          <div class="field"><label>피드백 마감</label><input type="date" id="e-ft" /></div>
+        </div>
+        <div class="row row-end" style="gap:8px; margin-top:8px;" id="e-actions"></div>
+      `);
+      node.querySelector('#round-sel').appendChild(UI.select({ options: [{ value: '기초', label: '기초' }, { value: '심화', label: '심화' }, { value: '파이널', label: '파이널' }, { value: '기타', label: '기타' }], value: p.round }));
+      node.querySelector('#e-title').value = p.title;
+      node.querySelector('#e-ol').value = p.oneLiner || '';
+      node.querySelector('#e-desc').value = p.description || '';
+      node.querySelector('#e-sf').value = p.submitFrom;
+      node.querySelector('#e-st').value = p.submitTo;
+      node.querySelector('#e-ff').value = p.feedbackFrom;
+      node.querySelector('#e-ft').value = p.feedbackTo;
+      node.querySelector('#e-actions').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+      node.querySelector('#e-actions').appendChild(UI.button({ label: '저장', icon: 'ri-check-line', type: 'solid', color: 'primary', onClick: () => { node.remove(); UI.toast('프로젝트 정보가 수정되었어요', 'success'); } }));
     }
 
     // 매니저 회차 등록
