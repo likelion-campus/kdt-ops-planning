@@ -124,7 +124,7 @@
         <div class="card-head">
           <div>
             <h3 class="card-title">활동 기록</h3>
-            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">최근 6개월 · 주 7일(월~일) × 26주차 · 주말은 비학습일(점선)</p>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">최근 6개월 · 주 7일(월~일) × 26주차 · 주말은 비학습일(점선) · 오늘은 진한 테두리</p>
           </div>
           <div id="heat-legend"></div>
         </div>
@@ -162,8 +162,9 @@
           if (heat.pattern) cell.setAttribute('data-pattern', heat.pattern);
           const excellent = status === 'written' && isExcellent(sid, d);
           if (excellent) cell.setAttribute('data-excellent', 'true');
+          if (d === MOCK.meta.today) cell.setAttribute('data-today', 'true');
           const lbl = excellent ? '★ 우수' : status === 'written' ? '작성' : status === 'temp' ? '임시' : status === 'weekend' ? '주말(비학습일)' : status === 'future' ? '미래' : '미작성';
-          cell.title = `${d} · ${lbl}`;
+          cell.title = `${d} · ${lbl}${d === MOCK.meta.today ? ' · 오늘' : ''}`;
           if (status === 'written' || status === 'temp') {
             cell.style.cursor = 'pointer';
             cell.addEventListener('click', () => openTilDetail(d, getTilForDate(sid, d)));
@@ -255,9 +256,9 @@
       if (!t) { openTraineeEdit(date, null); return; }
       const fp = UI.openFullPage({ backLabel: 'TIL' });
       const isMgr = view === 'manager';
-      // 발행 후 외부 공유 — 학생 본인만 (비공개 기본값 · 명시적 외부 복사 시에만 공개 URL 생성)
+      // 학생 본인 — 마크다운 복사 / PDF 다운로드 / 수정
       if (!isMgr) {
-        fp.actions.appendChild(UI.button({ label: '외부 복사', icon: 'ri-share-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openTilShareDialog(date, t) }));
+        fp.actions.appendChild(UI.button({ label: '마크다운 복사', icon: 'ri-file-copy-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('마크다운을 복사했어요', 'success') }));
         fp.actions.appendChild(UI.button({ label: 'PDF 다운로드', icon: 'ri-file-download-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('PDF 다운로드를 시작했어요', 'success') }));
         fp.actions.appendChild(UI.button({ label: '수정', icon: 'ri-edit-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => { UI.closeFullPage(); openTraineeEdit(date, t); } }));
       }
@@ -275,28 +276,6 @@
       fp.body.querySelector('[data-slot="body"]').innerHTML = UI.md(t.body || '');
     }
 
-    // ===== TIL 외부 공유 다이얼로그 — 명시적 외부 복사 시에만 공개 URL 생성 =====
-    function openTilShareDialog(date, t) {
-      const shareUrl = `https://likelion-classroom.app/til/${MOCK.activeStudentId}-${date}`;
-      const node = UI.openModal(`
-        <h3 class="card-title">외부 복사</h3>
-        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">TIL은 기본 비공개예요. 외부 복사를 누르면 <strong>공개 URL이 생성·복사</strong>되어 외부에 공유할 수 있어요.</p>
-        <div style="background: var(--lk-color-bg-normal); padding: 14px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 13px; font-family: ui-monospace, monospace; flex: 1; overflow: hidden; text-overflow: ellipsis;" data-slot="url"></span>
-          <button class="btn btn-small btn-solid-primary" id="copy">복사</button>
-        </div>
-        <div class="row" style="gap: 8px; margin-top: 14px; flex-wrap: wrap;">
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-file-copy-line"></i> 마크다운 복사</button>
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-twitter-x-line"></i> X</button>
-          <button class="btn btn-small btn-outline-neutral"><i class="ri-icon ri-linkedin-line"></i> LinkedIn</button>
-        </div>
-        <div class="row row-end" style="margin-top: 16px;"><button class="btn btn-outline-neutral" id="close">닫기</button></div>
-      `);
-      node.querySelector('[data-slot="url"]').textContent = shareUrl;
-      node.querySelector('#copy').addEventListener('click', () => UI.toast('공개 링크가 생성되어 복사되었어요', 'success'));
-      node.querySelector('#close').addEventListener('click', () => node.remove());
-    }
-
     // ============================================================
     // TIL 작성 진입 — 날짜 셀렉트 우선 (작성/수정 통합 분기)
     // ============================================================
@@ -305,53 +284,80 @@
       const today = MOCK.meta.today;
       const fp = UI.openFullPage({ backLabel: 'TIL' });
 
-      // 최근 21일(오늘 이하) — 날짜 + 작성 상태 + 🏆(우수)
-      const days = weeks.flatMap((w) => w.days).filter((d) => new Date(d) <= new Date(today)).sort().reverse().slice(0, 21);
-      const opts = days.map((d) => {
-        const status = tilStatusOn(sid, d);
-        const statusLabel = status === 'written' ? '작성됨' : status === 'temp' ? '임시' : '미작성';
-        const weekend = !MOCK.isLearningDay(d);
-        return {
-          value: d,
-          label: `${UI.fmtDate(d, { short: true })}${weekend ? ' · 주말' : ''}`,
-          sub: statusLabel,
-          score: (status === 'written' && isExcellent(sid, d)) ? '🏆' : '',
-        };
-      });
-      const defaultVal = opts.find((o) => o.value === today)?.value || opts[0]?.value;
-
       fp.body.innerHTML = `
         <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 12px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;">TIL 작성</h1>
-        <p class="text-mute" style="margin: 0 0 24px; font-size: 14px;">날짜를 선택하면 그 날의 작성 상태에 따라 <strong>새 글 작성</strong> 또는 <strong>수정</strong>으로 이어져요.</p>
-        <div class="card" style="max-width: 560px;">
-          <div class="field"><label>날짜 선택 (작성 상태 · 🏆 우수 함께 표시)</label><div id="date-sel"></div></div>
-          <div class="banner banner-info" style="margin: 4px 0 8px;"><i class="ri-icon ri-information-line"></i><span data-slot="mode"></span></div>
-          <div class="row row-end" style="margin-top: 8px; gap: 8px;" id="actions"></div>
+        <p class="text-mute" style="margin: 0 0 24px; font-size: 14px;">날짜를 선택하세요. 작성한 날·안 한 날을 한눈에 볼 수 있어요. <strong>오늘</strong>은 진한 테두리로 표시돼요.</p>
+        <div class="card" style="max-width: 760px;">
+          <div class="card-head" style="margin-bottom: 12px;"><div class="card-meta">날짜를 클릭해 선택</div><div id="dsel-legend"></div></div>
+          <div class="til-heatmap">
+            <div class="til-heatmap-row-labels" id="row-labels"></div>
+            <div class="til-heatmap-grid" id="grid"></div>
+          </div>
+          <div class="til-month-labels" id="months"></div>
+          <div class="banner banner-info" style="margin: 16px 0 8px;"><i class="ri-icon ri-information-line"></i><span data-slot="mode"></span></div>
+          <div class="row row-end" style="gap: 8px;" id="actions"></div>
         </div>
       `;
+      fp.body.querySelector('#dsel-legend').appendChild(UI.renderLegend([
+        { color: 'var(--lk-color-bg-normal)', label: '미작성' },
+        { color: 'var(--lk-color-primary-200)', label: '임시', pattern: 'stripe' },
+        { color: 'var(--lk-color-primary-500)', label: '작성' },
+      ]));
+
+      const rowLabels = fp.body.querySelector('#row-labels');
+      WEEKDAY_LABELS.forEach((lbl, ri) => { const el = document.createElement('div'); el.textContent = lbl; if (WEEKEND_ROWS.includes(ri)) el.className = 'is-weekend'; rowLabels.appendChild(el); });
+
+      let selected = today;
+      let selectedEl = null;
       const modeEl = fp.body.querySelector('[data-slot="mode"]');
       let actBtn;
-      function refresh(v) {
-        const status = tilStatusOn(sid, v);
+      function refresh() {
+        const status = tilStatusOn(sid, selected);
         const isEdit = status === 'written' || status === 'temp';
-        modeEl.textContent = isEdit
-          ? `이 날은 이미 ${status === 'temp' ? '임시저장' : '작성'}된 TIL이 있어요 — 수정 모드로 열려요.`
-          : '이 날은 아직 작성 전이에요 — 새 글 작성 모드로 열려요.';
+        modeEl.innerHTML = `<strong>${UI.fmtDate(selected, { short: true })}</strong> — ${isEdit ? (status === 'temp' ? '임시저장된 TIL이 있어요 · 수정 모드' : '작성된 TIL이 있어요 · 수정 모드') : '작성 전 · 새 글 작성 모드'}`;
         if (actBtn) actBtn.querySelector('span').textContent = isEdit ? '수정하기' : '새 글 작성';
       }
-      const sel = UI.select({ options: opts, value: defaultVal, rich: true, onChange: (v) => refresh(v) });
-      fp.body.querySelector('#date-sel').appendChild(sel);
+
+      const grid = fp.body.querySelector('#grid');
+      weeks.forEach((wk) => {
+        wk.days.forEach((d) => {
+          const cell = document.createElement('div');
+          cell.className = 'heat-cell';
+          const status = tilStatusOn(sid, d);
+          const heat = statusToHeat(status);
+          cell.setAttribute('data-level', String(heat.level));
+          if (heat.pattern) cell.setAttribute('data-pattern', heat.pattern);
+          if (status === 'written' && isExcellent(sid, d)) cell.setAttribute('data-excellent', 'true');
+          if (d === today) cell.setAttribute('data-today', 'true');
+          const lbl = status === 'written' ? '작성' : status === 'temp' ? '임시' : status === 'weekend' ? '주말' : status === 'future' ? '미래' : '미작성';
+          cell.title = `${d} · ${lbl}${d === today ? ' · 오늘' : ''}`;
+          const selectable = new Date(d) <= new Date(today) && status !== 'future';
+          if (selectable) {
+            cell.setAttribute('data-pick', 'true');
+            cell.addEventListener('click', () => {
+              if (selectedEl) selectedEl.removeAttribute('data-selected');
+              cell.setAttribute('data-selected', 'true');
+              selectedEl = cell; selected = d; refresh();
+            });
+            if (d === selected) { cell.setAttribute('data-selected', 'true'); selectedEl = cell; }
+          }
+          grid.appendChild(cell);
+        });
+      });
+
+      const months = fp.body.querySelector('#months');
+      let prevMonth = null;
+      weeks.forEach((wk) => { const m = new Date(wk.monday).getMonth() + 1; const span = document.createElement('span'); span.style.minWidth = '20px'; span.textContent = (m !== prevMonth) ? `${m}월` : ''; prevMonth = m; months.appendChild(span); });
 
       const actions = fp.body.querySelector('#actions');
       actions.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => UI.closeFullPage() }));
       actBtn = UI.button({ label: '새 글 작성', icon: 'ri-edit-line', type: 'solid', color: 'primary', onClick: () => {
-        const d = sel.value;
-        const existing = getTilForDate(sid, d);
+        const existing = getTilForDate(sid, selected);
         UI.closeFullPage();
-        openTraineeEdit(d, existing && existing.status !== 'none' ? existing : null);
+        openTraineeEdit(selected, existing && existing.status !== 'none' ? existing : null);
       } });
       actions.appendChild(actBtn);
-      refresh(defaultVal);
+      refresh();
     }
 
     // ============================================================
@@ -486,7 +492,7 @@
           <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">정답률</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="rate"></div></div>
           <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">오답 수</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="wc"></div></div>
         </div>
-        <div class="card-meta" style="margin-bottom: 10px;"><strong>오답 문항 요약</strong></div>
+        <div class="spread" style="margin-bottom: 10px;"><span class="card-meta"><strong>문항 전체</strong></span><span class="card-meta" data-slot="qtotal"></span></div>
         <div id="wlist" class="col" style="gap: 8px;"></div>
       `;
       wrap.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[date]?.title || '오늘의 퀴즈';
@@ -495,18 +501,39 @@
       wrap.querySelector('[data-slot="rate"]').textContent = `${attempt.score * 10}%`;
       wrap.querySelector('[data-slot="wc"]').textContent = `${wrongCount}건`;
       const wl = wrap.querySelector('#wlist');
-      if (wrongCount === 0) {
-        const empty = document.createElement('div');
-        empty.style.cssText = 'padding: 14px; background: var(--lk-color-bg-lightgreen); color: var(--lk-color-light-green-700); border-radius: 8px; font-size: 12.5px;';
-        empty.textContent = '🎉 오답 없이 모두 맞혔어요!';
-        wl.appendChild(empty);
-      } else {
-        (MOCK.wrongNotes[sid] || []).filter((w) => w.date === date).slice(0, 5).forEach((w, i) => {
+      const wrongSet = new Set(attempt.wrongIds || []);
+      // 오답 상세(보기·내 선택)는 오답노트 매핑에서 보강
+      const wrongByDate = (MOCK.wrongNotes[sid] || []).filter((w) => w.date === date);
+      const qs = quiz.questions || [];
+      wrap.querySelector('[data-slot="qtotal"]').textContent = `${qs.length}문항`;
+      qs.forEach((q, i) => {
+        const isWrong = wrongSet.has(q.id);
+        const wn = wrongByDate.find((w) => w.id === q.id || w.stem === q.stem);
+        const userPick = isWrong ? (wn ? wn.userPick : null) : q.answer;
+        const it = document.createElement('div');
+        it.style.cssText = `background: var(--lk-color-bg-normal); border-radius: 8px; padding: 10px 12px; border-left: 3px solid ${isWrong ? 'var(--lk-color-state-danger)' : 'var(--lk-color-light-green-500)'}; cursor: pointer;`;
+        it.innerHTML = `
+          <div class="spread" style="margin-bottom: 4px;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--lk-color-fg-primary);">문항 ${i + 1}</span>
+            <span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span>
+          </div>
+          <div style="font-size: 12.5px; line-height: 1.5;" data-slot="s"></div>
+          <div style="font-size: 11px; color: var(--lk-color-fg-neutral); margin-top: 6px;">정답: <strong data-slot="a"></strong></div>
+        `;
+        it.querySelector('[data-slot="s"]').textContent = q.stem;
+        it.querySelector('[data-slot="a"]').textContent = q.choices[q.answer];
+        it.addEventListener('click', () => openQuizQuestionModal(q, i + 1, isWrong, userPick, date));
+        wl.appendChild(it);
+      });
+      if (qs.length === 0) {
+        wrongByDate.slice(0, 10).forEach((w, i) => {
+          const isWrong = true;
           const it = document.createElement('div');
-          it.style.cssText = 'background: var(--lk-color-bg-normal); border-radius: 8px; padding: 10px 12px;';
-          it.innerHTML = `<div style="font-size: 11px; font-weight: 700; color: var(--lk-color-fg-primary); margin-bottom: 4px;">문항 ${i + 1}</div><div style="font-size: 12.5px; line-height: 1.5;" data-slot="s"></div><div style="font-size: 11px; color: var(--lk-color-fg-neutral); margin-top: 6px;">정답: <strong data-slot="a"></strong></div>`;
+          it.style.cssText = 'background: var(--lk-color-bg-normal); border-radius: 8px; padding: 10px 12px; border-left: 3px solid var(--lk-color-state-danger); cursor: pointer;';
+          it.innerHTML = `<div class="spread" style="margin-bottom:4px;"><span style="font-size: 11px; font-weight: 700; color: var(--lk-color-fg-primary);">문항 ${i + 1}</span><span class="tag tag-small tag-weak-error">오답</span></div><div style="font-size: 12.5px; line-height: 1.5;" data-slot="s"></div><div style="font-size: 11px; color: var(--lk-color-fg-neutral); margin-top: 6px;">정답: <strong data-slot="a"></strong></div>`;
           it.querySelector('[data-slot="s"]').textContent = w.stem;
           it.querySelector('[data-slot="a"]').textContent = w.choices[w.answer];
+          it.addEventListener('click', () => openWrongDetailModal(w));
           wl.appendChild(it);
         });
       }
@@ -543,6 +570,33 @@
         it.addEventListener('click', () => openWrongDetailModal(w));
         pane.appendChild(it);
       });
+    }
+
+    // 퀴즈결과 문항 상세 모달 (정답/내 선택/해설)
+    function openQuizQuestionModal(q, num, isWrong, userPick, date) {
+      const node = UI.openModal(`
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span class="card-meta" data-slot="m"></span>
+          <span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span>
+          <button class="btn btn-small btn-ghost-neutral" id="close" style="margin-left: auto;"><i class="ri-icon ri-close-line"></i></button>
+        </div>
+        <h3 class="card-title" style="font-size: 16px; line-height: 1.5; margin: 0 0 16px;" data-slot="stem"></h3>
+        <ul style="list-style: none; padding: 0; margin: 0 0 16px;" data-slot="ch"></ul>
+        <div style="background: var(--lk-color-bg-normal); padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.7; color: var(--lk-color-fg-neutral);"><strong>해설:</strong> <span data-slot="ex"></span></div>
+      `);
+      node.querySelector('[data-slot="m"]').textContent = `${UI.fmtDate(date)} · 문항 ${num}`;
+      node.querySelector('[data-slot="stem"]').textContent = q.stem;
+      const ul = node.querySelector('[data-slot="ch"]');
+      q.choices.forEach((c, ci) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 6px;';
+        if (ci === q.answer) { li.style.background = 'var(--lk-color-bg-lightgreen)'; li.textContent = `${ci + 1}. ${c}   ✓ 정답`; }
+        else if (userPick != null && ci === userPick) { li.style.background = 'var(--lk-color-bg-red)'; li.textContent = `${ci + 1}. ${c}   ✗ 내 선택`; }
+        else { li.style.background = 'var(--lk-color-bg-normal)'; li.textContent = `${ci + 1}. ${c}`; }
+        ul.appendChild(li);
+      });
+      node.querySelector('[data-slot="ex"]').textContent = q.explanation;
+      node.querySelector('#close').addEventListener('click', () => node.remove());
     }
 
     function openWrongDetailModal(w) {
@@ -585,11 +639,11 @@
         <div class="card-head">
           <div>
             <h3 class="card-title">학생 × 주차 히트맵 (최근 6개월)</h3>
-            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">주 7일(월~일) · 미작성·임시·작성·★우수, 주말은 점선. 셀 클릭 시 본문 상세 + 우수 마크</p>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">주 7일(월~일) · 미작성·임시·작성·★우수, 주말은 점선 · 오늘은 진한 테두리(세로) · 셀 클릭 시 본문 상세 + 우수 마크</p>
           </div>
           <div id="legend"></div>
         </div>
-        <div class="heatmap-scroll" id="heat" style="margin-top: 16px;"></div>
+        <div class="heatmap-scroll is-frozen-scroll" id="heat" style="margin-top: 16px;"></div>
       `;
       const legend = UI.renderLegend([
         { color: 'var(--lk-color-bg-normal)', label: '미작성' },
@@ -604,6 +658,8 @@
       const heat = UI.renderHeatmap({
         rows: MOCK.students,
         cols: flatDays,
+        freeze: true,                       // 이름 열 + 날짜 헤더 고정
+        today: MOCK.meta.today,             // 오늘 컬럼 표시(세로 밴드)
         rowLabel: (s) => s.name,
         colLabel: (d) => {
           const dt = new Date(d);
