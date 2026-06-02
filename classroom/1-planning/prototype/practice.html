@@ -307,7 +307,7 @@
         tdName.className = 'row-head';
         tdName.style.textAlign = 'left';
         tdName.style.fontWeight = '600';
-        tdName.textContent = s.name;
+        tdName.textContent = UI.displayName(s);
         tr.appendChild(tdName);
         ps.forEach((p) => {
           const td = document.createElement('td');
@@ -356,7 +356,7 @@
         </div>
       `);
       node.querySelector('[data-slot="t"]').textContent = p.title;
-      node.querySelector('[data-slot="n"]').textContent = `${s.name} 제출`;
+      node.querySelector('[data-slot="n"]').textContent = `${UI.displayName(s)} 제출`;
       node.querySelector('[data-slot="text"]').value = sub.text || '';
       node.querySelector('[data-slot="sc"]').value = sub.score ?? '';
       node.querySelector('[data-slot="time"]').value = sub.submittedAt;
@@ -364,7 +364,7 @@
       node.querySelector('#close').addEventListener('click', () => node.remove());
       node.querySelector('#save').addEventListener('click', () => {
         node.remove();
-        UI.toast(`${s.name}에게 채점 결과 DM이 발송되었어요`, 'success');
+        UI.toast(`${UI.displayName(s)}에게 채점 결과 DM이 발송되었어요`, 'success');
       });
     }
   </script>

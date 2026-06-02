@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>레드플래그 대시보드 — LMS Admin (프로토타입)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+  <link rel="stylesheet" href="./assets/tokens.css" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script src="./assets/mock-data.js"></script>
+  <script src="./assets/components.js"></script>
+  <style>
+    .admin-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 28px 64px; }
+    .admin-tabs { display:flex; gap:4px; border-bottom:1px solid var(--lk-color-border-weak); margin:16px 0 24px; overflow-x:auto; }
+    .admin-tabs .t { padding:10px 14px; font-size:13px; color:var(--lk-color-fg-neutral); white-space:nowrap; border-bottom:2px solid transparent; cursor:default; }
+    .admin-tabs .t.active { color:var(--lk-color-fg-primary); border-bottom-color:var(--lk-color-bg-primary); font-weight:700; }
+    .admin-tabs .t.muted { color:var(--lk-color-fg-assistive); }
+    .summary-band { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+    .summary-cell { border:1px solid var(--lk-color-border-weak); border-radius:12px; padding:16px 18px; }
+    .summary-cell .n { font-size:30px; font-weight:800; line-height:1; }
+    .summary-cell .l { font-size:13px; color:var(--lk-color-fg-neutral); margin-top:8px; }
+    table.rf { width:100%; border-collapse:collapse; font-size:13px; }
+    table.rf th, table.rf td { padding:11px 12px; border-bottom:1px solid var(--lk-color-border-weak); text-align:center; white-space:nowrap; }
+    table.rf th { font-size:12px; color:var(--lk-color-fg-neutral); font-weight:600; background:var(--lk-color-bg-normal); position:sticky; top:0; }
+    table.rf td.name { text-align:left; font-weight:600; color:var(--lk-color-fg-strong); }
+    table.rf tr.danger { background:var(--lk-color-state-danger-weak, #fde8e8); }
+    table.rf tr.danger:hover { background:#fbdcdc; }
+    table.rf td.bad { color:var(--lk-color-fg-error, #d92d20); font-weight:700; }
+    .cell-metric { display:inline-flex; align-items:baseline; gap:3px; }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap">
+    <div class="row" style="align-items:baseline; gap:12px;">
+      <h1 style="font-size:22px; font-weight:800; margin:0;">레드플래그 대시보드</h1>
+      <span class="text-mute" style="font-size:14px;" id="cohort"></span>
+      <span class="tag tag-small tag-weak-neutral" style="margin-left:auto;">LMS Admin · 프로토타입(레퍼런스)</span>
+    </div>
+
+    <!-- 기존 LMS Admin 탭 구조 미러 (대시보드만 활성) -->
+    <div class="admin-tabs">
+      <div class="t active">대시보드</div>
+      <div class="t muted">공유 현황</div>
+      <div class="t muted">출결 현황</div>
+      <div class="t muted">결제 내역</div>
+      <div class="t muted">수강생 관리</div>
+      <div class="t muted">공지/알림</div>
+      <div class="t muted">설정</div>
+    </div>
+
+    <div class="banner banner-info" style="margin-bottom:20px;"><i class="ri-icon ri-information-line"></i><span>주차별 위험 신호를 한눈에 봅니다. 지표: <strong>주간 퀴즈 평균점수 · TIL 작성수 · 보충퀴즈 사용량 · 응시율</strong>. (클래스챗 사용량 지표는 제외)</span></div>
+
+    <div class="section-head" style="margin:0 0 12px;"><h3>학습 상태 요약</h3><span class="hint">전체 <span id="total-n"></span>명</span></div>
+    <div class="summary-band" id="summary"></div>
+
+    <div class="row" style="gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+      <div id="filter-tabs"></div>
+      <div class="search-field" style="margin-left:auto; min-width:240px;"><i class="ri-icon ri-search-line"></i><input type="search" id="q" placeholder="이름으로 검색" /></div>
+    </div>
+
+    <div class="card" style="padding:0; overflow-x:auto;">
+      <table class="rf">
+        <thead>
+          <tr>
+            <th style="width:48px;">번호</th>
+            <th style="text-align:left;">이름</th>
+            <th>상태</th>
+            <th>주간 퀴즈 평균</th>
+            <th>TIL 작성수</th>
+            <th>보충퀴즈 사용량</th>
+            <th>응시율</th>
+            <th>위험 신호</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('cohort').textContent = `· ${MOCK.meta.cohortName}`;
+    document.getElementById('total-n').textContent = MOCK.students.length;
+
+    const learningDays = MOCK.days.filter((d) => MOCK.isLearningDay(d));
+    const last7 = learningDays.slice(-7);
+
+    function metricsFor(s) {
+      // 주간(최근 7 학습일) 퀴즈 평균
+      const scores = last7.map((d) => MOCK.attempts[s.id]?.[d]?.score).filter((v) => v != null);
+      const quizAvg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      // TIL 작성수 (status === 'written')
+      const tilCount = Object.values(MOCK.tils[s.id] || {}).filter((t) => t && t.status === 'written').length;
+      // 보충퀴즈 사용량 (생성 세트 총합)
+      const suppUsage = (MOCK.suppSessions[s.id] || []).length;
+      // 응시율 (전체 학습일 대비 퀴즈 응시)
+      const attempted = learningDays.filter((d) => MOCK.attempts[s.id]?.[d]?.submitted).length;
+      const attendRate = learningDays.length ? Math.round(attempted / learningDays.length * 100) : 0;
+      return { quizAvg, tilCount, suppUsage, attendRate };
+    }
+
+    // 위험 신호 카운트 → 상태 분류
+    const TH = { quiz: 5, til: 8, supp: 10, attend: 60 };
+    function flagsFor(m) {
+      const f = [];
+      if (m.attendRate < TH.attend) f.push('응시율');
+      if (m.quizAvg != null && m.quizAvg < TH.quiz) f.push('퀴즈 저조');
+      if (m.tilCount < TH.til) f.push('TIL 부족');
+      if (m.suppUsage < TH.supp) f.push('보충 미흡');
+      return f;
+    }
+    function statusFor(flagCount) {
+      if (flagCount >= 3) return { key: 'danger', label: '위험', cls: 'tag-weak-error' };
+      if (flagCount === 2) return { key: 'warn', label: '경고', cls: 'tag-weak-warning' };
+      if (flagCount === 1) return { key: 'caution', label: '주의', cls: 'tag-weak-progressing' };
+      return { key: 'ok', label: '정상', cls: 'tag-weak-success' };
+    }
+
+    const data = MOCK.students.map((s) => {
+      const m = metricsFor(s);
+      const flags = flagsFor(m);
+      const status = statusFor(flags.length);
+      return { s, m, flags, status };
+    });
+
+    // 요약 밴드
+    const counts = { ok: 0, caution: 0, warn: 0, danger: 0 };
+    data.forEach((r) => counts[r.status.key]++);
+    const summaryDefs = [
+      { key: 'ok', label: '정상', color: 'var(--lk-color-fg-success, #2e9e44)' },
+      { key: 'caution', label: '주의', color: 'var(--lk-color-fg-primary)' },
+      { key: 'warn', label: '경고', color: 'var(--lk-color-fg-warning, #c47d00)' },
+      { key: 'danger', label: '위험', color: 'var(--lk-color-fg-error, #d92d20)' },
+    ];
+    const summaryEl = document.getElementById('summary');
+    summaryDefs.forEach((d) => {
+      const cell = document.createElement('div');
+      cell.className = 'summary-cell';
+      cell.innerHTML = `<div class="n" style="color:${d.color};" data-slot="n"></div><div class="l" data-slot="l"></div>`;
+      cell.querySelector('[data-slot="n"]').textContent = counts[d.key];
+      cell.querySelector('[data-slot="l"]').textContent = `${d.label} (명)`;
+      summaryEl.appendChild(cell);
+    });
+
+    // 필터 + 검색
+    let filter = 'all', query = '';
+    const filterTabs = document.createElement('div');
+    filterTabs.className = 'tabs-round';
+    [['all', `전체 (${data.length})`], ['risk', `위험군 (${counts.warn + counts.danger})`], ['danger', `위험 (${counts.danger})`]].forEach(([k, label], i) => {
+      const b = document.createElement('button');
+      b.className = 'tab' + (i === 0 ? ' is-active' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => { filter = k; filterTabs.querySelectorAll('.tab').forEach((x) => x.classList.remove('is-active')); b.classList.add('is-active'); draw(); });
+      filterTabs.appendChild(b);
+    });
+    document.getElementById('filter-tabs').appendChild(filterTabs);
+    const qInput = document.getElementById('q');
+    qInput.addEventListener('input', () => { query = qInput.value.trim(); draw(); });
+
+    const rows = document.getElementById('rows');
+    function draw() {
+      let items = data.slice();
+      if (filter === 'risk') items = items.filter((r) => r.status.key === 'warn' || r.status.key === 'danger');
+      if (filter === 'danger') items = items.filter((r) => r.status.key === 'danger');
+      if (query) items = items.filter((r) => r.s.name.includes(query) || (r.s.phone4 || '').includes(query));
+      // 위험 우선 정렬
+      const order = { danger: 0, warn: 1, caution: 2, ok: 3 };
+      items.sort((a, b) => order[a.status.key] - order[b.status.key] || a.s.no - b.s.no);
+
+      rows.innerHTML = '';
+      if (items.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="8" style="padding:32px; color:var(--lk-color-fg-neutral);">해당하는 학생이 없어요</td>`;
+        rows.appendChild(tr);
+        return;
+      }
+      items.forEach((r) => {
+        const { s, m, flags, status } = r;
+        const tr = document.createElement('tr');
+        if (status.key === 'danger') tr.className = 'danger';
+        const quizTxt = m.quizAvg != null ? `${m.quizAvg.toFixed(1)} / 10` : '—';
+        tr.innerHTML = `
+          <td data-slot="no"></td>
+          <td class="name" data-slot="name"></td>
+          <td><span class="tag tag-small ${status.cls}" data-slot="st"></span></td>
+          <td class="${m.quizAvg != null && m.quizAvg < TH.quiz ? 'bad' : ''}" data-slot="quiz"></td>
+          <td class="${m.tilCount < TH.til ? 'bad' : ''}" data-slot="til"></td>
+          <td class="${m.suppUsage < TH.supp ? 'bad' : ''}" data-slot="supp"></td>
+          <td class="${m.attendRate < TH.attend ? 'bad' : ''}" data-slot="att"></td>
+          <td data-slot="flags" style="text-align:left;"></td>
+        `;
+        tr.querySelector('[data-slot="no"]').textContent = `${s.no}`;
+        tr.querySelector('[data-slot="name"]').textContent = UI.displayName(s);
+        tr.querySelector('[data-slot="st"]').textContent = status.label;
+        tr.querySelector('[data-slot="quiz"]').textContent = quizTxt;
+        tr.querySelector('[data-slot="til"]').textContent = `${m.tilCount}건`;
+        tr.querySelector('[data-slot="supp"]').textContent = `${m.suppUsage}세트`;
+        tr.querySelector('[data-slot="att"]').textContent = `${m.attendRate}%`;
+        const flagsEl = tr.querySelector('[data-slot="flags"]');
+        if (flags.length === 0) {
+          flagsEl.innerHTML = '<span class="text-mute" style="font-size:12px;">—</span>';
+        } else {
+          flags.forEach((f) => {
+            const t = document.createElement('span');
+            t.className = 'tag tag-small tag-weak-error';
+            t.style.marginRight = '4px';
+            t.textContent = f;
+            flagsEl.appendChild(t);
+          });
+        }
+        rows.appendChild(tr);
+      });
+    }
+    draw();
+  </script>
+</body>
+</html>

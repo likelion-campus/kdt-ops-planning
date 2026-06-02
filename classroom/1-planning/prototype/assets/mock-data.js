@@ -39,7 +39,9 @@
     const id = 's' + String(i + 1).padStart(2, '0');
     // 25~30번은 위험군 — 활동률 낮게 편향
     const baseActivity = i < 20 ? 0.85 - i * 0.01 : 0.45 - (i - 20) * 0.04;
-    return { id, name, no: i + 1, baseActivity: Math.max(0.15, baseActivity) };
+    // 동명이인 식별용 전화번호 뒷자리 4 (결정론적). 이름 노출 시 항상 함께 표시.
+    const phone4 = String((i * 7919 + 3271) % 10000).padStart(4, '0');
+    return { id, name, no: i + 1, phone4, baseActivity: Math.max(0.15, baseActivity) };
   });
 
   // ---------- AI 노트 ----------
@@ -262,6 +264,7 @@
         WRONG_NOTES[s.id].push({
           date: d,
           questionId: qid,
+          source: 'today', // 출처: 오늘의 퀴즈
           stem: q.stem,
           choices: q.choices,
           userPick: (q.answer + 1 + idx) % 4, // 정답이 아닌 보기
@@ -309,8 +312,10 @@
       const solvedAt = solved
         ? SUPP_TARGET_DAYS[Math.min(SUPP_TARGET_DAYS.length - 1, createdIdx + (seed % 3))] + 'T19:30'
         : null;
+      const setId = `supp-${s.id}-${i}`;
+      const topic = AI_NOTE_TOPICS[targetDate] || '복습 세트';
       SUPP_SESSIONS[s.id].push({
-        id: `supp-${s.id}-${i}`,
+        id: setId,
         createdAt,
         targetDate,
         count,
@@ -319,8 +324,26 @@
         correct,
         rate: solved ? correct / count : null,
         wrongFocus: i % 2 === 0,
-        topic: AI_NOTE_TOPICS[targetDate] || '복습 세트',
+        topic,
       });
+      // 보충 퀴즈 오답도 오답노트에 누적 (출처: 보충 퀴즈) — 대상일 퀴즈 풀에서 1문항 노트화
+      if (solved && i % 2 === 0 && count - correct > 0 && QUIZZES[targetDate]?.questions?.length) {
+        const pool = QUIZZES[targetDate].questions;
+        const q = pool[seed % pool.length];
+        WRONG_NOTES[s.id].push({
+          date: (solvedAt || createdAt).slice(0, 10),
+          questionId: `${setId}-wn`,
+          source: 'supp', // 출처: 보충 퀴즈
+          title: topic, // 보충 퀴즈는 대상일 핵심 개념을 제목으로
+          stem: q.stem,
+          choices: q.choices,
+          userPick: (q.answer + 1) % q.choices.length,
+          answer: q.answer,
+          explanation: q.explanation,
+          bookmarked: false,
+          memo: null,
+        });
+      }
     }
     // 최신순 정렬
     SUPP_SESSIONS[s.id].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -620,7 +643,9 @@
         attachments: r() < 0.3 ? ['발표자료.pdf'] : [],
         slides: 'https://docs.google.com/presentation/d/sample',
         submittedAt: p.submitFrom + 'T22:00',
-        published: r() < 0.2,
+        published: r() < 0.2, // 외부 공개(로그인 없이 별도 주소로 열람) — 학생이 토글
+        externalRestricted: false, // 매니저가 외부 공개를 제한했는지
+        restrictReason: null, // 제한 사유 (학생 외부공개 탭에 표시)
         feedback: p.status !== '제출 진행' && r() < 0.6
           ? '문제 정의가 명확하고, 시각화 선택이 적절합니다. tech stack에서 의존성 관리 부분 보완하면 좋겠어요.'
           : null,
@@ -641,7 +666,7 @@
       mainImage: `https://picsum.photos/seed/${sid}-${p.id}/640/360`,
       urls: ['https://github.com/sample/' + sid, 'https://figma.com/file/sample'],
       videoUrl: 'https://youtu.be/dQw4w9WgXcQ', attachments: [], slides: 'https://docs.google.com/presentation/d/sample',
-      submittedAt: p.submitFrom + 'T22:00', published: false, excellent: false, feedback: fb,
+      submittedAt: p.submitFrom + 'T22:00', published: false, externalRestricted: false, restrictReason: null, excellent: false, feedback: fb,
     });
     const want = { 'proj-basic': '문제 정의가 명확하고 시각화 선택이 적절합니다. 의존성 관리 부분을 보완하면 좋겠어요.', 'proj-deep': null, 'proj-extra': null };
     Object.keys(want).forEach((pid) => {
@@ -650,6 +675,9 @@
       PROJECT_SUBMISSIONS[pid] = PROJECT_SUBMISSIONS[pid].filter((s) => s.studentId !== sid);
       PROJECT_SUBMISSIONS[pid].unshift(mk(p, want[pid]));
     });
+    // 데모: proj-deep 제출물은 외부 공개가 매니저에 의해 제한된 상태 (학생 외부공개 탭에서 사유 확인)
+    const deep = PROJECT_SUBMISSIONS['proj-deep']?.find((s) => s.studentId === sid);
+    if (deep) { deep.published = true; deep.externalRestricted = true; deep.restrictReason = '제출물에 외부 비공개 데이터셋(고객 PII)이 포함되어 있어 외부 공개를 제한합니다. 데이터 마스킹 후 매니저에게 해제 요청해 주세요.'; }
     if (PROJECT_SUBMISSIONS['proj-final']) PROJECT_SUBMISSIONS['proj-final'] = PROJECT_SUBMISSIONS['proj-final'].filter((s) => s.studentId !== sid);
   })();
 
@@ -675,6 +703,8 @@
     suppSessions: SUPP_SESSIONS,
     suppDailyLimit: 1000,
     suppDailySetLimit: 10,
+    todayQuizDailyLimit: 20, // 오늘의 퀴즈(매니저 공식 발행) 생성일 기준 하루 최대 발행 수
+    quizQuestionMax: 15, // 퀴즈 1세트 최대 문항 수
     practices: PRACTICES,
     practiceSubmissions: PRACTICE_SUBMISSIONS,
     tils: TILS,
