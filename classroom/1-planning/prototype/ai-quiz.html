@@ -54,13 +54,14 @@
 
     // ===== 오늘의 퀴즈 탭 =====
     function renderTodayTab(body) {
-      // 데모 상태 토글 (출제전·출제후·내제출후)
+      // 데모 상태 토글 (출제전 · 오전 퀴즈 발행 · 추가 퀴즈 발행 · 내제출후)
       const st = UI.loadState();
       const demoState = st.todayDemo || 'pre-publish';
       const toggle = UI.demoStateToggle(
         [
           { value: 'pre-publish', label: '출제 전' },
-          { value: 'published', label: '출제 후 (미응시)' },
+          { value: 'morning', label: '오전 퀴즈 발행' },
+          { value: 'added', label: '추가 퀴즈 발행' },
           { value: 'after-submit', label: '내 제출 후' },
         ],
         demoState,
@@ -70,17 +71,16 @@
 
       const sid = MOCK.activeStudentId;
       const today = MOCK.meta.today;
-
-      // 오늘 카드 — 데모 상태별 렌더
-      const todayCard = document.createElement('div');
-      todayCard.className = 'card';
-      todayCard.style.marginBottom = '32px';
+      const SEP = '<span style="color:var(--lk-color-fg-disabled); font-weight:400; margin:0 8px;">|</span>';
 
       if (demoState === 'pre-publish') {
+        const todayCard = document.createElement('div');
+        todayCard.className = 'card';
+        todayCard.style.marginBottom = '32px';
         todayCard.innerHTML = `
           <div class="card-head">
             <div>
-              <div class="card-meta" data-slot="d"></div>
+              <div class="card-meta">${UI.fmtDate(today)}</div>
               <h3 class="card-title" style="margin-top: 6px;">오늘의 퀴즈</h3>
             </div>
             <span class="tag tag-weak-neutral">발행 대기</span>
@@ -91,89 +91,133 @@
             <p>매일 <strong>08:30</strong>에 자동 발행됩니다</p>
           </div>
         `;
-      } else if (demoState === 'published') {
-        todayCard.innerHTML = `
-          <div class="card-head">
-            <div>
-              <div class="card-meta" data-slot="d"></div>
-              <h3 class="card-title" style="margin-top: 6px;">오늘의 퀴즈<span style="color:var(--lk-color-fg-disabled); font-weight:400; margin:0 8px;">|</span><span data-slot="qtitle"></span><span style="color:var(--lk-color-fg-disabled); font-weight:400; margin:0 8px;">|</span>객관식 10문제</h3>
-            </div>
-          </div>
-          <div id="start-btn" style="margin-top: 16px;"></div>
-        `;
-        const qt = todayCard.querySelector('[data-slot="qtitle"]'); if (qt) qt.textContent = MOCK.aiNotes[today]?.title || '퀴즈';
-        todayCard.querySelector('#start-btn').appendChild(
-          UI.button({ label: '오늘의 퀴즈 풀기', icon: 'ri-play-circle-line', size: 'large', type: 'solid', color: 'primary', onClick: () => openTaking(today) })
-        );
+        body.appendChild(todayCard);
       } else {
-        // after-submit
-        const attempt = MOCK.attempts[sid]?.[today] || { submitted: true, score: 7, submittedAt: today + 'T09:18', wrongIds: [`${today}-q3`, `${today}-q5`, `${today}-q7`] };
-        todayCard.innerHTML = `
-          <div class="card-head">
-            <div>
-              <div class="card-meta" data-slot="d"></div>
-              <h3 class="card-title" style="margin-top: 6px;">오늘의 퀴즈 · 응시 완료</h3>
-            </div>
-          </div>
-          <div class="row" style="gap: 32px; margin-top: 8px; align-items: center;">
-            <div><div class="card-meta">점수</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px;" data-slot="score"></div></div>
-            <div><div class="card-meta">정답률</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px;" data-slot="rate"></div></div>
-            <div><div class="card-meta">제출 시각</div><div style="font-size: 14px; margin-top: 6px;" data-slot="time"></div></div>
-            <div style="margin-left: auto;" id="result-btn"></div>
-          </div>
-        `;
-        todayCard.querySelector('[data-slot="score"]').textContent = `${attempt.score} / 10`;
-        todayCard.querySelector('[data-slot="rate"]').textContent = `${attempt.score * 10}%`;
-        todayCard.querySelector('[data-slot="time"]').textContent = UI.relTime(attempt.submittedAt);
-        todayCard.querySelector('#result-btn').appendChild(
-          UI.button({ label: '결과·해설 보기', icon: 'ri-arrow-right-line', type: 'outline', color: 'neutral', onClick: () => openResult(today, attempt) })
-        );
-      }
-      const dEl = todayCard.querySelector('[data-slot="d"]'); if (dEl) dEl.textContent = UI.fmtDate(today);
-      body.appendChild(todayCard);
+        // 오늘의 퀴즈는 하루에 여러 개 발행될 수 있음 → 발행된 세트마다 블럭 표시
+        // morning = 오전 퀴즈만(1개) / added·after-submit = 추가 발행(2개)
+        const solved = demoState === 'after-submit';
+        const blockCount = demoState === 'morning' ? 1 : 2;
+        const sets = (MOCK.quizzes[today]?.sets || []).slice(0, blockCount);
+        const blocks = sets.length ? sets : [{ id: `${today}-set-auto`, title: MOCK.aiNotes[today]?.title || '퀴즈' }];
 
-      // 과거 응시 결과 — 클릭 즉시 해설 페이지
+        const head0 = document.createElement('div');
+        head0.className = 'section-head';
+        head0.style.margin = '0 0 12px';
+        const hint = blockCount === 1 ? '오전 자동 발행 1개' : `발행 ${blocks.length}개 · 추가 발행됨`;
+        head0.innerHTML = `<h3>오늘의 퀴즈</h3><span class="hint">${UI.fmtDate(today)} · ${hint}</span>`;
+        body.appendChild(head0);
+
+        const blockWrap = document.createElement('div');
+        blockWrap.style.cssText = 'display:flex; flex-direction:column; gap:16px; margin-bottom:32px;';
+        blocks.forEach((set, i) => {
+          const title = set.title || (MOCK.aiNotes[today]?.title || '퀴즈');
+          const ctx = { title: `오늘의 퀴즈 · ${title}`, backLabel: 'AI 퀴즈' };
+          const card = document.createElement('div');
+          card.className = 'card';
+          // 데모: after-submit이면 첫 블럭만 응시 완료, 나머지는 미응시 → 블럭별 상태 차이를 보여줌
+          const blockSolved = solved && i === 0;
+          if (blockSolved) {
+            const attempt = MOCK.attempts[sid]?.[today] || { submitted: true, score: 7, submittedAt: today + 'T09:18', wrongIds: [`${today}-q3`, `${today}-q5`, `${today}-q7`] };
+            card.innerHTML = `
+              <div class="card-head">
+                <div><h3 class="card-title">오늘의 퀴즈${SEP}<span data-slot="bt"></span></h3></div>
+                <span class="tag tag-small tag-weak-success">응시 완료</span>
+              </div>
+              <div class="row" style="gap: 32px; margin-top: 12px; align-items: center;">
+                <div><div class="card-meta">점수</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px;" data-slot="score"></div></div>
+                <div><div class="card-meta">정답률</div><div style="font-size: 24px; font-weight: 700; margin-top: 4px;" data-slot="rate"></div></div>
+                <div><div class="card-meta">제출 시각</div><div style="font-size: 14px; margin-top: 6px;" data-slot="time"></div></div>
+                <div style="margin-left: auto;" id="result-btn-${i}"></div>
+              </div>
+            `;
+            card.querySelector('[data-slot="bt"]').textContent = title;
+            card.querySelector('[data-slot="score"]').textContent = `${attempt.score} / 10`;
+            card.querySelector('[data-slot="rate"]').textContent = `${attempt.score * 10}%`;
+            card.querySelector('[data-slot="time"]').textContent = UI.relTime(attempt.submittedAt);
+            card.querySelector(`#result-btn-${i}`).appendChild(
+              UI.button({ label: '결과·해설 보기', icon: 'ri-arrow-right-line', type: 'outline', color: 'neutral', onClick: () => openResult(today, attempt, ctx) })
+            );
+          } else {
+            card.innerHTML = `
+              <div class="card-head">
+                <div><h3 class="card-title">오늘의 퀴즈${SEP}<span data-slot="bt"></span>${SEP}객관식 10문제</h3></div>
+              </div>
+              <div id="start-btn-${i}" style="margin-top: 16px;"></div>
+            `;
+            card.querySelector('[data-slot="bt"]').textContent = title;
+            card.querySelector(`#start-btn-${i}`).appendChild(
+              UI.button({ label: '풀기', icon: 'ri-play-circle-line', size: 'large', type: 'solid', color: 'primary', onClick: () => openTaking(today, ctx) })
+            );
+          }
+          blockWrap.appendChild(card);
+        });
+        body.appendChild(blockWrap);
+      }
+
+      // 과거 응시 결과 — 페이지네이션 (20/50/100)
       const head = document.createElement('div');
       head.className = 'section-head';
       head.innerHTML = '<h3>과거 응시 결과</h3><span class="hint">클릭하면 결과 + 해설을 바로 볼 수 있어요</span>';
       body.appendChild(head);
 
-      const list = document.createElement('div');
-      list.className = 'note-list';
-      const pastDates = MOCK.days.filter((d) => d !== today && MOCK.quizzes[d]).sort().reverse();
+      // 생성 실패 퀴즈는 학생뷰에서 숨김 (그날 퀴즈가 없는 것과 동일하게 처리) — W1
+      const pastDates = MOCK.days.filter((d) => d !== today && MOCK.quizzes[d] && MOCK.quizzes[d].status !== 'generation_failed').sort().reverse();
       if (pastDates.length === 0) {
         body.appendChild(UI.emptyCard({ icon: 'ri-list-check-2', title: '아직 응시 이력이 없어요', body: '첫 퀴즈가 발행되면 여기에 누적됩니다.' }));
         return;
       }
-      pastDates.forEach((d) => {
-        const q = MOCK.quizzes[d];
-        const a = MOCK.attempts[sid]?.[d];
-        const row = document.createElement('div');
-        row.className = 'quiz-row';
-        let status;
-        if (q.status === 'generation_failed') status = { tag: 'tag-weak-error', label: '생성 실패' };
-        else if (!a?.submitted) status = { tag: 'tag-weak-neutral', label: '미응시' };
-        else status = { tag: 'tag-weak-success', label: `${a.score} / 10` };
-        row.innerHTML = `
-          <div class="quiz-date"><i class="ri-icon ri-calendar-line"></i><span data-slot="d"></span></div>
-          <div class="quiz-title" data-slot="t"></div>
-          <span class="tag tag-small ${status.tag}" data-slot="s"></span>
-        `;
-        row.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
-        row.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[d]?.title || '퀴즈';
-        row.querySelector('[data-slot="s"]').textContent = status.label;
-        row.addEventListener('click', () => {
-          if (q.status === 'generation_failed') { UI.toast('이 날의 퀴즈는 생성에 실패했어요', 'danger'); return; }
-          if (!a?.submitted) {
-            // 미응시 → 결과 화면 대신 안내 후 응시
-            openTaking(d);
-            return;
-          }
-          openResult(d, a); // 클릭 즉시 해설
-        });
-        list.appendChild(row);
-      });
+
+      const pastControls = document.createElement('div');
+      pastControls.className = 'row';
+      pastControls.style.cssText = 'margin-bottom: 12px; justify-content: flex-end;';
+      pastControls.innerHTML = '<div id="past-size"></div>';
+      body.appendChild(pastControls);
+
+      const list = document.createElement('div');
+      list.className = 'note-list';
       body.appendChild(list);
+      const pastPager = document.createElement('div');
+      pastPager.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:14px; margin-top:20px;';
+      body.appendChild(pastPager);
+
+      let pastSize = 20, pastPage = 1;
+      pastControls.querySelector('#past-size').appendChild(
+        UI.select({ options: [{ value: 20, label: '20개씩' }, { value: 50, label: '50개씩' }, { value: 100, label: '100개씩' }], value: 20, onChange: (v) => { pastSize = v; pastPage = 1; drawPast(); } })
+      );
+
+      function drawPast() {
+        const totalPages = Math.max(1, Math.ceil(pastDates.length / pastSize));
+        if (pastPage > totalPages) pastPage = totalPages;
+        list.innerHTML = '';
+        const start = (pastPage - 1) * pastSize;
+        pastDates.slice(start, start + pastSize).forEach((d) => {
+          const a = MOCK.attempts[sid]?.[d];
+          const row = document.createElement('div');
+          row.className = 'quiz-row';
+          const status = !a?.submitted ? { tag: 'tag-weak-neutral', label: '미응시' } : { tag: 'tag-weak-success', label: `${a.score} / 10` };
+          row.innerHTML = `
+            <div class="quiz-date"><i class="ri-icon ri-calendar-line"></i><span data-slot="d"></span></div>
+            <div class="quiz-title" data-slot="t"></div>
+            <span class="tag tag-small ${status.tag}" data-slot="s"></span>
+          `;
+          row.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
+          row.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[d]?.title || '퀴즈';
+          row.querySelector('[data-slot="s"]').textContent = status.label;
+          row.addEventListener('click', () => {
+            if (!a?.submitted) { openTaking(d); return; }
+            openResult(d, a);
+          });
+          list.appendChild(row);
+        });
+        pastPager.innerHTML = '';
+        pastPager.appendChild(UI.button({ label: '이전', icon: 'ri-arrow-left-s-line', type: 'ghost', color: 'neutral', size: 'small', disabled: pastPage <= 1, onClick: () => { pastPage--; drawPast(); } }));
+        const lbl = document.createElement('span');
+        lbl.style.cssText = 'font-size:13px; color:var(--lk-color-fg-neutral); min-width:120px; text-align:center;';
+        lbl.textContent = `${pastPage} / ${totalPages} · 총 ${pastDates.length}건`;
+        pastPager.appendChild(lbl);
+        pastPager.appendChild(UI.button({ label: '다음', icon: 'ri-arrow-right-s-line', type: 'ghost', color: 'neutral', size: 'small', disabled: pastPage >= totalPages, onClick: () => { pastPage++; drawPast(); } }));
+      }
+      drawPast();
     }
 
     // ===== 오답노트 탭 — 객관식 문제 카드뷰 (1뎁스) =====
@@ -206,6 +250,8 @@
       filterTabs.className = 'tabs-round';
       filterTabs.innerHTML = `
         <button class="tab is-active" data-f="all">전체 (${all.length})</button>
+        <button class="tab" data-f="today">오늘의 퀴즈 (${all.filter((w) => w.source !== 'supp').length})</button>
+        <button class="tab" data-f="supp">보충 퀴즈 (${all.filter((w) => w.source === 'supp').length})</button>
         <button class="tab" data-f="book">📌 책갈피 (${all.filter((w) => w.bookmarked).length})</button>
         <button class="tab" data-f="memo">📝 메모 (${all.filter((w) => w.memo).length})</button>
       `;
@@ -231,6 +277,8 @@
 
       function filtered() {
         let items = all;
+        if (filter === 'today') items = items.filter((w) => w.source !== 'supp');
+        if (filter === 'supp') items = items.filter((w) => w.source === 'supp');
         if (filter === 'book') items = items.filter((w) => w.bookmarked);
         if (filter === 'memo') items = items.filter((w) => w.memo);
         if (query) items = items.filter((w) => (w.stem || '').toLowerCase().includes(query) || (w.choices || []).some((c) => (c || '').toLowerCase().includes(query)) || (w.explanation || '').toLowerCase().includes(query));
@@ -264,7 +312,10 @@
       card.className = 'wrong-card';
       card.innerHTML = `
         <div class="top-row">
-          <span data-slot="meta"></span>
+          <span style="display:inline-flex; align-items:center; gap:8px; min-width:0;">
+            <span class="tag tag-small" data-slot="src-tag"></span>
+            <span data-slot="meta"></span>
+          </span>
           <div class="actions" id="acts"></div>
         </div>
         <div class="stem" data-slot="stem"></div>
@@ -272,7 +323,11 @@
         <div class="explain" data-slot="ex"></div>
         <div data-slot="memo"></div>
       `;
-      card.querySelector('[data-slot="meta"]').textContent = `${UI.fmtDate(w.date, { short: true })} · ${MOCK.aiNotes[w.date]?.title || '퀴즈'}`;
+      const isSupp = w.source === 'supp';
+      const srcTag = card.querySelector('[data-slot="src-tag"]');
+      srcTag.classList.add(isSupp ? 'tag-weak-neutral' : 'tag-weak-enabled');
+      srcTag.textContent = isSupp ? '보충 퀴즈' : '오늘의 퀴즈';
+      card.querySelector('[data-slot="meta"]').textContent = `${UI.fmtDate(w.date, { short: true })} · ${w.title || MOCK.aiNotes[w.date]?.title || '퀴즈'}`;
       card.querySelector('[data-slot="stem"]').textContent = w.stem;
       const ch = card.querySelector('[data-slot="ch"]');
       w.choices.forEach((c, idx) => {
@@ -517,12 +572,12 @@
     // ============================================================
     // 응시 / 결과·해설
     // ============================================================
-    function openTaking(date) {
+    function openTaking(date, ctx) {
       const quiz = MOCK.quizzes[date];
       let cur = 0;
       let selections = {};
       const totalDemo = 3;
-      const fp = UI.openFullPage({ backLabel: 'AI 퀴즈' });
+      const fp = UI.openFullPage({ backLabel: ctx?.backLabel || 'AI 퀴즈' });
 
       function paint() {
         const q = quiz.questions[cur];
@@ -575,7 +630,7 @@
                   .filter(([qid, s]) => quiz.questions.find((q) => q.id === qid).answer !== s)
                   .map(([qid]) => qid);
                 UI.closeFullPage();
-                openResult(date, { submitted: true, score, wrongIds, submittedAt: new Date().toISOString() });
+                openResult(date, { submitted: true, score, wrongIds, submittedAt: new Date().toISOString() }, ctx);
                 UI.toast(`채점 완료 — 오답 ${wrongIds.length}건이 오답노트에 누적되었어요`, 'success');
               }
             },
@@ -705,14 +760,27 @@
       body.appendChild(policy);
 
       if (q?.status === 'generation_failed') {
-        body.appendChild(UI.banner({ kind: 'error', msg: '오늘 자동 생성에 실패했어요. 재생성을 시도해주세요.', action: { label: '재생성', onClick: () => UI.toast('재생성 요청 전송됨', 'success') } }));
+        body.appendChild(UI.banner({ kind: 'error', msg: '오늘 자동 생성에 실패했어요. (학생에게는 노출되지 않아요) 바로 재생성할 수 있어요.', action: { label: '재생성', onClick: () => {
+          const set = (q.sets || []).find((s) => s.source === 'auto') || (q.sets || [])[0];
+          if (set) { set.questions = genQuestions(10, MOCK.aiNotes[today]?.title || '오늘 핵심 개념'); set.status = 'draft'; set.title = set.title && set.title !== '새 퀴즈' ? set.title : `${MOCK.aiNotes[today]?.title || '오늘'} 데일리 퀴즈`; }
+          MOCK.quizzes[today].status = 'draft';
+          UI.toast('퀴즈를 재생성했어요 — 검토 후 발행하세요', 'success');
+          if (set) openDraftEditor(today, set, () => { body.innerHTML = ''; renderMgrToday(body); });
+          else { body.innerHTML = ''; renderMgrToday(body); }
+        } } }));
       }
+
+      // 오늘의 퀴즈는 생성일 기준 하루 최대 20개까지 발행 가능 (W4)
+      const limit = MOCK.todayQuizDailyLimit || 20;
+      const dayCount = (q?.sets || []).length;
+      const remaining = Math.max(0, limit - dayCount);
 
       const head = document.createElement('div');
       head.className = 'section-head';
       head.style.margin = '20px 0 12px';
-      head.innerHTML = `<h3>${UI.fmtDate(today)} · 발행 대기 퀴즈</h3><span id="new-set-btn"></span>`;
-      head.querySelector('#new-set-btn').appendChild(UI.button({ label: '새 퀴즈 추가', icon: 'ri-add-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => {
+      head.innerHTML = `<h3>${UI.fmtDate(today)} · 오늘 발행</h3><span class="row" style="gap:12px; align-items:center;"><span class="hint">오늘 ${dayCount}/${limit}개 · ${remaining}개 더 생성 가능</span><span id="new-set-btn"></span></span>`;
+      head.querySelector('#new-set-btn').appendChild(UI.button({ label: '새 퀴즈 추가', icon: 'ri-add-line', type: 'outline', color: 'primary', size: 'medium', disabled: remaining <= 0, onClick: () => {
+        if (remaining <= 0) { UI.toast(`오늘의 퀴즈는 하루 최대 ${limit}개까지 발행할 수 있어요`, 'danger'); return; }
         const newSet = { id: `${today}-set-manual-${Date.now()}`, title: '새 퀴즈', source: 'manual', status: 'draft', publishedAt: null, scheduledAt: `${today}T08:30`, questions: [] };
         if (!MOCK.quizzes[today]) MOCK.quizzes[today] = { sets: [] };
         if (!MOCK.quizzes[today].sets) MOCK.quizzes[today].sets = [];
@@ -723,13 +791,30 @@
 
       const drafts = (q?.sets || []).filter((s) => s.status !== 'published');
       if (drafts.length === 0) {
-        body.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '발행 대기 중인 퀴즈가 없어요', body: '상단 [새 퀴즈 추가]로 만들거나, 발행된 퀴즈 탭에서 발행본을 확인하세요.' }));
-        return;
+        body.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '오늘 발행 대기 중인 퀴즈가 없어요', body: '상단 [새 퀴즈 추가]로 만들거나, 발행된 퀴즈 탭에서 발행본을 확인하세요.' }));
+      } else {
+        const list = document.createElement('div');
+        list.className = 'note-list';
+        drafts.forEach((set) => list.appendChild(buildSlotRow(today, set, body)));
+        body.appendChild(list);
       }
-      const list = document.createElement('div');
-      list.className = 'note-list';
-      drafts.forEach((set) => list.appendChild(buildSlotRow(today, set, body)));
-      body.appendChild(list);
+
+      // 미래 예약 발행 리스트 (W5) — 오늘 이후 일자에 예약된 퀴즈를 하단에 표시
+      const addDays = (iso, n) => { const dt = new Date(iso); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); };
+      const d1 = addDays(today, 1), d3 = addDays(today, 3);
+      const futureScheduled = [
+        { id: 'fut-set-1', date: d1, title: '내일 데일리 퀴즈', source: 'auto', status: 'scheduled', scheduledAt: `${d1}T08:30`, questions: genQuestions(10, '내일 핵심 개념') },
+        { id: 'fut-set-2', date: d3, title: '주간 종합 복습 퀴즈', source: 'manual', status: 'scheduled', scheduledAt: `${d3}T09:00`, questions: genQuestions(15, '주간 종합 복습') },
+      ];
+      const fHead = document.createElement('div');
+      fHead.className = 'section-head';
+      fHead.style.margin = '28px 0 12px';
+      fHead.innerHTML = `<h3>예약 발행 (예정)</h3><span class="hint">미래 일자에 예약된 퀴즈 — 발행 전까지 수정 가능</span>`;
+      body.appendChild(fHead);
+      const fList = document.createElement('div');
+      fList.className = 'note-list';
+      futureScheduled.forEach((set) => fList.appendChild(buildSlotRow(set.date, set, body)));
+      body.appendChild(fList);
     }
 
     // 요약 슬롯 행 — 상태(임시저장/예약발행/생성실패)·예약 일시·이름·문항수. 클릭 시 편집/발행 폼.
@@ -909,6 +994,27 @@
         } else {
           const ta = document.createElement('textarea'); ta.id = 'concept'; ta.placeholder = '문항으로 만들 개념/주제를 입력하세요 (예: pandas merge vs join 차이)'; ta.style.minHeight = '90px'; ta.style.width = '100%';
           pane.appendChild(ta);
+          // 예시 프롬프트 안내 — 클릭하면 입력란에 채워짐 (W3)
+          const guide = document.createElement('div');
+          guide.style.cssText = 'margin-top:10px;';
+          guide.innerHTML = `<div class="card-meta" style="margin-bottom:6px;"><i class="ri-icon ri-lightbulb-line"></i> 예시 프롬프트 — 클릭하면 입력돼요</div><div id="ex-chips" style="display:flex; flex-wrap:wrap; gap:6px;"></div><p class="hint" style="margin:8px 0 0;">개념·비교·상황을 구체적으로 적을수록 문항 품질이 올라가요. (예: "~의 차이와 각각 언제 쓰는지", "~의 장단점")</p>`;
+          const examples = [
+            'pandas merge와 join의 차이, 각각 언제 쓰는지',
+            'groupby 후 agg로 다중 집계를 수행하는 방법',
+            'SQL의 INNER JOIN과 LEFT JOIN 결과 차이',
+            '결측치 처리 전략(제거·평균대치·예측대치)의 장단점',
+            '정규화와 표준화의 차이와 사용 상황',
+          ];
+          const chipWrap = guide.querySelector('#ex-chips');
+          examples.forEach((ex) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'btn btn-small btn-ghost-neutral';
+            chip.textContent = ex;
+            chip.addEventListener('click', () => { ta.value = ex; ta.focus(); });
+            chipWrap.appendChild(chip);
+          });
+          pane.appendChild(guide);
         }
       }
       node.querySelectorAll('#mode button').forEach((b) => b.addEventListener('click', () => { node.querySelectorAll('#mode button').forEach((x) => x.classList.remove('is-active')); b.classList.add('is-active'); mode = b.dataset.m; renderPane(); }));
@@ -1336,6 +1442,7 @@
       const avg = MOCK.students.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[targetDate]?.score || 0), 0) / total;
       const missing = total - submitted;
 
+      // 탭: 결과 요약 / 학생별 점수 / 미응시 명단
       fp.body.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
           <span class="card-meta" data-slot="d"></span>
@@ -1344,73 +1451,176 @@
         </div>
         <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 20px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
 
-        <div class="kpi-grid" id="kpi"></div>
-
-        <div class="section-head"><h3>문항별 오답률 · 보기 선택 분포</h3><span class="hint">09:30 리뷰 우선순위 판단용</span></div>
-        <div class="card" style="margin-top: 12px;"><div id="wlist" class="col" style="gap: 12px;"></div></div>
+        <div class="tabs" style="margin-bottom: 24px;">
+          <button class="tab is-active" data-pt="summary"><i class="ri-icon ri-bar-chart-box-line"></i> 퀴즈 결과 요약</button>
+          <button class="tab" data-pt="scores"><i class="ri-icon ri-user-star-line"></i> 학생별 점수 (${submitted})</button>
+          <button class="tab" data-pt="missing"><i class="ri-icon ri-user-unfollow-line"></i> 미응시 명단 (${missing})</button>
+        </div>
+        <div id="pd-pane"></div>
       `;
       fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(targetDate);
       fp.body.querySelector('[data-slot="t"]').textContent = set?.title || MOCK.aiNotes[targetDate]?.title || '퀴즈';
       fp.body.querySelector('[data-slot="src"]').textContent = set?.source === 'auto' ? '자동 생성' : '강사 작성';
 
-      const kpi = fp.body.querySelector('#kpi');
-      [
-        { label: '응시율', value: `${Math.round(submitted / total * 100)}%`, sub: `${submitted}/${total}명` },
-        { label: '평균 점수', value: `${avg.toFixed(1)} / 10`, sub: UI.fmtDate(targetDate, { short: true }) },
-        { label: '정답률', value: `${Math.round(avg * 10)}%`, sub: '전체 평균' },
-        { label: '미응시', value: `${missing}명`, sub: missing > 0 ? '알림 발송 가능' : '전원 응시' },
-      ].forEach((s) => {
-        const c = document.createElement('div');
-        c.className = 'kpi';
-        c.innerHTML = `<div class="label" data-slot="l"></div><div class="value" data-slot="v"></div><div class="sub" data-slot="sub"></div>`;
-        c.querySelector('[data-slot="l"]').textContent = s.label;
-        c.querySelector('[data-slot="v"]').textContent = s.value;
-        c.querySelector('[data-slot="sub"]').textContent = s.sub;
-        kpi.appendChild(c);
-      });
+      const pane = fp.body.querySelector('#pd-pane');
+      function renderPdPane(k) {
+        pane.innerHTML = '';
+        if (k === 'scores') renderScoresPane(pane);
+        else if (k === 'missing') renderMissingPane(pane);
+        else renderSummaryPane(pane);
+      }
+      fp.body.querySelectorAll('[data-pt]').forEach((b) => b.addEventListener('click', () => {
+        fp.body.querySelectorAll('[data-pt]').forEach((x) => x.classList.remove('is-active'));
+        b.classList.add('is-active');
+        renderPdPane(b.dataset.pt);
+      }));
+      renderPdPane('summary');
 
-      const wlist = fp.body.querySelector('#wlist');
-      const qs = set?.questions || MOCK.quizzes[targetDate]?.questions || [];
-      qs.slice(0, 5).forEach((q, i) => {
-        const dist = [0, 0, 0, 0];
-        MOCK.students.forEach((s) => {
-          const a = MOCK.attempts[s.id]?.[targetDate];
-          if (!a?.submitted) return;
-          const correct = !a.wrongIds?.includes(q.id);
-          dist[correct ? q.answer : (q.answer + 1 + (s.no + i) % 3) % 4]++;
+      // ----- 탭1: 퀴즈 결과 요약 (KPI + 문항별 오답률 분포) -----
+      function renderSummaryPane(pane) {
+        const kpi = document.createElement('div');
+        kpi.className = 'kpi-grid';
+        pane.appendChild(kpi);
+        [
+          { label: '응시율', value: `${Math.round(submitted / total * 100)}%`, sub: `${submitted}/${total}명` },
+          { label: '평균 점수', value: `${avg.toFixed(1)} / 10`, sub: UI.fmtDate(targetDate, { short: true }) },
+          { label: '정답률', value: `${Math.round(avg * 10)}%`, sub: '전체 평균' },
+          { label: '미응시', value: `${missing}명`, sub: missing > 0 ? '미응시 명단 탭 참고' : '전원 응시' },
+        ].forEach((s) => {
+          const c = document.createElement('div');
+          c.className = 'kpi';
+          c.innerHTML = `<div class="label" data-slot="l"></div><div class="value" data-slot="v"></div><div class="sub" data-slot="sub"></div>`;
+          c.querySelector('[data-slot="l"]').textContent = s.label;
+          c.querySelector('[data-slot="v"]').textContent = s.value;
+          c.querySelector('[data-slot="sub"]').textContent = s.sub;
+          kpi.appendChild(c);
         });
-        const totalSubs = dist.reduce((a, b) => a + b, 0);
-        const wrongRate = totalSubs ? Math.round((totalSubs - dist[q.answer]) / totalSubs * 100) : 0;
 
-        const item = document.createElement('div');
-        item.style.cssText = 'border: 1px solid var(--lk-color-border-weak); border-radius: 10px; padding: 14px 16px;';
-        item.innerHTML = `
-          <div class="spread" style="margin-bottom: 10px;">
-            <div class="card-meta">문항 ${i + 1}</div>
-            <span class="tag tag-small ${wrongRate >= 50 ? 'tag-weak-error' : wrongRate >= 30 ? 'tag-weak-warning' : 'tag-weak-success'}">오답률 ${wrongRate}%</span>
-          </div>
-          <div style="font-size: 13.5px; font-weight: 600; margin-bottom: 12px; line-height: 1.5;" data-slot="stem"></div>
-          <div class="col" style="gap: 6px;" data-slot="dist"></div>
-        `;
-        item.querySelector('[data-slot="stem"]').textContent = q.stem;
-        const distEl = item.querySelector('[data-slot="dist"]');
-        q.choices.forEach((c, idx) => {
-          const pct = totalSubs ? Math.round(dist[idx] / totalSubs * 100) : 0;
-          const row = document.createElement('div');
-          row.style.cssText = 'display: grid; grid-template-columns: 24px 1fr 80px 100px; gap: 10px; align-items: center; font-size: 12px;';
-          row.innerHTML = `
-            <span class="text-mute">${idx + 1}.</span>
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" data-slot="c"></span>
-            <div style="height: 8px; background: var(--lk-color-bg-normal); border-radius: 4px; overflow: hidden;">
-              <div style="height: 100%; width: ${pct}%; background: ${idx === q.answer ? 'var(--lk-color-light-green-500)' : 'var(--lk-color-primary-300)'};"></div>
+        const sh = document.createElement('div');
+        sh.className = 'section-head';
+        sh.style.marginTop = '24px';
+        sh.innerHTML = '<h3>문항별 오답률 · 보기 선택 분포</h3><span class="hint">09:30 리뷰 우선순위 판단용</span>';
+        pane.appendChild(sh);
+        const wcard = document.createElement('div');
+        wcard.className = 'card';
+        wcard.style.marginTop = '12px';
+        const wlist = document.createElement('div');
+        wlist.className = 'col';
+        wlist.style.gap = '12px';
+        wcard.appendChild(wlist);
+        pane.appendChild(wcard);
+
+        const qs = set?.questions || MOCK.quizzes[targetDate]?.questions || [];
+        qs.slice(0, 5).forEach((q, i) => {
+          const dist = [0, 0, 0, 0];
+          MOCK.students.forEach((s) => {
+            const a = MOCK.attempts[s.id]?.[targetDate];
+            if (!a?.submitted) return;
+            const correct = !a.wrongIds?.includes(q.id);
+            dist[correct ? q.answer : (q.answer + 1 + (s.no + i) % 3) % 4]++;
+          });
+          const totalSubs = dist.reduce((a, b) => a + b, 0);
+          const wrongRate = totalSubs ? Math.round((totalSubs - dist[q.answer]) / totalSubs * 100) : 0;
+
+          const item = document.createElement('div');
+          item.style.cssText = 'border: 1px solid var(--lk-color-border-weak); border-radius: 10px; padding: 14px 16px;';
+          item.innerHTML = `
+            <div class="spread" style="margin-bottom: 10px;">
+              <div class="card-meta">문항 ${i + 1}</div>
+              <span class="tag tag-small ${wrongRate >= 50 ? 'tag-weak-error' : wrongRate >= 30 ? 'tag-weak-warning' : 'tag-weak-success'}">오답률 ${wrongRate}%</span>
             </div>
-            <span class="text-mute" style="text-align: right;">${dist[idx]}명 (${pct}%)${idx === q.answer ? ' ✓' : ''}</span>
+            <div style="font-size: 13.5px; font-weight: 600; margin-bottom: 12px; line-height: 1.5;" data-slot="stem"></div>
+            <div class="col" style="gap: 6px;" data-slot="dist"></div>
           `;
-          row.querySelector('[data-slot="c"]').textContent = c;
-          distEl.appendChild(row);
+          item.querySelector('[data-slot="stem"]').textContent = q.stem;
+          const distEl = item.querySelector('[data-slot="dist"]');
+          q.choices.forEach((c, idx) => {
+            const pct = totalSubs ? Math.round(dist[idx] / totalSubs * 100) : 0;
+            const row = document.createElement('div');
+            row.style.cssText = 'display: grid; grid-template-columns: 24px 1fr 80px 100px; gap: 10px; align-items: center; font-size: 12px;';
+            row.innerHTML = `
+              <span class="text-mute">${idx + 1}.</span>
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" data-slot="c"></span>
+              <div style="height: 8px; background: var(--lk-color-bg-normal); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; width: ${pct}%; background: ${idx === q.answer ? 'var(--lk-color-light-green-500)' : 'var(--lk-color-primary-300)'};"></div>
+              </div>
+              <span class="text-mute" style="text-align: right;">${dist[idx]}명 (${pct}%)${idx === q.answer ? ' ✓' : ''}</span>
+            `;
+            row.querySelector('[data-slot="c"]').textContent = c;
+            distEl.appendChild(row);
+          });
+          wlist.appendChild(item);
         });
-        wlist.appendChild(item);
-      });
+      }
+
+      // ----- 탭2: 학생별 점수 (점수순 + 클릭 시 개별 결과 드릴다운) -----
+      function renderScoresPane(pane) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const scoreList = document.createElement('div');
+        scoreList.className = 'col';
+        scoreList.style.gap = '6px';
+        card.appendChild(scoreList);
+        pane.appendChild(card);
+
+        const submittedStudents = MOCK.students
+          .map((s) => ({ s, a: MOCK.attempts[s.id]?.[targetDate] }))
+          .filter((x) => x.a?.submitted)
+          .sort((a, b) => (b.a.score || 0) - (a.a.score || 0));
+        if (submittedStudents.length === 0) {
+          scoreList.appendChild(UI.emptyCard({ icon: 'ri-user-line', title: '아직 응시한 학생이 없어요', body: '응시가 시작되면 점수가 표시됩니다.' }));
+          return;
+        }
+        submittedStudents.forEach(({ s, a }, idx) => {
+          const score = a.score || 0;
+          const row = document.createElement('div');
+          row.className = 'quiz-row';
+          row.style.cursor = 'pointer';
+          const scoreCls = score >= 8 ? 'tag-weak-success' : score >= 5 ? 'tag-weak-warning' : 'tag-weak-error';
+          row.innerHTML = `
+            <div class="quiz-date"><span style="min-width:28px; text-align:center; font-weight:700; color:var(--lk-color-fg-neutral);" data-slot="rank"></span></div>
+            <div class="quiz-title" data-slot="name"></div>
+            <span class="tag tag-small tag-weak-neutral" data-slot="rate"></span>
+            <span class="tag tag-small ${scoreCls}" data-slot="score"></span>
+            <i class="ri-icon ri-arrow-right-s-line" style="color: var(--lk-color-fg-assistive);"></i>
+          `;
+          row.querySelector('[data-slot="rank"]').textContent = `${idx + 1}`;
+          row.querySelector('[data-slot="name"]').textContent = UI.displayName(s);
+          row.querySelector('[data-slot="rate"]').textContent = `정답률 ${score * 10}%`;
+          row.querySelector('[data-slot="score"]').textContent = `${score} / 10`;
+          row.addEventListener('click', () => openResult(targetDate, a, { title: `${UI.displayName(s)} · 결과`, backLabel: '발행된 퀴즈', questions: set?.questions }));
+          scoreList.appendChild(row);
+        });
+      }
+
+      // ----- 탭3: 미응시 명단 -----
+      function renderMissingPane(pane) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const missList = document.createElement('div');
+        missList.className = 'col';
+        missList.style.gap = '6px';
+        card.appendChild(missList);
+        pane.appendChild(card);
+
+        const missStudents = MOCK.students.filter((s) => !MOCK.attempts[s.id]?.[targetDate]?.submitted);
+        if (missStudents.length === 0) {
+          missList.appendChild(UI.emptyCard({ icon: 'ri-check-double-line', title: '전원 응시했어요 🎉', body: '미응시자가 없습니다.' }));
+          return;
+        }
+        missStudents.forEach((s) => {
+          const row = document.createElement('div');
+          row.className = 'quiz-row';
+          row.innerHTML = `
+            <div class="quiz-date"><i class="ri-icon ri-user-line"></i><span data-slot="no"></span></div>
+            <div class="quiz-title" data-slot="name"></div>
+            <span class="tag tag-small tag-weak-warning">미응시</span>
+          `;
+          row.querySelector('[data-slot="no"]').textContent = `${s.no}번`;
+          row.querySelector('[data-slot="name"]').textContent = UI.displayName(s);
+          missList.appendChild(row);
+        });
+      }
     }
 
     function renderMgrSupp(body) {
@@ -1448,13 +1658,13 @@
         heatBox.appendChild(UI.renderHeatmap({
           rows: MOCK.students,
           cols,
-          rowLabel: (s) => s.name,
+          rowLabel: (s) => UI.displayName(s),
           colLabel: (c) => `${new Date(c).getDate()}`,
           cellLevel: (s, d) => {
             const n = Math.min(10, MOCK.suppSolvedDaily[s.id]?.[d]?.plays || 0);
             if (n === 0) return { level: 0 };
             const lvl = n >= 9 ? 4 : n >= 6 ? 3 : n >= 3 ? 2 : 1;
-            return { level: lvl, title: `${s.name} ${d}: ${n}회 풀이` };
+            return { level: lvl, title: `${UI.displayName(s)} ${d}: ${n}회 풀이` };
           },
           onCell: (s, d) => openMgrSuppDetail(s, d),
         }));
@@ -1492,7 +1702,7 @@
       `;
       fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(date);
       fp.body.querySelector('[data-slot="cnt"]').textContent = `${sets.length}회 풀이`;
-      fp.body.querySelector('[data-slot="n"]').textContent = `${student.name} · 이 날 푼 보충 퀴즈`;
+      fp.body.querySelector('[data-slot="n"]').textContent = `${UI.displayName(student)} · 이 날 푼 보충 퀴즈`;
 
       // KPI
       const total = sets.reduce((sum, s) => sum + s.count, 0);
@@ -1540,7 +1750,7 @@
           const score = Math.round(set.rate * 10);
           openResult(set.targetDate, { submitted: true, score, wrongIds, submittedAt: set.createdAt }, {
             kind: 'supp',
-            title: `${set.topic} · ${set.count}문제 (${student.name})`,
+            title: `${set.topic} · ${set.count}문제 (${UI.displayName(student)})`,
             backLabel: '학생 보충 풀이',
             questions: qs,
           });

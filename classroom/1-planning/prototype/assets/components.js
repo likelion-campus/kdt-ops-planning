@@ -341,6 +341,43 @@
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
+  // ===== 이름 표시 (동명이인 정책: 항상 전화번호 뒷자리 4 병기) =====
+  // 인자: 학생 객체 {name, phone4} | 제출물 {studentId, studentName} | studentId 문자열
+  function displayName(arg) {
+    const students = (window.MOCK && window.MOCK.students) || [];
+    let name = '', phone4 = '';
+    if (typeof arg === 'string') {
+      const s = students.find((x) => x.id === arg);
+      name = s ? s.name : arg; phone4 = s ? s.phone4 : '';
+    } else if (arg) {
+      name = arg.name || arg.studentName || '';
+      phone4 = arg.phone4 || '';
+      if (!phone4 && arg.studentId) {
+        const s = students.find((x) => x.id === arg.studentId);
+        phone4 = s ? s.phone4 : '';
+      }
+    }
+    return phone4 ? `${name} (${phone4})` : name;
+  }
+
+  // ===== 모바일 가드 (W13) — 작성/발행/편집은 PC 전용, 열람·풀기는 모바일 허용 =====
+  function isMobile() { return window.matchMedia('(max-width: 768px)').matches; }
+  // 작성성 액션 진입 시 호출. 모바일이면 toast 후 true(차단) 반환.
+  function pcOnly(label) {
+    if (isMobile()) { toast(`${label || '이 기능'}은(는) PC에서 이용해주세요 — 모바일에서는 열람만 가능해요`, 'danger'); return true; }
+    return false;
+  }
+  // 페이지 전체가 PC 전용일 때 안내 카드 렌더. 모바일이면 true 반환(본 렌더 스킵).
+  function pcOnlyNotice(mount, label) {
+    if (!isMobile()) return false;
+    const box = document.createElement('div');
+    box.className = 'empty';
+    box.style.cssText = 'padding:48px 24px; text-align:center;';
+    box.innerHTML = `<div class="icon"><i class="ri-icon ri-computer-line"></i></div><h4>${label || '이 화면'}은 PC에서 이용해주세요</h4><p>작성·관리 기능은 PC에 최적화되어 있어요. 모바일에서는 노트·퀴즈·TIL 열람을 이용해 주세요.</p>`;
+    mount.appendChild(box);
+    return true;
+  }
+
   // ===== Heatmap =====
   function renderHeatmap(opts) {
     const { rows, cols, cellLevel, onCell, rowLabel, colLabel, freeze = false, today = null } = opts;
@@ -630,7 +667,7 @@
     openSlide, closeSlide, openModal,
     openFullPage, closeFullPage, closeAllFullPages,
     select, multiSelect, demoStateToggle,
-    md, fmtDate, relTime,
+    md, fmtDate, relTime, displayName, isMobile, pcOnly, pcOnlyNotice,
     renderHeatmap, renderLegend, emptyCard, banner,
     getView, setView, loadState, saveState,
     stateFlag,

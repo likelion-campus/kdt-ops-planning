@@ -20,7 +20,9 @@
       actions: _isMgr ? [UI.button({ label: '프로젝트 등록하기', icon: 'ri-add-line', type: 'solid', color: 'primary', onClick: openManagerCreate })] : [],
     });
 
-    if (view === 'trainee') renderTrainee(); else renderManager();
+    // W13 — 프로젝트는 작성·관리 중심이라 PC 전용. 모바일은 안내만.
+    if (UI.pcOnlyNotice(root, '프로젝트')) { /* 모바일: 본 렌더 생략 */ }
+    else if (view === 'trainee') renderTrainee(); else renderManager();
 
     // ============================================================
     // 헬퍼: 단계·종류 태그
@@ -30,8 +32,8 @@
       const today = new Date(MOCK.meta.today);
       const sf = new Date(p.submitFrom), st = new Date(p.submitTo), ft = new Date(p.feedbackTo);
       if (today < sf) return { key: 'scheduled', label: '예정', cls: 'tag-weak-neutral' };
-      if (today <= st) return { key: 'submitting', label: '제출 진행', cls: 'tag-weak-progressing' };
-      if (today <= ft) return { key: 'feedback', label: '피드백 진행', cls: 'tag-weak-warning' };
+      if (today <= st) return { key: 'submitting', label: '제출 마감', cls: 'tag-weak-progressing' };
+      if (today <= ft) return { key: 'feedback', label: '피드백 진행중', cls: 'tag-weak-warning' };
       return { key: 'closed', label: '종료', cls: 'tag-weak-neutral' };
     }
     function dDay(dateStr) {
@@ -46,7 +48,7 @@
     }
     // 내 진행 상태(학생 본인) — 제출축+피드백축 결합 (POL-CR-03 §6.0)
     function myStateTag(p, mine, stage) {
-      if (mine && mine.feedback) return { key: 'feedback_ready', label: '피드백 도착', cls: 'tag-weak-progressing' };
+      // 제출축만 (피드백 여부는 feedbackBadge로 분리 표시)
       if (mine && mine.draft) return { key: 'draft', label: '임시저장', cls: 'tag-weak-neutral' };
       if (mine) return { key: 'submitted', label: '제출 완료', cls: 'tag-weak-success' };
       if (stage.key === 'scheduled') return { key: 'not_open', label: '오픈 예정', cls: 'tag-weak-neutral' };
@@ -75,6 +77,51 @@
       const ft = new Date(p.feedbackTo);
       return today >= ff && today <= ft;
     }
+    // 피드백 도착 표시 — 제출 상태 태그와 분리된 별도 아이콘(메시지 아이콘)
+    function feedbackBadge(mine) {
+      if (mine && mine.feedback) return '<span class="tag tag-small tag-weak-progressing" title="피드백 도착"><i class="ri-icon ri-chat-3-fill"></i> 피드백</span>';
+      return '';
+    }
+    // 외부 공개 상태 태그 (제한 > 공개중 > 없음)
+    function shareStatusTag(s) {
+      if (s.externalRestricted) return '<span class="tag tag-small tag-weak-error"><i class="ri-icon ri-lock-line"></i> 외부 공개 제한</span>';
+      if (s.published) return '<span class="tag tag-small tag-weak-success">공개 중</span>';
+      return '';
+    }
+    // 간이 마크다운 에디터 — 툴바 + 입력 + 실시간 미리보기. {el, getValue} 반환
+    function buildMarkdownEditor(initial = '', opts = {}) {
+      const wrap = document.createElement('div');
+      wrap.className = 'md-editor';
+      wrap.innerHTML = `
+        <div class="md-editor-toolbar" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">
+          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="h2"># 제목</button>
+          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="bold"><b>굵게</b></button>
+          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="list">• 목록</button>
+          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="link">🔗 링크</button>
+          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="code">&lt;/&gt; 코드</button>
+        </div>
+        <div class="md-editor-split" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start;">
+          <textarea data-md-input style="min-height:240px; font-family:ui-monospace, monospace; font-size:13px; line-height:1.6;"></textarea>
+          <div class="md-view" data-md-preview style="min-height:240px; padding:12px 16px; background:var(--lk-color-bg-normal); border-radius:10px; overflow:auto;"></div>
+        </div>
+      `;
+      const ta = wrap.querySelector('[data-md-input]');
+      const pv = wrap.querySelector('[data-md-preview]');
+      if (opts.placeholder) ta.placeholder = opts.placeholder;
+      ta.value = initial;
+      function refresh() { pv.innerHTML = ta.value.trim() ? UI.md(ta.value) : '<p class="text-mute" style="font-size:13px;">미리보기가 여기에 표시됩니다.</p>'; }
+      ta.addEventListener('input', refresh);
+      const snippets = { h2: '\n## 제목\n', bold: '**굵게**', list: '\n- 항목 1\n- 항목 2\n', link: '[링크 텍스트](https://)', code: '\n```\n코드\n```\n' };
+      wrap.querySelectorAll('[data-md]').forEach((b) => b.addEventListener('click', () => {
+        const snip = snippets[b.dataset.md] || '';
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.slice(0, start) + snip + ta.value.slice(end);
+        ta.focus(); ta.selectionStart = ta.selectionEnd = start + snip.length;
+        refresh();
+      }));
+      refresh();
+      return { el: wrap, getValue: () => ta.value };
+    }
 
     // ============================================================
     // 학생뷰
@@ -100,6 +147,7 @@
             <span class="tag tag-small ${stage.cls}" data-slot="stage"></span>
             <span class="title" data-slot="title"></span>
             <span class="tag ${my.cls}" data-slot="my" style="margin-left:auto;"></span>
+            <span data-slot="fbicon"></span>
           </div>
           <div class="meta-row">
             <div class="meta-pill"><span class="label">제출 기간</span><span data-slot="sf"></span> ~ <span data-slot="st"></span></div>
@@ -109,6 +157,7 @@
         card.querySelector('[data-slot="round"]').textContent = round.label;
         card.querySelector('[data-slot="stage"]').textContent = stageWithDday(p, stage);
         card.querySelector('[data-slot="my"]').textContent = my.label;
+        card.querySelector('[data-slot="fbicon"]').innerHTML = feedbackBadge(mine);
         card.querySelector('[data-slot="title"]').textContent = p.title;
         card.querySelector('[data-slot="sf"]').textContent = UI.fmtDate(p.submitFrom, { compact: true });
         card.querySelector('[data-slot="st"]').textContent = UI.fmtDate(p.submitTo, { compact: true });
@@ -188,7 +237,7 @@
       function renderPane(key) {
         pane.innerHTML = '';
         if (key === 'problem') renderProblemPane(pane, p, {
-          my, stage, btn: submitBtnInfo(p, mine, stage),
+          my, stage, mine, btn: submitBtnInfo(p, mine, stage),
           onSubmit: () => openSubmitForm(p, sid, mine, stage),
         });
         else if (key === 'board') renderBoardPane(pane, p, sid, mine, subs);
@@ -222,11 +271,13 @@
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
           <span class="tag ${cta.my.cls}" data-slot="my"></span>
           <span class="tag tag-small ${cta.stage.cls}" data-slot="stg"></span>
+          <span data-slot="fbicon"></span>
         </div>
         <div id="cta-btn"></div>
       `;
       left.querySelector('[data-slot="my"]').textContent = cta.my.label;
       left.querySelector('[data-slot="stg"]').textContent = dd;
+      left.querySelector('[data-slot="fbicon"]').innerHTML = feedbackBadge(cta.mine);
       const b = UI.button({ label: cta.btn.label, icon: cta.btn.icon, type: 'solid', color: 'primary', size: 'medium', disabled: cta.btn.disabled, onClick: cta.onSubmit });
       b.style.width = '100%';
       left.querySelector('#cta-btn').appendChild(b);
@@ -322,7 +373,7 @@
           <div class="body">
             <div class="row" style="gap: 4px;">
               ${idx === 0 && s.studentId === sid ? '<span class="tag tag-small tag-weak-enabled">내 제출본</span>' : ''}
-              ${s.published ? '<span class="tag tag-small tag-weak-success">공개 중</span>' : ''}
+              ${shareStatusTag(s)}
             </div>
             <div class="title" data-slot="t"></div>
             <p class="meta" data-slot="o"></p>
@@ -332,7 +383,7 @@
         card.querySelector('img').src = s.mainImage;
         card.querySelector('[data-slot="t"]').textContent = s.title;
         card.querySelector('[data-slot="o"]').textContent = s.oneLiner;
-        card.querySelector('[data-slot="by"]').textContent = `by ${s.studentName}`;
+        card.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)}`;
         card.addEventListener('click', () => openSubmissionView(s, s.studentId === sid));
         board.appendChild(card);
       });
@@ -352,7 +403,7 @@
           ${isOwn ? '<span class="tag tag-small tag-weak-enabled">내 제출본</span>' : ''}
           <span class="card-meta" data-slot="by"></span>
           ${s.excellent ? '<span class="tag tag-small tag-weak-enabled"><i class="ri-icon ri-star-fill"></i> 우수</span>' : ''}
-          ${s.published ? '<span class="tag tag-small tag-weak-success">공개 중</span>' : ''}
+          ${shareStatusTag(s)}
         </div>
         <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
         <p class="text-mute" style="font-size: 14px; margin: 0 0 24px;" data-slot="ol"></p>
@@ -364,7 +415,7 @@
           <a class="btn btn-outline-neutral btn-small" data-slot="vid" target="_blank">시연 영상 보기</a>
         </div>
       `;
-      fp.body.querySelector('[data-slot="by"]').textContent = `by ${s.studentName} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
+      fp.body.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
       fp.body.querySelector('[data-slot="t"]').textContent = s.title;
       fp.body.querySelector('[data-slot="ol"]').textContent = s.oneLiner;
       fp.body.querySelector('[data-slot="img"]').src = s.mainImage;
@@ -374,17 +425,19 @@
     }
 
     function openShareDialog(s, opts = {}) {
-      // 외부 공유/공개 토글 ON/OFF + 링크 복사 (SNS 연동 없음). 학생=외부 공유하기 / 매니저=공개 설정
+      // 학생 외부 공유 토글 — 코호트 내 공유는 항상 고정. 외부(로그인 없이 별도 주소 열람)만 켜고 끔.
+      // 매니저가 외부 공개를 제한한 경우(externalRestricted) 토글 비활성 + 사유 표시.
       const shareUrl = `https://likelion-classroom.app/share/${s.studentId}-${s.title.length}`;
       const node = UI.openModal(`
         <h3 class="card-title" data-slot="dtitle"></h3>
-        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">공개를 켜면 공개 링크가 생성돼요. 끄면 링크가 비활성화되어 외부에서 볼 수 없어요.</p>
+        <p class="text-mute" style="font-size: 13px; margin: 8px 0 16px;">코호트(수업) 내 공유는 항상 유지돼요. 여기서는 <strong>외부 공개</strong>(로그인 없이 별도 주소로 누구나 열람)만 켜고 끌 수 있어요.</p>
+        <div id="restrict-note" class="banner banner-error" style="display:none; margin-bottom:14px; align-items:flex-start;"><i class="ri-icon ri-lock-line"></i><span><strong>매니저가 외부 공개를 제한했어요.</strong><br/><span data-slot="reason" style="display:block; margin-top:4px; line-height:1.6;"></span><span style="display:block; margin-top:6px; color:var(--lk-color-fg-neutral);">해제하려면 매니저·강사에게 사유를 설명하고 요청해 주세요.</span></span></div>
         <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--lk-color-bg-normal); border-radius:10px;">
           <div>
             <div style="font-size:14px; font-weight:600; color:var(--lk-color-fg-strong);" data-slot="swlabel"></div>
             <div class="text-mute" style="font-size:12px; margin-top:2px;" data-slot="state"></div>
           </div>
-          <button id="sw" role="switch" aria-label="공개 토글" style="position:relative; width:46px; height:26px; border-radius:9999px; border:none; cursor:pointer; transition:background .15s; flex:0 0 auto;"><span id="knob" style="position:absolute; top:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:left .15s;"></span></button>
+          <button id="sw" role="switch" aria-label="외부 공개 토글" style="position:relative; width:46px; height:26px; border-radius:9999px; border:none; cursor:pointer; transition:background .15s; flex:0 0 auto;"><span id="knob" style="position:absolute; top:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:left .15s;"></span></button>
         </div>
         <div id="link-row" style="margin-top:14px; background:var(--lk-color-bg-normal); padding:14px 16px; border-radius:10px; display:flex; align-items:center; gap:12px;">
           <span style="font-size:13px; font-family:ui-monospace,monospace; flex:1; overflow:hidden; text-overflow:ellipsis;" data-slot="url"></span>
@@ -393,22 +446,59 @@
         <div class="row row-end" style="margin-top:16px;"><button class="btn btn-outline-neutral" id="close">닫기</button></div>
       `);
       node.querySelector('[data-slot="dtitle"]').textContent = opts.title || '외부 공유하기';
-      node.querySelector('[data-slot="swlabel"]').textContent = opts.toggleLabel || '외부 공유';
+      node.querySelector('[data-slot="swlabel"]').textContent = opts.toggleLabel || '외부 공개';
       node.querySelector('[data-slot="url"]').textContent = shareUrl;
-      const sw = node.querySelector('#sw'), knob = node.querySelector('#knob'), linkRow = node.querySelector('#link-row'), copy = node.querySelector('#copy'), state = node.querySelector('[data-slot="state"]');
+      const sw = node.querySelector('#sw'), knob = node.querySelector('#knob'), linkRow = node.querySelector('#link-row'), copy = node.querySelector('#copy'), state = node.querySelector('[data-slot="state"]'), restrictNote = node.querySelector('#restrict-note');
       function render() {
-        const on = !!s.published;
+        const restricted = !!s.externalRestricted;
+        const on = !restricted && !!s.published;
+        restrictNote.style.display = restricted ? 'flex' : 'none';
+        if (restricted) node.querySelector('[data-slot="reason"]').textContent = s.restrictReason || '';
         sw.style.background = on ? 'var(--lk-color-bg-primary)' : 'var(--lk-color-border-normal)';
         knob.style.left = on ? '23px' : '3px';
-        state.textContent = on ? '공개 중 — 링크로 누구나 열람 가능' : '비공개 — 링크 비활성화';
+        sw.disabled = restricted; sw.style.cursor = restricted ? 'not-allowed' : 'pointer'; sw.style.opacity = restricted ? '0.5' : '1';
+        state.textContent = restricted ? '매니저 제한 중 — 외부 공개 불가' : (on ? '외부 공개 중 — 링크로 누구나 열람 가능' : '외부 비공개 — 링크 비활성화');
         linkRow.style.opacity = on ? '1' : '0.45';
         copy.disabled = !on;
         copy.style.cursor = on ? 'pointer' : 'not-allowed';
       }
       render();
-      sw.addEventListener('click', () => { s.published = !s.published; render(); if (opts.onChange) opts.onChange(); UI.toast(s.published ? '공개로 전환했어요 — 링크가 생성됐어요' : '비공개로 전환했어요', 'success'); });
-      copy.addEventListener('click', () => { if (!s.published) return; UI.toast('링크를 복사했어요', 'success'); });
+      sw.addEventListener('click', () => {
+        if (s.externalRestricted) { UI.toast('매니저가 외부 공개를 제한했어요', 'danger'); return; }
+        s.published = !s.published; render(); if (opts.onChange) opts.onChange();
+        UI.toast(s.published ? '외부 공개로 전환했어요 — 링크가 생성됐어요' : '외부 비공개로 전환했어요', 'success');
+      });
+      copy.addEventListener('click', () => { if (!s.published || s.externalRestricted) return; UI.toast('링크를 복사했어요', 'success'); });
       node.querySelector('#close').addEventListener('click', () => { node.remove(); if (opts.onChange) opts.onChange(); });
+    }
+
+    // 매니저 — 외부 공개 제한/해제 (제한 시 사유 필수)
+    function openRestrictDialog(s, opts = {}) {
+      if (s.externalRestricted) {
+        const node = UI.openModal(`
+          <h3 class="card-title" style="margin-bottom:8px;">외부 공개 제한 해제</h3>
+          <p class="text-mute" style="font-size:13px; margin:0 0 14px;">현재 외부 공개가 제한되어 있어요. 해제하면 학생이 다시 외부 공개를 켤 수 있어요.</p>
+          <div class="banner banner-error" style="margin-bottom:16px; align-items:flex-start;"><i class="ri-icon ri-lock-line"></i><span data-slot="reason" style="line-height:1.6;"></span></div>
+          <div class="row row-end" style="gap:8px;" id="acts"></div>
+        `);
+        node.querySelector('[data-slot="reason"]').textContent = s.restrictReason || '';
+        node.querySelector('#acts').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+        node.querySelector('#acts').appendChild(UI.button({ label: '제한 해제', icon: 'ri-lock-unlock-line', type: 'solid', color: 'primary', onClick: () => { s.externalRestricted = false; s.restrictReason = null; node.remove(); UI.toast('외부 공개 제한을 해제했어요', 'success'); if (opts.onChange) opts.onChange(); } }));
+      } else {
+        const node = UI.openModal(`
+          <h3 class="card-title" style="margin-bottom:8px;">외부 공개 제한</h3>
+          <p class="text-mute" style="font-size:13px; margin:0 0 14px;">외부 공개(로그인 없이 별도 주소 열람)를 제한해요. 코호트 내 공유는 그대로 유지돼요. 사유는 학생의 외부 공유 화면에 표시되며, 해제는 매니저만 할 수 있어요.</p>
+          <div class="field"><label>제한 사유<span class="req">*</span></label><textarea id="reason" style="min-height:110px;" placeholder="예: 외부 비공개 데이터셋(고객 PII)이 포함되어 있어 외부 공개를 제한합니다."></textarea></div>
+          <div class="row row-end" style="gap:8px;" id="acts"></div>
+        `);
+        node.querySelector('#acts').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+        node.querySelector('#acts').appendChild(UI.button({ label: '외부 공개 제한', icon: 'ri-lock-line', type: 'solid', color: 'danger', onClick: () => {
+          const reason = node.querySelector('#reason').value.trim();
+          if (!reason) { UI.toast('제한 사유를 입력해주세요', 'danger'); return; }
+          s.externalRestricted = true; s.restrictReason = reason; s.published = false;
+          node.remove(); UI.toast('외부 공개를 제한했어요', 'success'); if (opts.onChange) opts.onChange();
+        } }));
+      }
     }
 
     function renderFeedbackPane(pane, p, mine) {
@@ -597,7 +687,7 @@
             <img class="thumb" loading="lazy" alt="" />
             <div class="body">
               <div class="row" style="gap: 4px;">
-                ${s.published ? '<span class="tag tag-small tag-weak-success">공개 중</span>' : ''}
+                ${shareStatusTag(s)}
               </div>
               <div class="title" data-slot="t"></div>
               <div class="meta" data-slot="by"></div>
@@ -605,7 +695,7 @@
           `;
           c.querySelector('img').src = s.mainImage;
           c.querySelector('[data-slot="t"]').textContent = s.title;
-          c.querySelector('[data-slot="by"]').textContent = `by ${s.studentName}`;
+          c.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)}`;
           c.addEventListener('click', () => openMgrSubmission(p, s, draw));
           board.appendChild(c);
         });
@@ -640,7 +730,7 @@
           <span class="tag tag-small tag-weak-warning">미제출</span>
         `;
         row.querySelector('[data-slot="no"]').textContent = `${s.no}번`;
-        row.querySelector('[data-slot="name"]').textContent = s.name;
+        row.querySelector('[data-slot="name"]').textContent = UI.displayName(s);
         list.appendChild(row);
       });
       pane.appendChild(list);
@@ -650,12 +740,12 @@
     function openMgrSubmission(p, s, onChange) {
       const fp = UI.openFullPage({ backLabel: p.title });
       fp.actions.appendChild(UI.button({ label: s.excellent ? '우수 해제' : '우수 마크', icon: 'ri-star-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => { s.excellent = !s.excellent; UI.closeFullPage(); UI.toast(s.excellent ? '우수로 표시했어요' : '우수 표시를 해제했어요', 'success'); if (onChange) onChange(); } }));
-      fp.actions.appendChild(UI.button({ label: '공개 설정', icon: 'ri-global-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openShareDialog(s, { title: '공개 설정', toggleLabel: '외부 공개', onChange: () => { refreshHeaderTags(); if (onChange) onChange(); } }) }));
+      fp.actions.appendChild(UI.button({ label: s.externalRestricted ? '외부 공개 제한 해제' : '외부 공개 제한', icon: s.externalRestricted ? 'ri-lock-unlock-line' : 'ri-lock-line', type: 'outline', color: s.externalRestricted ? 'neutral' : 'danger', size: 'medium', onClick: () => openRestrictDialog(s, { onChange: () => { UI.closeFullPage(); UI.toast('상태가 업데이트됐어요', 'success'); if (onChange) onChange(); } }) }));
 
       fp.body.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;" id="mgr-sub-tags">
           <span class="tag tag-small ${s.feedback ? 'tag-weak-success' : 'tag-weak-warning'}" data-slot="fbtag"></span>
-          <span class="tag tag-small tag-weak-success" data-slot="pubtag" style="${s.published ? '' : 'display:none;'}">공개 중</span>
+          <span data-slot="pubtag"></span>
           ${s.excellent ? '<span class="tag tag-small tag-weak-enabled">우수</span>' : ''}
           <span class="card-meta" data-slot="by"></span>
         </div>
@@ -676,9 +766,10 @@
           <div class="row row-end" id="fb-actions"></div>
         </div>
       `;
-      function refreshHeaderTags() { const pt = fp.body.querySelector('[data-slot="pubtag"]'); if (pt) pt.style.display = s.published ? '' : 'none'; }
+      function refreshHeaderTags() { const pt = fp.body.querySelector('[data-slot="pubtag"]'); if (pt) pt.innerHTML = shareStatusTag(s); }
+      refreshHeaderTags();
       fp.body.querySelector('[data-slot="fbtag"]').textContent = s.feedback ? '피드백 완료' : '피드백 전';
-      fp.body.querySelector('[data-slot="by"]').textContent = `by ${s.studentName} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
+      fp.body.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
       fp.body.querySelector('[data-slot="t"]').textContent = s.title;
       fp.body.querySelector('[data-slot="ol"]').textContent = s.oneLiner;
       fp.body.querySelector('[data-slot="img"]').src = s.mainImage;
@@ -691,7 +782,7 @@
         if (!val) { UI.toast('피드백 내용을 입력해주세요', 'danger'); return; }
         const wasEmpty = !s.feedback; s.feedback = val;
         UI.closeFullPage();
-        UI.toast(`${s.studentName}에게 피드백을 ${wasEmpty ? '등록' : '저장'}했어요`, 'success');
+        UI.toast(`${UI.displayName(s)}에게 피드백을 ${wasEmpty ? '등록' : '저장'}했어요`, 'success');
         if (onChange) onChange();
       } }));
     }
@@ -703,7 +794,7 @@
         <div class="field"><label>회차 종류</label><div id="round-sel"></div></div>
         <div class="field"><label>회차명</label><input type="text" id="e-title" /></div>
         <div class="field"><label>한 줄 소개</label><input type="text" id="e-ol" /></div>
-        <div class="field"><label>문제 설명 · 마크다운</label><textarea id="e-desc" style="min-height:160px; font-family:ui-monospace,monospace;"></textarea></div>
+        <div class="field"><label>문제 설명</label><div id="e-desc-mount"></div></div>
         <div class="field-row">
           <div class="field"><label>제출 시작</label><input type="date" id="e-sf" /></div>
           <div class="field"><label>제출 마감</label><input type="date" id="e-st" /></div>
@@ -717,7 +808,7 @@
       node.querySelector('#round-sel').appendChild(UI.select({ options: [{ value: '기초', label: '기초' }, { value: '심화', label: '심화' }, { value: '파이널', label: '파이널' }, { value: '기타', label: '기타' }], value: p.round }));
       node.querySelector('#e-title').value = p.title;
       node.querySelector('#e-ol').value = p.oneLiner || '';
-      node.querySelector('#e-desc').value = p.description || '';
+      node.querySelector('#e-desc-mount').appendChild(buildMarkdownEditor(p.description || '', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
       node.querySelector('#e-sf').value = p.submitFrom;
       node.querySelector('#e-st').value = p.submitTo;
       node.querySelector('#e-ff').value = p.feedbackFrom;
@@ -735,7 +826,7 @@
           <div class="field"><label>회차 종류<span class="req">*</span></label><div id="round-sel"></div></div>
           <div class="field"><label>회차명<span class="req">*</span></label><input type="text" placeholder="예: 심화 — 머신러닝 모델링" /></div>
           <div class="field"><label>한 줄 소개<span class="req">*</span></label><input type="text" placeholder="예: 도메인 데이터로 모델을 학습하고 결과를 대시보드로 가시화합니다." /></div>
-          <div class="field"><label>문제 설명<span class="req">*</span> · 마크다운</label><textarea style="min-height: 240px; font-family: ui-monospace, monospace;" placeholder="배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준"></textarea></div>
+          <div class="field"><label>문제 설명<span class="req">*</span></label><div id="desc-mount"></div></div>
           <div class="field-row">
             <div class="field"><label>제출 시작</label><input type="datetime-local" /></div>
             <div class="field"><label>제출 마감</label><input type="datetime-local" /></div>
@@ -748,6 +839,7 @@
         </div>
       `;
       fp.body.querySelector('#round-sel').appendChild(UI.select({ options: [{ value: '기초', label: '기초' }, { value: '심화', label: '심화' }, { value: '파이널', label: '파이널' }, { value: '기타', label: '기타' }], value: '심화' }));
+      fp.body.querySelector('#desc-mount').appendChild(buildMarkdownEditor('', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
       fp.body.querySelector('#actions').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => UI.closeFullPage() }));
       fp.body.querySelector('#actions').appendChild(UI.button({ label: '등록', icon: 'ri-add-line', type: 'solid', color: 'primary', onClick: () => { UI.closeFullPage(); UI.toast('회차 등록 완료 — 학생에게 알림 발송', 'success'); } }));
     }

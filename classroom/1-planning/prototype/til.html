@@ -280,6 +280,7 @@
     // TIL 작성 진입 — 날짜 셀렉트 우선 (작성/수정 통합 분기)
     // ============================================================
     function openDateSelectThenEdit() {
+      if (UI.pcOnly('TIL 작성')) return; // W13 — TIL 작성은 PC 전용 (열람은 모바일 허용)
       const sid = MOCK.activeStudentId;
       const today = MOCK.meta.today;
       const fp = UI.openFullPage({ backLabel: 'TIL' });
@@ -660,7 +661,7 @@
         cols: flatDays,
         freeze: true,                       // 이름 열 + 날짜 헤더 고정
         today: MOCK.meta.today,             // 오늘 컬럼 표시(세로 밴드)
-        rowLabel: (s) => s.name,
+        rowLabel: (s) => UI.displayName(s),
         colLabel: (d) => {
           const dt = new Date(d);
           if (dt.getDay() !== 1) return '';
@@ -668,7 +669,7 @@
         },
         cellLevel: (s, d) => {
           const status = tilStatusOn(s.id, d);
-          return { ...statusToHeat(status), excellent: status === 'written' && isExcellent(s.id, d), title: `${s.name} ${d}: ${status === 'written' && isExcellent(s.id, d) ? '우수' : status}` };
+          return { ...statusToHeat(status), excellent: status === 'written' && isExcellent(s.id, d), title: `${UI.displayName(s)} ${d}: ${status === 'written' && isExcellent(s.id, d) ? '우수' : status}` };
         },
         onCell: (s, d) => openManagerDetail(s, d, getTilForDate(s.id, d)),
       });
@@ -694,7 +695,7 @@
           refreshMark();
           const tag = fp.body.querySelector('#excellent-tag');
           if (tag) tag.style.display = excellent ? '' : 'none';
-          UI.toast(excellent ? `${s.name}의 TIL을 우수로 표시했어요 (히트맵 ★ 노출)` : '우수 표시를 해제했어요', 'success');
+          UI.toast(excellent ? `${UI.displayName(s)}의 TIL을 우수로 표시했어요 (히트맵 ★ 노출)` : '우수 표시를 해제했어요', 'success');
         } });
         fp.actions.appendChild(markBtn);
       }
@@ -706,7 +707,7 @@
         <div id="body"></div>
       `;
       fp.body.querySelector('[data-slot="m"]').textContent = UI.fmtDate(d);
-      fp.body.querySelector('[data-slot="n"]').textContent = `${s.name}의 TIL`;
+      fp.body.querySelector('[data-slot="n"]').textContent = `${UI.displayName(s)}의 TIL`;
       const bodyWrap = fp.body.querySelector('#body');
       if (!t) {
         bodyWrap.innerHTML = '<div class="empty"><div class="icon"><i class="ri-icon ri-file-list-line"></i></div><h4>이 날 작성된 TIL이 없어요</h4></div>';
