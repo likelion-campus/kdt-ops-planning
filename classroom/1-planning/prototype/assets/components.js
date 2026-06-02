@@ -343,13 +343,15 @@
 
   // ===== Heatmap =====
   function renderHeatmap(opts) {
-    const { rows, cols, cellLevel, onCell, rowLabel, colLabel } = opts;
+    const { rows, cols, cellLevel, onCell, rowLabel, colLabel, freeze = false, today = null } = opts;
     const wrap = document.createElement('div');
-    wrap.className = 'heatmap-table';
+    wrap.className = 'heatmap-table' + (freeze ? ' is-frozen' : '');
     wrap.style.gridTemplateColumns = `auto repeat(${cols.length}, 14px)`;
 
-    // header
-    wrap.appendChild(document.createElement('div'));
+    // header (top-left corner)
+    const corner = document.createElement('div');
+    if (freeze) corner.className = 'hm-corner';
+    wrap.appendChild(corner);
     cols.forEach((c) => {
       const h = document.createElement('div');
       h.className = 'col-label';
@@ -374,6 +376,7 @@
         } else {
           cell.setAttribute('data-level', level == null ? '0' : level);
         }
+        if (today && c === today) cell.setAttribute('data-today', 'true');
         if (onCell) cell.addEventListener('click', () => onCell(row, c));
         wrap.appendChild(cell);
       });

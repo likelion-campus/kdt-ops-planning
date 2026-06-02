@@ -663,6 +663,11 @@ html, body {
   font-size: 10px; line-height: 1; color: var(--lk-color-yellow-500);
   text-shadow: 0 0 1px rgba(0,0,0,0.5);
 }
+/* 오늘 표시 (히트맵 공통) — 매니저 컬럼은 세로 밴드처럼 보임 */
+.heat-cell[data-today] { box-shadow: 0 0 0 2px var(--lk-color-fg-strong); border-radius: 3px; position: relative; z-index: 1; }
+/* 날짜 선택 히트맵 — 선택된 칸 */
+.heat-cell[data-selected] { box-shadow: 0 0 0 2px var(--lk-color-fg-primary); border-radius: 3px; position: relative; z-index: 2; }
+.heat-cell[data-pick] { cursor: pointer; }
 
 .heat-legend {
   display: inline-flex; gap: 16px; align-items: center;
@@ -678,6 +683,12 @@ html, body {
 .heatmap-table { display: inline-grid; gap: 4px; align-items: center; }
 .heatmap-table .row-label { font-size: 11px; color: var(--lk-color-fg-neutral); padding-right: 8px; text-align: right; }
 .heatmap-table .col-label { font-size: 9px; color: var(--lk-color-fg-assistive); transform: rotate(-50deg); transform-origin: bottom; white-space: nowrap; height: 60px; padding-bottom: 4px; }
+
+/* Frozen heatmap — 이름 열·날짜 헤더 고정 (TIL 운영자 뷰) */
+.heatmap-scroll.is-frozen-scroll { overflow: auto; max-height: 560px; }
+.heatmap-table.is-frozen .row-label { position: sticky; left: 0; z-index: 2; background: var(--lk-color-bg-white); padding-left: 4px; }
+.heatmap-table.is-frozen .col-label { position: sticky; top: 0; z-index: 2; background: var(--lk-color-bg-white); }
+.heatmap-table.is-frozen .hm-corner { position: sticky; left: 0; top: 0; z-index: 3; background: var(--lk-color-bg-white); }
 
 /* ===== Empty state ===== */
 .empty {
