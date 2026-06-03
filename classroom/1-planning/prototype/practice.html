@@ -301,13 +301,14 @@
       table.appendChild(thead);
 
       const tbody = document.createElement('tbody');
-      MOCK.students.forEach((s) => {
+      UI.sortDropoutLast(MOCK.students).forEach((s) => {
         const tr = document.createElement('tr');
+        if (UI.isDropped(s)) tr.style.opacity = '0.6';
         const tdName = document.createElement('td');
         tdName.className = 'row-head';
         tdName.style.textAlign = 'left';
         tdName.style.fontWeight = '600';
-        tdName.textContent = UI.displayName(s);
+        tdName.innerHTML = `${UI.displayName(s)} ${UI.dropoutTag(s)}`;
         tr.appendChild(tdName);
         ps.forEach((p) => {
           const td = document.createElement('td');

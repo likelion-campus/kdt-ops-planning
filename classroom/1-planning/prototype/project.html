@@ -82,46 +82,15 @@
       if (mine && mine.feedback) return '<span class="tag tag-small tag-weak-progressing" title="피드백 도착"><i class="ri-icon ri-chat-3-fill"></i> 피드백</span>';
       return '';
     }
-    // 외부 공개 상태 태그 (제한 > 공개중 > 없음)
-    function shareStatusTag(s) {
+    // 외부 공개 상태 태그 (제한 > 공개중 > 비공개). opts.always=true면 비공개도 태그로 표시(매니저뷰용)
+    function shareStatusTag(s, opts = {}) {
       if (s.externalRestricted) return '<span class="tag tag-small tag-weak-error"><i class="ri-icon ri-lock-line"></i> 외부 공개 제한</span>';
-      if (s.published) return '<span class="tag tag-small tag-weak-success">공개 중</span>';
+      if (s.published) return '<span class="tag tag-small tag-weak-success"><i class="ri-icon ri-global-line"></i> 외부 공개</span>';
+      if (opts.always) return '<span class="tag tag-small tag-weak-neutral"><i class="ri-icon ri-lock-2-line"></i> 외부 비공개</span>';
       return '';
     }
     // 간이 마크다운 에디터 — 툴바 + 입력 + 실시간 미리보기. {el, getValue} 반환
-    function buildMarkdownEditor(initial = '', opts = {}) {
-      const wrap = document.createElement('div');
-      wrap.className = 'md-editor';
-      wrap.innerHTML = `
-        <div class="md-editor-toolbar" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">
-          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="h2"># 제목</button>
-          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="bold"><b>굵게</b></button>
-          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="list">• 목록</button>
-          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="link">🔗 링크</button>
-          <button type="button" class="btn btn-small btn-ghost-neutral" data-md="code">&lt;/&gt; 코드</button>
-        </div>
-        <div class="md-editor-split" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start;">
-          <textarea data-md-input style="min-height:240px; font-family:ui-monospace, monospace; font-size:13px; line-height:1.6;"></textarea>
-          <div class="md-view" data-md-preview style="min-height:240px; padding:12px 16px; background:var(--lk-color-bg-normal); border-radius:10px; overflow:auto;"></div>
-        </div>
-      `;
-      const ta = wrap.querySelector('[data-md-input]');
-      const pv = wrap.querySelector('[data-md-preview]');
-      if (opts.placeholder) ta.placeholder = opts.placeholder;
-      ta.value = initial;
-      function refresh() { pv.innerHTML = ta.value.trim() ? UI.md(ta.value) : '<p class="text-mute" style="font-size:13px;">미리보기가 여기에 표시됩니다.</p>'; }
-      ta.addEventListener('input', refresh);
-      const snippets = { h2: '\n## 제목\n', bold: '**굵게**', list: '\n- 항목 1\n- 항목 2\n', link: '[링크 텍스트](https://)', code: '\n```\n코드\n```\n' };
-      wrap.querySelectorAll('[data-md]').forEach((b) => b.addEventListener('click', () => {
-        const snip = snippets[b.dataset.md] || '';
-        const start = ta.selectionStart, end = ta.selectionEnd;
-        ta.value = ta.value.slice(0, start) + snip + ta.value.slice(end);
-        ta.focus(); ta.selectionStart = ta.selectionEnd = start + snip.length;
-        refresh();
-      }));
-      refresh();
-      return { el: wrap, getValue: () => ta.value };
-    }
+    // 마크다운 에디터는 공통 `UI.markdownEditor`(뷰어+편집 단일) 사용
 
     // ============================================================
     // 학생뷰
@@ -298,26 +267,25 @@
       if (!stage || stage.key !== 'submitting') { UI.toast('지금은 제출 진행 기간이 아니에요', 'danger'); return; }
       const fp = UI.openFullPage({ backLabel: p.title });
       const placeholder = '# 문제 정의\n\n\n# 핵심 기능\n\n\n# Tech Stack\n\n\n# 주요 트러블슈팅\n\n\n# 팀 소개\n';
+      // 매니저가 설정한 제출 폼 옵션 — 필수 여부 (기본: URL·시연영상 필수, 첨부 선택)
+      const opts = p.submitOptions || { projectUrl: true, demoVideo: true, attachment: false };
+      const reqMark = (c) => c ? '<span class="req">*</span>' : ' <span class="text-mute" style="font-weight:400;">(선택)</span>';
 
       const card = document.createElement('div');
       card.className = 'card';
       card.style.maxWidth = '760px';
       card.innerHTML = `
         <h3 class="card-title">${prev ? '프로젝트 수정하기' : '프로젝트 제출하기'}</h3>
-        <p class="text-mute" style="font-size: 13px; margin: 8px 0 20px;">${prev ? '마감 전까지 자유롭게 수정할 수 있어요' : '필수 항목을 모두 채우면 제출 버튼이 활성화돼요'}</p>
-        <div class="card-meta" style="margin-bottom: 8px;"><strong>기본 정보</strong></div>
+        <p class="text-mute" style="font-size: 13px; margin: 8px 0 20px;">${prev ? '마감 전까지 자유롭게 수정할 수 있어요' : '필수(<span class="req">*</span>) 항목을 모두 채우면 제출돼요'}</p>
         <div class="field"><label>프로젝트 제목<span class="req">*</span></label><input type="text" id="t" /></div>
         <div class="field"><label>한 줄 소개<span class="req">*</span></label><input type="text" id="ol" /></div>
-        <div class="field"><label>프로젝트 설명<span class="req">*</span> · 마크다운</label><textarea id="body" style="min-height: 240px; font-family: ui-monospace, monospace;"></textarea></div>
+        <div class="field"><label>프로젝트 설명<span class="req">*</span></label><textarea id="body" style="min-height: 240px; font-family: ui-monospace, monospace;"></textarea></div>
         <div class="field"><label>메인 이미지<span class="req">*</span></label><input type="text" placeholder="파일 선택 (최대 30MB)" disabled /></div>
-
-        <div class="divider"></div>
-        <div class="card-meta" style="margin-bottom: 8px;"><strong>제출 정보</strong></div>
-        <div class="field"><label>프로젝트 URL<span class="req">*</span> · 다중 (GitHub · Web · Figma 등)</label><input type="url" id="u1" placeholder="https://github.com/..." /></div>
-        <div class="field"><label>시연 영상 URL<span class="req">*</span> · YouTube / Vimeo</label><input type="url" id="vid" placeholder="https://youtu.be/..." /></div>
+        <div class="field"><label>프로젝트 URL${reqMark(opts.projectUrl)} · 다중 (GitHub · Web · Figma 등)</label><input type="url" id="u1" placeholder="https://github.com/..." /></div>
+        <div class="field"><label>시연 영상 URL${reqMark(opts.demoVideo)} · YouTube / Vimeo</label><input type="url" id="vid" placeholder="https://youtu.be/..." /></div>
         <div class="field-row">
-          <div class="field"><label>발표자료 (선택)</label><input type="text" placeholder="파일 선택" disabled /></div>
-          <div class="field"><label>첨부파일 (선택, 30MB)</label><input type="text" placeholder="파일 선택" disabled /></div>
+          <div class="field"><label>발표자료 <span class="text-mute" style="font-weight:400;">(선택)</span></label><input type="text" placeholder="파일 선택" disabled /></div>
+          <div class="field"><label>첨부파일${reqMark(opts.attachment)} · 30MB</label><input type="text" placeholder="파일 선택" disabled /></div>
         </div>
         <div class="inline-error hide" id="vid-err">YouTube 또는 Vimeo 링크만 등록 가능해요</div>
 
@@ -330,7 +298,15 @@
       card.querySelector('#body').value = prev?.description || placeholder;
       card.querySelector('#actions').appendChild(UI.button({ label: '임시저장', type: 'outline', color: 'neutral', onClick: () => UI.toast('임시저장됨', 'success') }));
       card.querySelector('#actions').appendChild(UI.button({ label: prev ? '수정 저장' : '제출하기', type: 'solid', color: 'primary', icon: 'ri-upload-cloud-line', onClick: () => {
-        const vid = card.querySelector('#vid').value;
+        const val = (sel) => (card.querySelector(sel).value || '').trim();
+        const missing = [];
+        if (!val('#t')) missing.push('프로젝트 제목');
+        if (!val('#ol')) missing.push('한 줄 소개');
+        if (!val('#body')) missing.push('프로젝트 설명');
+        if (opts.projectUrl && !val('#u1')) missing.push('프로젝트 URL');
+        if (opts.demoVideo && !val('#vid')) missing.push('시연 영상 URL');
+        if (missing.length) { UI.toast(`필수 항목을 입력해주세요: ${missing.join(', ')}`, 'danger'); return; }
+        const vid = val('#vid');
         if (vid && !/(youtu\.be|youtube\.com|vimeo\.com)/.test(vid)) { card.querySelector('#vid-err').classList.remove('hide'); return; }
         UI.closeFullPage();
         UI.toast(`${prev ? '수정 저장' : '제출 완료'} — 클래스 게시판에 공개되었어요`, 'success');
@@ -373,7 +349,6 @@
           <div class="body">
             <div class="row" style="gap: 4px;">
               ${idx === 0 && s.studentId === sid ? '<span class="tag tag-small tag-weak-enabled">내 제출본</span>' : ''}
-              ${shareStatusTag(s)}
             </div>
             <div class="title" data-slot="t"></div>
             <p class="meta" data-slot="o"></p>
@@ -383,7 +358,7 @@
         card.querySelector('img').src = s.mainImage;
         card.querySelector('[data-slot="t"]').textContent = s.title;
         card.querySelector('[data-slot="o"]').textContent = s.oneLiner;
-        card.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)}`;
+        card.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s, { hideDropout: true })}`;
         card.addEventListener('click', () => openSubmissionView(s, s.studentId === sid));
         board.appendChild(card);
       });
@@ -403,7 +378,6 @@
           ${isOwn ? '<span class="tag tag-small tag-weak-enabled">내 제출본</span>' : ''}
           <span class="card-meta" data-slot="by"></span>
           ${s.excellent ? '<span class="tag tag-small tag-weak-enabled"><i class="ri-icon ri-star-fill"></i> 우수</span>' : ''}
-          ${shareStatusTag(s)}
         </div>
         <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
         <p class="text-mute" style="font-size: 14px; margin: 0 0 24px;" data-slot="ol"></p>
@@ -415,7 +389,7 @@
           <a class="btn btn-outline-neutral btn-small" data-slot="vid" target="_blank">시연 영상 보기</a>
         </div>
       `;
-      fp.body.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
+      fp.body.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s, { hideDropout: true })} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
       fp.body.querySelector('[data-slot="t"]').textContent = s.title;
       fp.body.querySelector('[data-slot="ol"]').textContent = s.oneLiner;
       fp.body.querySelector('[data-slot="img"]').src = s.mainImage;
@@ -672,7 +646,7 @@
 
       function draw() {
         board.innerHTML = '';
-        const items = subs.filter((s) => filter === 'all' ? true : filter === 'done' ? !!s.feedback : !s.feedback);
+        const items = UI.sortDropoutLast(subs.filter((s) => filter === 'all' ? true : filter === 'done' ? !!s.feedback : !s.feedback));
         if (items.length === 0) {
           board.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '해당하는 제출본이 없어요', body: '다른 필터를 선택해보세요.' }));
           return;
@@ -681,13 +655,14 @@
           const c = document.createElement('div');
           c.className = 'board-card';
           c.style.position = 'relative';
+          if (UI.isDropped(s)) c.style.opacity = '0.6';
           c.innerHTML = `
             <span class="tag tag-small ${s.feedback ? 'tag-weak-success' : 'tag-weak-warning'}" style="position:absolute; top:8px; left:8px; z-index:1;">${s.feedback ? '피드백 완료' : '피드백 전'}</span>
             ${s.excellent ? '<span class="tag tag-small tag-weak-enabled" style="position:absolute; top:8px; right:8px; z-index:1;"><i class="ri-icon ri-star-fill"></i> 우수</span>' : ''}
             <img class="thumb" loading="lazy" alt="" />
             <div class="body">
               <div class="row" style="gap: 4px;">
-                ${shareStatusTag(s)}
+                ${shareStatusTag(s, { always: true })}${UI.dropoutTag(s)}
               </div>
               <div class="title" data-slot="t"></div>
               <div class="meta" data-slot="by"></div>
@@ -706,7 +681,7 @@
     // 미제출명단 — 제출하지 않은 학생 리스트만 표시
     function renderMgrUnsubmittedPane(pane, p, subs) {
       const submittedIds = new Set(subs.map((s) => s.studentId));
-      const unsubmitted = MOCK.students.filter((s) => !submittedIds.has(s.id));
+      const unsubmitted = UI.sortDropoutLast(MOCK.students.filter((s) => !submittedIds.has(s.id)));
 
       const head = document.createElement('div');
       head.className = 'section-head';
@@ -724,9 +699,11 @@
       unsubmitted.forEach((s) => {
         const row = document.createElement('div');
         row.className = 'quiz-row';
+        if (UI.isDropped(s)) row.style.opacity = '0.6';
         row.innerHTML = `
           <div class="quiz-date"><i class="ri-icon ri-user-line"></i><span data-slot="no"></span></div>
           <div class="quiz-title" data-slot="name"></div>
+          ${UI.dropoutTag(s)}
           <span class="tag tag-small tag-weak-warning">미제출</span>
         `;
         row.querySelector('[data-slot="no"]').textContent = `${s.no}번`;
@@ -766,7 +743,7 @@
           <div class="row row-end" id="fb-actions"></div>
         </div>
       `;
-      function refreshHeaderTags() { const pt = fp.body.querySelector('[data-slot="pubtag"]'); if (pt) pt.innerHTML = shareStatusTag(s); }
+      function refreshHeaderTags() { const pt = fp.body.querySelector('[data-slot="pubtag"]'); if (pt) pt.innerHTML = shareStatusTag(s, { always: true }); }
       refreshHeaderTags();
       fp.body.querySelector('[data-slot="fbtag"]').textContent = s.feedback ? '피드백 완료' : '피드백 전';
       fp.body.querySelector('[data-slot="by"]').textContent = `by ${UI.displayName(s)} · ${UI.fmtDate(s.submittedAt, { compact: true })}`;
@@ -808,7 +785,7 @@
       node.querySelector('#round-sel').appendChild(UI.select({ options: [{ value: '기초', label: '기초' }, { value: '심화', label: '심화' }, { value: '파이널', label: '파이널' }, { value: '기타', label: '기타' }], value: p.round }));
       node.querySelector('#e-title').value = p.title;
       node.querySelector('#e-ol').value = p.oneLiner || '';
-      node.querySelector('#e-desc-mount').appendChild(buildMarkdownEditor(p.description || '', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
+      node.querySelector('#e-desc-mount').appendChild(UI.markdownEditor(p.description || '', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
       node.querySelector('#e-sf').value = p.submitFrom;
       node.querySelector('#e-st').value = p.submitTo;
       node.querySelector('#e-ff').value = p.feedbackFrom;
@@ -831,6 +808,15 @@
             <div class="field"><label>제출 시작</label><input type="datetime-local" /></div>
             <div class="field"><label>제출 마감</label><input type="datetime-local" /></div>
           </div>
+          <div class="field">
+            <label>제출 폼 옵션 — 학생 제출 시 필수 항목</label>
+            <p class="text-mute" style="font-size:12px; margin:0 0 8px;">제목 · 한 줄 소개 · 프로젝트 설명 · 메인 이미지는 항상 필수입니다. 아래 항목의 필수 여부를 선택하세요. (체크 시 학생 제출 폼에 <span class="req">*</span> 표시 + 미입력 시 제출 차단)</p>
+            <div style="display:flex; flex-direction:column; gap:10px; padding:12px 14px; background:var(--lk-color-bg-normal); border-radius:10px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="opt-url" checked /> 프로젝트 URL 필수</label>
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="opt-vid" checked /> 시연 영상 URL 필수</label>
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="opt-att" /> 첨부파일 필수</label>
+            </div>
+          </div>
           <div class="field-row">
             <div class="field"><label>피드백 시작</label><input type="datetime-local" /></div>
             <div class="field"><label>피드백 마감</label><input type="datetime-local" /></div>
@@ -839,9 +825,16 @@
         </div>
       `;
       fp.body.querySelector('#round-sel').appendChild(UI.select({ options: [{ value: '기초', label: '기초' }, { value: '심화', label: '심화' }, { value: '파이널', label: '파이널' }, { value: '기타', label: '기타' }], value: '심화' }));
-      fp.body.querySelector('#desc-mount').appendChild(buildMarkdownEditor('', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
+      fp.body.querySelector('#desc-mount').appendChild(UI.markdownEditor('', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
       fp.body.querySelector('#actions').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => UI.closeFullPage() }));
-      fp.body.querySelector('#actions').appendChild(UI.button({ label: '등록', icon: 'ri-add-line', type: 'solid', color: 'primary', onClick: () => { UI.closeFullPage(); UI.toast('회차 등록 완료 — 학생에게 알림 발송', 'success'); } }));
+      fp.body.querySelector('#actions').appendChild(UI.button({ label: '등록', icon: 'ri-add-line', type: 'solid', color: 'primary', onClick: () => {
+        const req = ['제목', '소개', '설명', '이미지'];
+        if (fp.body.querySelector('#opt-url').checked) req.push('URL');
+        if (fp.body.querySelector('#opt-vid').checked) req.push('시연영상');
+        if (fp.body.querySelector('#opt-att').checked) req.push('첨부');
+        UI.closeFullPage();
+        UI.toast(`회차 등록 완료 — 필수 항목: ${req.join('·')} · 학생에게 알림 발송`, 'success');
+      } }));
     }
   </script>
 </body>

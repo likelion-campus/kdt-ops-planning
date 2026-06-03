@@ -163,9 +163,9 @@
       if (filter === 'risk') items = items.filter((r) => r.status.key === 'warn' || r.status.key === 'danger');
       if (filter === 'danger') items = items.filter((r) => r.status.key === 'danger');
       if (query) items = items.filter((r) => r.s.name.includes(query) || (r.s.phone4 || '').includes(query));
-      // 위험 우선 정렬
+      // 중도포기자 최하단 → 그 외 위험 우선 정렬
       const order = { danger: 0, warn: 1, caution: 2, ok: 3 };
-      items.sort((a, b) => order[a.status.key] - order[b.status.key] || a.s.no - b.s.no);
+      items.sort((a, b) => ((UI.isDropped(a.s) ? 1 : 0) - (UI.isDropped(b.s) ? 1 : 0)) || (order[a.status.key] - order[b.status.key]) || (a.s.no - b.s.no));
 
       rows.innerHTML = '';
       if (items.length === 0) {
@@ -178,6 +178,7 @@
         const { s, m, flags, status } = r;
         const tr = document.createElement('tr');
         if (status.key === 'danger') tr.className = 'danger';
+        if (UI.isDropped(s)) tr.style.opacity = '0.55';
         const quizTxt = m.quizAvg != null ? `${m.quizAvg.toFixed(1)} / 10` : '—';
         tr.innerHTML = `
           <td data-slot="no"></td>
@@ -190,7 +191,7 @@
           <td data-slot="flags" style="text-align:left;"></td>
         `;
         tr.querySelector('[data-slot="no"]').textContent = `${s.no}`;
-        tr.querySelector('[data-slot="name"]').textContent = UI.displayName(s);
+        tr.querySelector('[data-slot="name"]').innerHTML = `${UI.displayName(s)} ${UI.dropoutTag(s)}`;
         tr.querySelector('[data-slot="st"]').textContent = status.label;
         tr.querySelector('[data-slot="quiz"]').textContent = quizTxt;
         tr.querySelector('[data-slot="til"]').textContent = `${m.tilCount}건`;
