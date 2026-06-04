@@ -140,7 +140,22 @@
     };
   });
 
+  // AI 노트 매니저 수정 데모 — '수정됨 · 시각' 배지 + 원본 복구(백업).
+  // 잘못 수정했을 때 되돌릴 수 있도록 최초 수정 시 원본(originalBody/Title/Summary)을 보관한다.
+  if (AI_NOTES['2026-05-27']) {
+    const n = AI_NOTES['2026-05-27'];
+    n.originalTitle = n.title;
+    n.originalSummary = n.summary;
+    n.originalBody = n.body;
+    n.editedAt = '2026-05-27T11:20';
+    n.body = n.body + '\n\n## 매니저 보강 (수정)\n> 실습 중 자주 나온 질문을 강사가 보강했습니다.\n\n- PARTITION BY 없이 ORDER BY만 쓰면 누적 집계가 전체 행 기준으로 동작합니다.\n- 원본 복구 버튼으로 이 보강 전 상태로 되돌릴 수 있습니다.';
+  }
+
   // ---------- AI 퀴즈 ----------
+  // 문항별 평균 응시시간(초) — 문제 난이도 측정 지표. 합계가 목표 응시시간(15분=900초)에 맞도록 구성.
+  // (긴 시간 = 어려운 문항. 매니저는 이 값으로 09:30 리뷰 우선순위를 판단)
+  const QUIZ_TARGET_SEC = 900; // 하루 학습퀴즈 목표 풀이시간 (전체 10문항 ≈ 15분)
+  const BASE_SECS = [120, 75, 150, 60, 90, 80, 110, 70, 95, 50]; // 합계 900초
   const SAMPLE_QUIZ = (date) => ({
     questions: [
       {
@@ -154,6 +169,7 @@
         ],
         answer: 1,
         explanation: 'groupby 후 mean을 호출할 때 numeric_only=True를 명시하는 것이 안전하다. 비수치 컬럼에서 발생하는 FutureWarning을 피한다.',
+        avgSec: BASE_SECS[0],
       },
       {
         id: `${date}-q2`,
@@ -161,6 +177,7 @@
         choices: ['ISO 8601 문자열', 'epoch float', '월/일 약어 영문', '한글 날짜 표기'],
         answer: 0,
         explanation: 'ISO 8601(예: 2026-05-28)은 모호함이 없어 가장 안전하다.',
+        avgSec: BASE_SECS[1],
       },
       {
         id: `${date}-q3`,
@@ -168,6 +185,7 @@
         choices: ['sum', 'mean', 'first', '에러'],
         answer: 3,
         explanation: '.resample("W")만 호출하면 집계함수가 없어 에러. .mean() 등 명시 필요.',
+        avgSec: BASE_SECS[2],
       },
       // 4~10번은 동일 패턴으로 생성 — 데모용 짧게
       ...Array.from({ length: 7 }, (_, i) => ({
@@ -176,6 +194,7 @@
         choices: ['보기 A', '보기 B', '보기 C', '보기 D'],
         answer: Math.floor(r() * 4),
         explanation: '해설: 핵심 개념과 연결지어 이해할 것.',
+        avgSec: BASE_SECS[i + 3],
       })),
     ],
   });
@@ -249,7 +268,10 @@
       // 오답 ID
       const wrongCount = 10 - score;
       const wrongIds = Array.from({ length: wrongCount }, (_, i) => `${d}-q${i + 1}`);
-      ATTEMPTS[s.id][d] = { submitted: true, submittedAt: d + 'T09:30', score, wrongIds };
+      // 학생별 풀이 시간 — 활동률 높을수록 빠름(목표 900초 대비). timeFactor로 문항별 시간 재현.
+      const timeFactor = +(1.3 - s.baseActivity * 0.55 + (r() - 0.5) * 0.2).toFixed(3);
+      const durationSec = Math.max(180, Math.round(QUIZ_TARGET_SEC * timeFactor));
+      ATTEMPTS[s.id][d] = { submitted: true, submittedAt: d + 'T09:30', score, wrongIds, durationSec, timeFactor };
     });
   });
 
@@ -712,8 +734,9 @@
     suppSessions: SUPP_SESSIONS,
     suppDailyLimit: 1000,
     suppDailySetLimit: 10,
-    todayQuizDailyLimit: 20, // 오늘의 퀴즈(매니저 공식 발행) 생성일 기준 하루 최대 발행 수
+    todayQuizDailyLimit: 20, // 학습퀴즈(매니저 공식 발행) 생성일 기준 하루 최대 발행 수
     quizQuestionMax: 15, // 퀴즈 1세트 최대 문항 수
+    quizTargetSec: QUIZ_TARGET_SEC, // 하루 학습퀴즈 목표 응시(풀이) 시간 — 전체 ≈ 15분(900초)
     practices: PRACTICES,
     practiceSubmissions: PRACTICE_SUBMISSIONS,
     tils: TILS,

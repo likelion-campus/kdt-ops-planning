@@ -24,14 +24,14 @@
   const stateFlag = qs.get('state');
 
   // RemixIcon names per LNB key (멋사 스크린샷 기준)
-  // 요구 순서: 강의보드·출결·커리큘럼·공지 → AI 노트·AI 퀴즈·실습·TIL → Q&A·훈련평가·프로젝트·설문·행정
+  // 요구 순서: 강의보드·출결·커리큘럼·공지 → AI 노트·학습퀴즈·실습·TIL → Q&A·훈련평가·프로젝트·설문·행정
   const LNB_ITEMS = [
     { key: 'lecture-board',  label: '강의보드',   icon: 'ri-presentation-line',   scope: 'out' },
     { key: 'attendance',     label: '출결현황',   icon: 'ri-calendar-line',       scope: 'out' },
     { key: 'curriculum',     label: '커리큘럼',   icon: 'ri-book-open-line',      scope: 'out' },
     { key: 'notice',         label: '공지사항',   icon: 'ri-notification-line',   scope: 'out' },
     { key: 'ai-note',        label: 'AI 노트',    icon: 'ri-sticky-note-line',    scope: 'in', file: 'ai-note.html' },
-    { key: 'ai-quiz',        label: 'AI 퀴즈',    icon: 'ri-list-check-2',        scope: 'in', file: 'ai-quiz.html' },
+    { key: 'ai-quiz',        label: '학습퀴즈',   icon: 'ri-list-check-2',        scope: 'in', file: 'ai-quiz.html' },
     { key: 'til',            label: 'TIL',        icon: 'ri-quill-pen-line',      scope: 'in', file: 'til.html' },
     { key: 'qna',            label: 'Q&A',        icon: 'ri-question-line',       scope: 'out' },
     { key: 'eval',           label: '훈련평가',   icon: 'ri-file-list-3-line',    scope: 'out' },
