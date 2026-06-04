@@ -1,5 +1,229 @@
 version: 1
-file_root: "https://www.figma.com/design/REPLACE_FILE_KEY/classroom"
+file_root: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id={node-id}"
 
-screens: {}
-prd_map: {}
+# 가희 디자이너 영역(프로젝트 시안 — 페이지 0:1 "프로젝트")은 디자이너가 별도 채움.
+# 아래는 PM 측 1-planning/prototype/*.html 의 Figma 변환본 — POL-CR-04 §4 게이트 통과 후 등록.
+# 페이지 구조: AI 노트(73:453) / AI 퀴즈(88:401) / TIL(94:401) / 프로젝트 PM(99:401)
+
+screens:
+  # ========================================
+  # AI 노트 — 페이지 73:453
+  # ========================================
+  ai-note-student-list-default:
+    node: "73:454"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=73-454"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html"
+  ai-note-student-list-empty:
+    node: "83:648"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=83-648"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html (?state=empty)"
+  ai-note-student-list-error:
+    node: "83:796"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=83-796"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html (?state=error)"
+  ai-note-manager-list-default:
+    node: "84:1072"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=84-1072"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html (manager view)"
+  ai-note-manager-list-empty:
+    node: "84:1215"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=84-1215"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html (manager · empty)"
+  ai-note-manager-list-error:
+    node: "84:1332"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=84-1332"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html (manager · error)"
+  ai-note-student-detail-default:
+    node: "85:1747"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=85-1747"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html — openNoteDetail()"
+  ai-note-manager-detail-default:
+    node: "86:1969"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=86-1969"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html — openNoteDetail() (manager)"
+  ai-note-manager-edit-default:
+    node: "86:2145"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=86-2145"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-note.html — openNoteEdit() (manager)"
+
+  # ========================================
+  # AI 퀴즈 — 페이지 88:401
+  # ========================================
+  ai-quiz-student-today-default:
+    node: "88:402"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=88-402"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (student · 오늘의 퀴즈)"
+  ai-quiz-student-result:
+    node: "91:633"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=91-633"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (student · 응시 결과)"
+  ai-quiz-student-wrong-list:
+    node: "91:810"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=91-810"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (student · 오답노트)"
+  ai-quiz-student-supplementary-form:
+    node: "91:987"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=91-987"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (student · 보충 생성 폼 + 다중 셀렉트)"
+  ai-quiz-student-supplementary-limit:
+    node: "91:1176"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=91-1176"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (student · 하루 10회 한도 초과)"
+  ai-quiz-manager-publish:
+    node: "93:1503"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=93-1503"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (manager · 퀴즈 발행하기 슬롯)"
+  ai-quiz-manager-published-detail:
+    node: "93:1834"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=93-1834"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (manager · 발행본 상세 + 점수 히트맵)"
+  ai-quiz-manager-supplementary-heatmap:
+    node: "93:2074"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=93-2074"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/ai-quiz.html (manager · 보충 사용 히트맵 Max 10)"
+
+  # ========================================
+  # TIL — 페이지 94:401
+  # ========================================
+  til-student-heatmap-default:
+    node: "94:402"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=94-402"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (student · 활동 히트맵)"
+  til-student-date-selector:
+    node: "95:848"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=95-848"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (student · 작성 진입 날짜 셀렉트)"
+  til-student-edit-split:
+    node: "97:832"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=97-832"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (student · 작성 폼 좌 본문 / 우 컨텍스트 3종)"
+  til-student-detail:
+    node: "97:1089"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=97-1089"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (student · 상세 + 외부 복사/PDF)"
+  til-student-share-dialog:
+    node: "97:1383"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=97-1383"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (student · 외부 공유 다이얼로그)"
+  til-student-heatmap-empty:
+    node: "97:1679"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=97-1679"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (student · 활동 히트맵 빈상태)"
+  til-manager-week-heatmap:
+    node: "98:1737"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=98-1737"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (manager · 학생×주차 히트맵 + ★)"
+  til-manager-cell-detail:
+    node: "98:2009"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=98-2009"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/til.html (manager · 셀 상세 + 우수 마크)"
+
+  # ========================================
+  # 프로젝트 (PM) — 페이지 99:401
+  # 가희 디자이너 시안 페이지(0:1)와 별도. PM 변환본.
+  # ========================================
+  project-student-list-default:
+    node: "99:402"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=99-402"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (student · 회차 리스트 4탭)"
+  project-student-submit-form:
+    node: "100:647"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=100-647"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (student · 제출 폼)"
+  project-student-submission-detail:
+    node: "100:951"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=100-951"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (student · 제출본 상세 + 외부 공유)"
+  project-student-received-feedback:
+    node: "100:1202"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=100-1202"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (student · 받은 피드백)"
+  project-student-share-dialog:
+    node: "100:1404"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=100-1404"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (student · 외부 공유 다이얼로그)"
+  project-manager-register:
+    node: "101:1551"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=101-1551"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (manager · 프로젝트 등록)"
+  project-manager-submission-board:
+    node: "101:1822"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=101-1822"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (manager · 제출현황 보드)"
+  project-manager-feedback-editor:
+    node: "101:2138"
+    url: "https://www.figma.com/design/gTtfe482laJNGbTjKT7zLl/?node-id=101-2138"
+    last_review: "2026-06-02"
+    source: "1-planning/prototype/project.html (manager · 피드백 편집기 좌 미리보기/우 작성)"
+
+prd_map:
+  PRD-classroom-detail-v1.2:
+    # §4.1 AI 노트 — 스코프 외(현행 유지)이나 프로토타입 v2.3 기준 Figma 변환
+    - ai-note-student-list-default
+    - ai-note-student-list-empty
+    - ai-note-student-list-error
+    - ai-note-manager-list-default
+    - ai-note-manager-list-empty
+    - ai-note-manager-list-error
+    - ai-note-student-detail-default
+    - ai-note-manager-detail-default
+    - ai-note-manager-edit-default
+    # §4.2 AI 퀴즈 (오답노트·보충 퀴즈 흡수) — POL-CR-03 v1.2 §1.4 매니저 발행 재설계 반영
+    - ai-quiz-student-today-default
+    - ai-quiz-student-result
+    - ai-quiz-student-wrong-list
+    - ai-quiz-student-supplementary-form
+    - ai-quiz-student-supplementary-limit
+    - ai-quiz-manager-publish
+    - ai-quiz-manager-published-detail
+    - ai-quiz-manager-supplementary-heatmap
+    # §4.4 TIL — 주 7일·우수★·외부 복사/PDF 반영
+    - til-student-heatmap-default
+    - til-student-date-selector
+    - til-student-edit-split
+    - til-student-detail
+    - til-student-share-dialog
+    - til-student-heatmap-empty
+    - til-manager-week-heatmap
+    - til-manager-cell-detail
+    # §4.5 프로젝트 — 외부 발행 토글 제거 반영. 가희 디자이너 시안(페이지 0:1)과 별도 PM 변환본
+    - project-student-list-default
+    - project-student-submit-form
+    - project-student-submission-detail
+    - project-student-received-feedback
+    - project-student-share-dialog
+    - project-manager-register
+    - project-manager-submission-board
+    - project-manager-feedback-editor
