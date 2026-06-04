@@ -47,6 +47,7 @@
 
       const tabsEl = document.createElement('div');
       tabsEl.className = 'tabs';
+      tabsEl.style.justifyContent = 'center'; // 학습퀴즈·오답노트·보충 퀴즈 탭 가운데 정렬
       tabs.forEach((t) => {
         const btn = document.createElement('button');
         btn.className = 'tab' + (active === t.key ? ' is-active' : '');
@@ -697,8 +698,17 @@
       const wrongSet = new Set(attempt.wrongIds || []);
       const list = fp.body.querySelector('#qlist');
       const total = ctx?.questions || quiz.questions;
+      // 이 응시 건의 총 풀이 시간(durationSec)을 문항 난이도(avgSec) 가중으로 분배해
+      // "이 학생이 이 문항에 실제로 쓴 시간"을 산출 (평균이 아닌 본인 시간)
+      const totalAvgSec = (total || []).reduce((s, q) => s + (q.avgSec || 0), 0);
+      const studentSec = (q) => (attempt.durationSec != null && totalAvgSec > 0 && q.avgSec != null)
+        ? Math.round(q.avgSec * attempt.durationSec / totalAvgSec) : null;
       total.forEach((q, i) => {
         const isWrong = wrongSet.has(q.id);
+        const ss = studentSec(q);
+        const timeTag = ss != null
+          ? `<span class="tag tag-small tag-weak-neutral" title="이 학생이 이 문항에 쓴 시간"><i class="ri-icon ri-timer-line"></i> ${fmtDur(ss)}</span>`
+          : (q.avgSec != null ? `<span class="tag tag-small tag-weak-neutral" title="문항 평균 응시시간 — 난이도 지표"><i class="ri-icon ri-timer-line"></i> 평균 ${fmtDur(q.avgSec)}</span>` : '');
         const card = document.createElement('div');
         card.className = 'card';
         card.style.borderColor = isWrong ? 'var(--lk-color-state-danger)' : 'var(--lk-color-border-weak)';
@@ -706,7 +716,7 @@
           <div class="spread" style="margin-bottom: 12px;">
             <div class="card-meta">문항 ${i + 1} / ${total.length}</div>
             <div class="row" style="gap: 6px;">
-              ${q.avgSec != null ? `<span class="tag tag-small tag-weak-neutral" title="이 문항 평균 응시시간 — 난이도 지표"><i class="ri-icon ri-timer-line"></i> 평균 ${fmtDur(q.avgSec)}</span>` : ''}
+              ${timeTag}
               ${q.editedAt ? `<span class="tag tag-small tag-weak-warning"><i class="ri-icon ri-pencil-line"></i> 수정됨 · ${UI.relTime(q.editedAt)}</span>` : ''}
               <span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span>
             </div>
@@ -1520,7 +1530,6 @@
           { label: '평균 점수', value: `${avg.toFixed(1)} / 10`, sub: UI.fmtDate(targetDate, { short: true }) },
           { label: '정답률', value: `${Math.round(avg * 10)}%`, sub: '전체 평균' },
           { label: '평균 응시시간', value: avgDur != null ? fmtDur(avgDur) : '-', sub: `목표 ${fmtDur(MOCK.quizTargetSec)}` },
-          { label: '미응시', value: `${missing}명`, sub: missing > 0 ? '미응시 명단 탭 참고' : '전원 응시' },
         ].forEach((s) => {
           const c = document.createElement('div');
           c.className = 'kpi';
