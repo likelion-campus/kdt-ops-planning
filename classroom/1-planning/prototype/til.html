@@ -657,11 +657,12 @@
 
       const flatDays = weeks.flatMap((w) => w.days);
       const heat = UI.renderHeatmap({
-        rows: MOCK.students,
+        rows: UI.sortDropoutLast(MOCK.students),
         cols: flatDays,
         freeze: true,                       // 이름 열 + 날짜 헤더 고정
         today: MOCK.meta.today,             // 오늘 컬럼 표시(세로 밴드)
         rowLabel: (s) => UI.displayName(s),
+        rowMuted: (s) => UI.isDropped(s),
         colLabel: (d) => {
           const dt = new Date(d);
           if (dt.getDay() !== 1) return '';

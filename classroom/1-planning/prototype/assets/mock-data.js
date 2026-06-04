@@ -41,7 +41,9 @@
     const baseActivity = i < 20 ? 0.85 - i * 0.01 : 0.45 - (i - 20) * 0.04;
     // 동명이인 식별용 전화번호 뒷자리 4 (결정론적). 이름 노출 시 항상 함께 표시.
     const phone4 = String((i * 7919 + 3271) % 10000).padStart(4, '0');
-    return { id, name, no: i + 1, phone4, baseActivity: Math.max(0.15, baseActivity) };
+    // 중도포기자 (admin에서 별도 설정 가정) — 데모로 위험군 2명 지정
+    const dropped = (i === 26 || i === 29); // s27, s30
+    return { id, name, no: i + 1, phone4, dropped, baseActivity: Math.max(0.15, baseActivity) };
   });
 
   // ---------- AI 노트 ----------
@@ -624,6 +626,13 @@
       status: '제출 진행',
     },
   ];
+
+  // 제출 폼 옵션 — 매니저가 회차별로 지정하는 "필수 제출 값" (제목·소개·설명·이미지는 항상 필수)
+  // 데모: 대부분 URL·시연영상 필수, 첨부는 선택. proj-deep만 첨부도 필수로 변형.
+  PROJECTS.forEach((p) => {
+    p.submitOptions = { projectUrl: true, demoVideo: true, attachment: false };
+  });
+  if (PROJECTS.find((p) => p.id === 'proj-deep')) PROJECTS.find((p) => p.id === 'proj-deep').submitOptions.attachment = true;
 
   const PROJECT_SUBMISSIONS = {};
   PROJECTS.forEach((p) => {

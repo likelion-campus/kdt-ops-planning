@@ -123,49 +123,26 @@
           <span class="card-meta" data-slot="d"></span>
         </div>
         <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px; color: var(--lk-color-fg-strong);" data-slot="t"></h1>
-        <p class="text-mute" style="font-size: 13px; margin: 0 0 20px;">좌측에서 마크다운 본문을 수정하면 우측에 즉시 프리뷰됩니다. 자동 저장 후 [발행]으로 학생에게 반영합니다.</p>
+        <p class="text-mute" style="font-size: 13px; margin: 0 0 20px;">마크다운으로 본문을 편집하세요 — 굵게·제목·목록·링크 등 서식이 편집 화면에 그대로 보입니다. [발행]으로 학생에게 반영합니다.</p>
 
         <div class="field" style="max-width: 720px; margin-bottom: 20px;">
           <label>제목</label>
           <input type="text" id="title-input" />
         </div>
 
-        <div class="editor-split">
-          <div>
-            <div class="editor-toolbar">
-              <button title="굵게"><i class="ri-icon ri-bold"></i></button>
-              <button title="기울임"><i class="ri-icon ri-italic"></i></button>
-              <span class="sep"></span>
-              <button title="제목"><i class="ri-icon ri-heading"></i></button>
-              <button title="인용"><i class="ri-icon ri-double-quotes-l"></i></button>
-              <button title="목록"><i class="ri-icon ri-list-check-2"></i></button>
-              <span class="sep"></span>
-              <button title="링크"><i class="ri-icon ri-link"></i></button>
-              <button title="이미지"><i class="ri-icon ri-image-line"></i></button>
-              <button title="테이블"><i class="ri-icon ri-table-line"></i></button>
-              <button title="코드"><i class="ri-icon ri-code-line"></i></button>
-            </div>
-            <textarea class="md-source" id="src" style="border-radius: 0 0 12px 12px;"></textarea>
-          </div>
-          <div class="md-preview">
-            <div class="aimote-summary" style="margin-top: 0;">
-              <div class="lbl"><i class="ri-icon ri-play-fill"></i> 금일 학습 요약</div>
-              <div class="body" id="prev-summary"></div>
-            </div>
-            <div class="md-view" id="prev-body"></div>
-          </div>
+        <div class="aimote-summary" style="max-width: 880px; margin-bottom: 16px;">
+          <div class="lbl"><i class="ri-icon ri-play-fill"></i> 금일 학습 요약 (자동 생성)</div>
+          <div class="body" data-slot="summary"></div>
         </div>
+        <div id="note-editor-mount" style="max-width: 880px;"></div>
       `;
       fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
       fp.body.querySelector('[data-slot="t"]').textContent = '본문 수정';
       fp.body.querySelector('#title-input').value = note.title;
-      const src = fp.body.querySelector('#src');
-      src.value = note.body || '';
-      const prevBody = fp.body.querySelector('#prev-body');
-      const prevSummary = fp.body.querySelector('#prev-summary');
-      prevSummary.textContent = note.summary;
-      prevBody.innerHTML = UI.md(src.value);
-      src.addEventListener('input', () => { prevBody.innerHTML = UI.md(src.value); });
+      fp.body.querySelector('[data-slot="summary"]').textContent = note.summary;
+      fp.body.querySelector('#note-editor-mount').appendChild(
+        UI.markdownEditor(note.body || '', { placeholder: '본문을 입력하세요', minHeight: '360px' }).el
+      );
     }
   </script>
 </body>

@@ -343,7 +343,20 @@
 
   // ===== 이름 표시 (동명이인 정책: 항상 전화번호 뒷자리 4 병기) =====
   // 인자: 학생 객체 {name, phone4} | 제출물 {studentId, studentName} | studentId 문자열
-  function displayName(arg) {
+  // 중도포기 여부 (admin에서 별도 설정 가정). 학생객체 / 제출물(studentId) / id 문자열 모두 처리
+  function isDropped(arg) {
+    const students = (window.MOCK && window.MOCK.students) || [];
+    if (typeof arg === 'string') return !!(students.find((x) => x.id === arg) || {}).dropped;
+    if (arg) {
+      if (arg.dropped === true) return true;
+      const id = arg.id || arg.studentId;
+      if (id) return !!(students.find((x) => x.id === id) || {}).dropped;
+    }
+    return false;
+  }
+  // 이름 표기. 기본: "이름 (전화 뒷자리4)". 중도포기 확정 시 "이름 (중도포기)"로 대체(전화 숨김).
+  // 학생뷰 등 중도포기를 감출 곳은 { hideDropout: true } 전달 → 항상 전화번호 형태(매니저 전용 정책).
+  function displayName(arg, opts = {}) {
     const students = (window.MOCK && window.MOCK.students) || [];
     let name = '', phone4 = '';
     if (typeof arg === 'string') {
@@ -357,7 +370,20 @@
         phone4 = s ? s.phone4 : '';
       }
     }
+    if (!opts.hideDropout && isDropped(arg)) return `${name} (중도포기)`;
     return phone4 ? `${name} (${phone4})` : name;
+  }
+  // 중도포기 태그 HTML (리스트·카드·테이블 시각 강조용)
+  function dropoutTag(arg) {
+    return isDropped(arg) ? '<span class="tag tag-small tag-weak-neutral"><i class="ri-icon ri-user-unfollow-line"></i> 중도포기</span>' : '';
+  }
+  // 중도포기자를 리스트 최하단으로 (그 외 원래 순서 유지, stable)
+  function sortDropoutLast(arr, getItem) {
+    return arr.map((v, i) => [v, i]).sort((a, b) => {
+      const da = isDropped(getItem ? getItem(a[0]) : a[0]) ? 1 : 0;
+      const db = isDropped(getItem ? getItem(b[0]) : b[0]) ? 1 : 0;
+      return (da - db) || (a[1] - b[1]);
+    }).map((x) => x[0]);
   }
 
   // ===== 모바일 가드 (W13) — 작성/발행/편집은 PC 전용, 열람·풀기는 모바일 허용 =====
@@ -378,9 +404,67 @@
     return true;
   }
 
+  // ===== 통합 마크다운 에디터 (뷰어 + 편집 단일, WYSIWYG) =====
+  // 렌더된 마크다운이 곧 편집 영역. 별도 프리뷰 패널 없음. {el, getValue, getText} 반환.
+  function markdownEditor(initial = '', opts = {}) {
+    if (!document.getElementById('mde-style')) {
+      const st = document.createElement('style');
+      st.id = 'mde-style';
+      st.textContent = `
+        .mde-toolbar{display:flex;gap:2px;flex-wrap:wrap;border:1px solid var(--lk-color-border-normal);border-bottom:none;border-radius:10px 10px 0 0;padding:6px 8px;background:var(--lk-color-bg-normal);}
+        .mde-toolbar button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--lk-color-fg-neutral);font-size:15px;}
+        .mde-toolbar button:hover{background:var(--lk-color-bg-normal);filter:brightness(.94);color:var(--lk-color-fg-strong);}
+        .mde-toolbar .sep{width:1px;background:var(--lk-color-border-weak);margin:4px 4px;}
+        .mde-surface{border:1px solid var(--lk-color-border-normal);border-radius:0 0 10px 10px;padding:14px 16px;outline:none;overflow:auto;}
+        .mde-surface:focus{border-color:var(--lk-color-border-primary,#7c3aed);}
+        .mde-surface[data-empty="true"]:before{content:attr(data-placeholder);color:var(--lk-color-fg-assistive);pointer-events:none;}
+      `;
+      document.head.appendChild(st);
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'mde';
+    wrap.innerHTML = `
+      <div class="mde-toolbar">
+        <button type="button" data-cmd="bold" title="굵게"><i class="ri-icon ri-bold"></i></button>
+        <button type="button" data-cmd="italic" title="기울임"><i class="ri-icon ri-italic"></i></button>
+        <span class="sep"></span>
+        <button type="button" data-cmd="h2" title="제목"><i class="ri-icon ri-heading"></i></button>
+        <button type="button" data-cmd="quote" title="인용"><i class="ri-icon ri-double-quotes-l"></i></button>
+        <button type="button" data-cmd="ul" title="목록"><i class="ri-icon ri-list-unordered"></i></button>
+        <button type="button" data-cmd="ol" title="번호 목록"><i class="ri-icon ri-list-ordered"></i></button>
+        <span class="sep"></span>
+        <button type="button" data-cmd="link" title="링크"><i class="ri-icon ri-link"></i></button>
+        <button type="button" data-cmd="code" title="코드"><i class="ri-icon ri-code-line"></i></button>
+      </div>
+      <div class="md-view mde-surface" contenteditable="true" data-md-surface></div>
+    `;
+    const surf = wrap.querySelector('[data-md-surface]');
+    surf.style.minHeight = opts.minHeight || '240px';
+    surf.setAttribute('data-placeholder', opts.placeholder || '내용을 입력하세요');
+    surf.innerHTML = (initial && initial.trim()) ? md(initial) : '';
+    const syncEmpty = () => surf.setAttribute('data-empty', surf.textContent.trim() ? 'false' : 'true');
+    syncEmpty();
+    surf.addEventListener('input', syncEmpty);
+    function exec(cmd) {
+      surf.focus();
+      if (cmd === 'bold') document.execCommand('bold');
+      else if (cmd === 'italic') document.execCommand('italic');
+      else if (cmd === 'h2') document.execCommand('formatBlock', false, 'h2');
+      else if (cmd === 'quote') document.execCommand('formatBlock', false, 'blockquote');
+      else if (cmd === 'ul') document.execCommand('insertUnorderedList');
+      else if (cmd === 'ol') document.execCommand('insertOrderedList');
+      else if (cmd === 'link') { const u = prompt('링크 URL', 'https://'); if (u) document.execCommand('createLink', false, u); }
+      else if (cmd === 'code') document.execCommand('insertHTML', false, '<code>코드</code>');
+      syncEmpty();
+    }
+    // mousedown + preventDefault: 클릭 시 본문 선택이 풀리지 않도록 (execCommand가 선택에 적용되게)
+    wrap.querySelectorAll('[data-cmd]').forEach((b) => b.addEventListener('mousedown', (e) => { e.preventDefault(); exec(b.dataset.cmd); }));
+    return { el: wrap, getValue: () => surf.innerHTML, getText: () => surf.textContent };
+  }
+
   // ===== Heatmap =====
   function renderHeatmap(opts) {
-    const { rows, cols, cellLevel, onCell, rowLabel, colLabel, freeze = false, today = null } = opts;
+    const { rows, cols, cellLevel, onCell, rowLabel, colLabel, freeze = false, today = null, rowMuted = null } = opts;
     const wrap = document.createElement('div');
     wrap.className = 'heatmap-table' + (freeze ? ' is-frozen' : '');
     wrap.style.gridTemplateColumns = `auto repeat(${cols.length}, 14px)`;
@@ -397,13 +481,16 @@
     });
 
     rows.forEach((row) => {
+      const muted = rowMuted ? rowMuted(row) : false;
       const lbl = document.createElement('div');
       lbl.className = 'row-label';
       lbl.textContent = rowLabel ? rowLabel(row) : row;
+      if (muted) lbl.style.opacity = '0.5';
       wrap.appendChild(lbl);
       cols.forEach((c) => {
         const cell = document.createElement('div');
         cell.className = 'heat-cell';
+        if (muted) cell.style.opacity = '0.4';
         const level = cellLevel(row, c);
         if (level && typeof level === 'object') {
           if (level.level !== undefined) cell.setAttribute('data-level', level.level);
@@ -667,7 +754,7 @@
     openSlide, closeSlide, openModal,
     openFullPage, closeFullPage, closeAllFullPages,
     select, multiSelect, demoStateToggle,
-    md, fmtDate, relTime, displayName, isMobile, pcOnly, pcOnlyNotice,
+    md, fmtDate, relTime, displayName, isDropped, dropoutTag, sortDropoutLast, isMobile, pcOnly, pcOnlyNotice, markdownEditor,
     renderHeatmap, renderLegend, emptyCard, banner,
     getView, setView, loadState, saveState,
     stateFlag,

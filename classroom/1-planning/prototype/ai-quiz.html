@@ -1566,7 +1566,7 @@
         const submittedStudents = MOCK.students
           .map((s) => ({ s, a: MOCK.attempts[s.id]?.[targetDate] }))
           .filter((x) => x.a?.submitted)
-          .sort((a, b) => (b.a.score || 0) - (a.a.score || 0));
+          .sort((a, b) => ((UI.isDropped(a.s) ? 1 : 0) - (UI.isDropped(b.s) ? 1 : 0)) || ((b.a.score || 0) - (a.a.score || 0)));
         if (submittedStudents.length === 0) {
           scoreList.appendChild(UI.emptyCard({ icon: 'ri-user-line', title: '아직 응시한 학생이 없어요', body: '응시가 시작되면 점수가 표시됩니다.' }));
           return;
@@ -1576,10 +1576,12 @@
           const row = document.createElement('div');
           row.className = 'quiz-row';
           row.style.cursor = 'pointer';
+          if (UI.isDropped(s)) row.style.opacity = '0.6';
           const scoreCls = score >= 8 ? 'tag-weak-success' : score >= 5 ? 'tag-weak-warning' : 'tag-weak-error';
           row.innerHTML = `
             <div class="quiz-date"><span style="min-width:28px; text-align:center; font-weight:700; color:var(--lk-color-fg-neutral);" data-slot="rank"></span></div>
             <div class="quiz-title" data-slot="name"></div>
+            ${UI.dropoutTag(s)}
             <span class="tag tag-small tag-weak-neutral" data-slot="rate"></span>
             <span class="tag tag-small ${scoreCls}" data-slot="score"></span>
             <i class="ri-icon ri-arrow-right-s-line" style="color: var(--lk-color-fg-assistive);"></i>
@@ -1603,7 +1605,7 @@
         card.appendChild(missList);
         pane.appendChild(card);
 
-        const missStudents = MOCK.students.filter((s) => !MOCK.attempts[s.id]?.[targetDate]?.submitted);
+        const missStudents = UI.sortDropoutLast(MOCK.students.filter((s) => !MOCK.attempts[s.id]?.[targetDate]?.submitted));
         if (missStudents.length === 0) {
           missList.appendChild(UI.emptyCard({ icon: 'ri-check-double-line', title: '전원 응시했어요 🎉', body: '미응시자가 없습니다.' }));
           return;
@@ -1611,9 +1613,11 @@
         missStudents.forEach((s) => {
           const row = document.createElement('div');
           row.className = 'quiz-row';
+          if (UI.isDropped(s)) row.style.opacity = '0.6';
           row.innerHTML = `
             <div class="quiz-date"><i class="ri-icon ri-user-line"></i><span data-slot="no"></span></div>
             <div class="quiz-title" data-slot="name"></div>
+            ${UI.dropoutTag(s)}
             <span class="tag tag-small tag-weak-warning">미응시</span>
           `;
           row.querySelector('[data-slot="no"]').textContent = `${s.no}번`;
@@ -1656,9 +1660,10 @@
         const cols = MOCK.days.filter((d) => d.slice(0, 7) === ym);
         heatBox.innerHTML = '';
         heatBox.appendChild(UI.renderHeatmap({
-          rows: MOCK.students,
+          rows: UI.sortDropoutLast(MOCK.students),
           cols,
           rowLabel: (s) => UI.displayName(s),
+          rowMuted: (s) => UI.isDropped(s),
           colLabel: (c) => `${new Date(c).getDate()}`,
           cellLevel: (s, d) => {
             const n = Math.min(10, MOCK.suppSolvedDaily[s.id]?.[d]?.plays || 0);
