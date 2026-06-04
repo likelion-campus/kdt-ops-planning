@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>AI 노트 — 프로토타입 v2.3</title>
+  <title>AI 노트 — 프로토타입 v2.4</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -86,6 +86,10 @@
       if (_isMgr) {
         const editBtn = UI.button({ label: '본문 수정', icon: 'ri-edit-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openNoteEdit(d) });
         fp.actions.appendChild(editBtn);
+        // 잘못 수정했을 때 되돌리기 — 수정된 노트(원본 백업 보유)에만 노출
+        if (note.editedAt && note.originalBody) {
+          fp.actions.appendChild(UI.button({ label: '원본 복구', icon: 'ri-arrow-go-back-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openRestoreConfirm(d) }));
+        }
       }
       const pdfBtn = UI.button({ label: 'PDF 다운로드', icon: 'ri-file-download-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('PDF 다운로드를 시작했어요', 'success') });
       const copyBtn = UI.button({ label: '마크다운 복사', icon: 'ri-file-copy-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => UI.toast('마크다운이 복사되었어요 (메타데이터 미포함)', 'success') });
@@ -97,6 +101,7 @@
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
           <h1 style="font-size: 22px; font-weight: 700; margin: 0; color: var(--lk-color-fg-strong); letter-spacing: -0.01em;" data-slot="dlabel"></h1>
           <span class="tag tag-small tag-weak-enabled">AI 자동 생성</span>
+          ${note.editedAt ? `<span class="tag tag-small tag-weak-warning"><i class="ri-icon ri-pencil-line"></i> 수정됨 · ${UI.relTime(note.editedAt)}</span>` : ''}
         </div>
         <div class="aimote-summary">
           <div class="lbl"><i class="ri-icon ri-play-fill"></i> 금일 학습 요약</div>
@@ -115,7 +120,15 @@
     function openNoteEdit(d) {
       const note = MOCK.aiNotes[d];
       const fp = UI.openFullPage({ backLabel: 'AI 노트' });
-      fp.actions.appendChild(UI.button({ label: '발행 (수정 반영)', icon: 'ri-send-plane-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => { UI.toast(`${UI.fmtDate(d)} AI 노트 수정 사항이 발행되었어요 (학생 알림)`, 'success'); UI.closeFullPage(); UI.closeFullPage(); openNoteDetail(d); } }));
+      fp.actions.appendChild(UI.button({ label: '발행 (수정 반영)', icon: 'ri-send-plane-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => {
+        // 최초 수정 시 원본 백업 (잘못 수정 시 '원본 복구'로 되돌릴 수 있게)
+        if (!note.originalBody) { note.originalTitle = note.title; note.originalSummary = note.summary; note.originalBody = note.body; }
+        const newTitle = fp.body.querySelector('#title-input').value;
+        if (newTitle) note.title = newTitle;
+        note.editedAt = new Date().toISOString();
+        UI.toast(`${UI.fmtDate(d)} AI 노트 수정 사항이 발행되었어요 (학생 알림 · 수정됨 표시)`, 'success');
+        UI.closeFullPage(); UI.closeFullPage(); openNoteDetail(d);
+      } }));
 
       fp.body.innerHTML = `
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
@@ -143,6 +156,31 @@
       fp.body.querySelector('#note-editor-mount').appendChild(
         UI.markdownEditor(note.body || '', { placeholder: '본문을 입력하세요', minHeight: '360px' }).el
       );
+    }
+
+    // ===========================================================
+    // 매니저 — 원본 복구 (잘못 수정 시 백업으로 되돌리기)
+    // ===========================================================
+    function openRestoreConfirm(d) {
+      const note = MOCK.aiNotes[d];
+      const node = UI.openModal(`
+        <h3 class="card-title" style="margin-bottom:8px;">원본으로 복구</h3>
+        <p class="text-mute" style="font-size:13px; margin:0 0 14px; line-height:1.6;">이 AI 노트를 <strong>수정 전 원본 상태</strong>로 되돌려요. 매니저가 보강한 내용은 사라지고, 학생뷰의 <strong>수정됨</strong> 배지도 제거됩니다.</p>
+        <div class="banner banner-info" style="margin-bottom:4px;"><i class="ri-icon ri-information-line"></i><span>마지막 수정: <strong>${UI.relTime(note.editedAt)}</strong></span></div>
+        <div class="row row-end" style="margin-top:18px; gap:8px;" id="acts"></div>
+      `);
+      const acts = node.querySelector('#acts');
+      acts.appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
+      acts.appendChild(UI.button({ label: '원본 복구', icon: 'ri-arrow-go-back-line', type: 'solid', color: 'primary', onClick: () => {
+        if (note.originalBody != null) note.body = note.originalBody;
+        if (note.originalTitle != null) note.title = note.originalTitle;
+        if (note.originalSummary != null) note.summary = note.originalSummary;
+        note.editedAt = null;
+        node.remove();
+        UI.toast('원본으로 복구했어요 — 수정 전 상태로 되돌렸습니다', 'success');
+        UI.closeFullPage();
+        openNoteDetail(d);
+      } }));
     }
   </script>
 </body>

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>TIL — 프로토타입 v2.3</title>
+  <title>TIL — 프로토타입 v2.4</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -95,6 +95,22 @@
         return { status, title: `${UI.fmtDate(date, { short: true })} TIL`, body: '# 오늘 배운것\n오늘 배운 내용을 정리합니다.\n\n# 막힌것\n특정 개념에서 막힌 부분.\n\n# 내일 할 것\n복습 + 추가 학습 계획', updatedAt: date + 'T18:00', editCount: 0, excellent: isExcellent(sid, date) };
       }
       return null;
+    }
+
+    // 작성 중인 TIL 본문(textarea#body)에 텍스트 블록을 붙여넣는다 (퀴즈 결과 → TIL 본문 한 블록 삽입).
+    function insertIntoTilBody(text) {
+      const ta = document.getElementById('body');
+      if (!ta) { UI.toast('작성 중인 TIL 본문을 찾지 못했어요', 'danger'); return; }
+      const sep = ta.value && !ta.value.endsWith('\n') ? '\n\n' : (ta.value ? '\n' : '');
+      ta.value = ta.value + sep + text + '\n';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      ta.focus();
+      ta.scrollTop = ta.scrollHeight;
+      UI.toast('TIL 본문에 붙여넣었어요', 'success');
+    }
+    // 퀴즈 1문항을 마크다운 한 블록으로 변환
+    function quizBlockMd(q, num, isWrong) {
+      return `### 학습퀴즈 복습 — 문항 ${num} (${isWrong ? '오답' : '정답'})\n- 문제: ${q.stem}\n- 정답: ${q.choices[q.answer]}\n- 해설: ${q.explanation}`;
     }
 
     // ============================================================
@@ -469,12 +485,12 @@
       pane.appendChild(wrap);
     }
 
-    // ===== 컨텍스트 2: 오늘의 퀴즈 결과 =====
+    // ===== 컨텍스트 2: 학습퀴즈 결과 =====
     function renderCtxQuiz(pane, sid, date) {
       const quiz = MOCK.quizzes[date];
       const attempt = MOCK.attempts[sid]?.[date];
       if (!quiz) {
-        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-list-check-2"></i></div><h4>오늘의 퀴즈가 없어요</h4></div>';
+        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-list-check-2"></i></div><h4>학습퀴즈가 없어요</h4></div>';
         return;
       }
       if (!attempt?.submitted) {
@@ -493,10 +509,10 @@
           <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">정답률</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="rate"></div></div>
           <div><div class="card-meta" style="color: var(--lk-color-fg-pressed);">오답 수</div><div style="font-size: 20px; font-weight: 700; color: var(--lk-color-fg-pressed); margin-top: 2px;" data-slot="wc"></div></div>
         </div>
-        <div class="spread" style="margin-bottom: 10px;"><span class="card-meta"><strong>문항 전체</strong></span><span class="card-meta" data-slot="qtotal"></span></div>
+        <div class="spread" style="margin-bottom: 10px;"><span class="card-meta"><strong>문항 전체</strong> <span class="text-mute" style="font-weight:400;">· 클릭하면 상세, [붙여넣기]로 TIL 본문에 추가</span></span><span class="row" style="gap:8px; align-items:center;"><span class="card-meta" data-slot="qtotal"></span><span data-slot="paste-all"></span></span></div>
         <div id="wlist" class="col" style="gap: 8px;"></div>
       `;
-      wrap.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[date]?.title || '오늘의 퀴즈';
+      wrap.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[date]?.title || '학습퀴즈';
       wrap.querySelector('[data-slot="st"]').textContent = '제출 완료';
       wrap.querySelector('[data-slot="score"]').textContent = `${attempt.score} / 10`;
       wrap.querySelector('[data-slot="rate"]').textContent = `${attempt.score * 10}%`;
@@ -516,16 +532,23 @@
         it.innerHTML = `
           <div class="spread" style="margin-bottom: 4px;">
             <span style="font-size: 11px; font-weight: 700; color: var(--lk-color-fg-primary);">문항 ${i + 1}</span>
-            <span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span>
+            <span class="row" style="gap:6px; align-items:center;"><span class="tag tag-small ${isWrong ? 'tag-weak-error' : 'tag-weak-success'}">${isWrong ? '오답' : '정답'}</span><span data-slot="paste"></span></span>
           </div>
           <div style="font-size: 12.5px; line-height: 1.5;" data-slot="s"></div>
           <div style="font-size: 11px; color: var(--lk-color-fg-neutral); margin-top: 6px;">정답: <strong data-slot="a"></strong></div>
         `;
         it.querySelector('[data-slot="s"]').textContent = q.stem;
         it.querySelector('[data-slot="a"]').textContent = q.choices[q.answer];
+        it.querySelector('[data-slot="paste"]').appendChild(UI.button({ label: '붙여넣기', icon: 'ri-clipboard-line', type: 'ghost', color: 'primary', size: 'small', onClick: (e) => { e.stopPropagation(); insertIntoTilBody(quizBlockMd(q, i + 1, isWrong)); } }));
         it.addEventListener('click', () => openQuizQuestionModal(q, i + 1, isWrong, userPick, date));
         wl.appendChild(it);
       });
+      // 퀴즈 결과 전체를 TIL 본문에 한 번에 붙여넣기
+      wrap.querySelector('[data-slot="paste-all"]').appendChild(UI.button({ label: '전체 붙여넣기', icon: 'ri-clipboard-line', type: 'outline', color: 'primary', size: 'small', onClick: () => {
+        const header = `## 오늘의 학습퀴즈 복습 (${attempt.score}/10 · 정답률 ${attempt.score * 10}%)`;
+        const blocks = qs.map((q, i) => quizBlockMd(q, i + 1, wrongSet.has(q.id)));
+        insertIntoTilBody([header, ...blocks].join('\n\n'));
+      } }));
       if (qs.length === 0) {
         wrongByDate.slice(0, 10).forEach((w, i) => {
           const isWrong = true;
@@ -639,12 +662,13 @@
       card.innerHTML = `
         <div class="card-head">
           <div>
-            <h3 class="card-title">학생 × 주차 히트맵 (최근 6개월)</h3>
-            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">주 7일(월~일) · 미작성·임시·작성·★우수, 주말은 점선 · 오늘은 진한 테두리(세로) · 셀 클릭 시 본문 상세 + 우수 마크</p>
+            <h3 class="card-title">학생 × 날짜 히트맵</h3>
+            <p class="text-mute" style="font-size: 12px; margin-top: 4px;">월별로 나눠 봐요(스크롤 부담↓) · 미작성·임시·작성·★우수, 주말 점선 · 오늘은 진한 테두리 · 셀 클릭 시 본문 상세 + 우수 마크</p>
           </div>
           <div id="legend"></div>
         </div>
         <div class="heatmap-scroll is-frozen-scroll" id="heat" style="margin-top: 16px;"></div>
+        <div id="til-pager" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:16px;"></div>
       `;
       const legend = UI.renderLegend([
         { color: 'var(--lk-color-bg-normal)', label: '미작성' },
@@ -654,28 +678,41 @@
         { color: 'var(--lk-color-bg-white)', label: '주말' },
       ]);
       card.querySelector('#legend').appendChild(legend);
-
-      const flatDays = weeks.flatMap((w) => w.days);
-      const heat = UI.renderHeatmap({
-        rows: UI.sortDropoutLast(MOCK.students),
-        cols: flatDays,
-        freeze: true,                       // 이름 열 + 날짜 헤더 고정
-        today: MOCK.meta.today,             // 오늘 컬럼 표시(세로 밴드)
-        rowLabel: (s) => UI.displayName(s),
-        rowMuted: (s) => UI.isDropped(s),
-        colLabel: (d) => {
-          const dt = new Date(d);
-          if (dt.getDay() !== 1) return '';
-          return `${dt.getMonth() + 1}/${dt.getDate()}`;
-        },
-        cellLevel: (s, d) => {
-          const status = tilStatusOn(s.id, d);
-          return { ...statusToHeat(status), excellent: status === 'written' && isExcellent(s.id, d), title: `${UI.displayName(s)} ${d}: ${status === 'written' && isExcellent(s.id, d) ? '우수' : status}` };
-        },
-        onCell: (s, d) => openManagerDetail(s, d, getTilForDate(s.id, d)),
-      });
-      card.querySelector('#heat').appendChild(heat);
       root.appendChild(card);
+
+      // 월별 페이지네이션 — 26주 전체를 한 화면에 깔지 않고 한 달씩 (가로/세로 스크롤 축소)
+      const flatDays = weeks.flatMap((w) => w.days);
+      const months = [...new Set(flatDays.map((d) => d.slice(0, 7)))].sort();
+      let mi = months.length - 1; // 최신 월부터
+      const heatBox = card.querySelector('#heat');
+      const pager = card.querySelector('#til-pager');
+      function draw() {
+        const ym = months[mi];
+        const cols = flatDays.filter((d) => d.slice(0, 7) === ym);
+        heatBox.innerHTML = '';
+        heatBox.appendChild(UI.renderHeatmap({
+          rows: UI.sortDropoutLast(MOCK.students),
+          cols,
+          freeze: true,
+          today: MOCK.meta.today,
+          rowLabel: (s) => UI.displayName(s),
+          rowMuted: (s) => UI.isDropped(s),
+          colLabel: (d) => `${new Date(d).getDate()}`,
+          cellLevel: (s, d) => {
+            const status = tilStatusOn(s.id, d);
+            return { ...statusToHeat(status), excellent: status === 'written' && isExcellent(s.id, d), title: `${UI.displayName(s)} ${d}: ${status === 'written' && isExcellent(s.id, d) ? '우수' : status}` };
+          },
+          onCell: (s, d) => openManagerDetail(s, d, getTilForDate(s.id, d)),
+        }));
+        pager.innerHTML = '';
+        pager.appendChild(UI.button({ label: '이전 달', icon: 'ri-arrow-left-s-line', type: 'ghost', color: 'neutral', size: 'small', disabled: mi <= 0, onClick: () => { mi--; draw(); } }));
+        const lbl = document.createElement('span');
+        lbl.style.cssText = 'font-size:14px; font-weight:700; color:var(--lk-color-fg-strong); min-width:120px; text-align:center;';
+        lbl.textContent = `${ym.slice(0, 4)}년 ${Number(ym.slice(5, 7))}월`;
+        pager.appendChild(lbl);
+        pager.appendChild(UI.button({ label: '다음 달', icon: 'ri-arrow-right-s-line', type: 'ghost', color: 'neutral', size: 'small', disabled: mi >= months.length - 1, onClick: () => { mi++; draw(); } }));
+      }
+      draw();
     }
 
     function openManagerDetail(s, d, t) {

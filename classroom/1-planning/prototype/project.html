@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>프로젝트 — 프로토타입 v2.3</title>
+  <title>프로젝트 — 프로토타입 v2.4</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
   <link rel="stylesheet" href="./assets/tokens.css" />
@@ -176,10 +176,12 @@
       head.querySelector('[data-slot="ft"]').textContent = UI.fmtDate(p.feedbackTo, { compact: true });
       fp.body.appendChild(head);
 
+      // 제출 프로젝트 리스트(다른 학생 제출본)는 제출 기간이 끝난 뒤(피드백 기간부터) 전체 공개 — 제출 여부 무관 (POL-CR-03 §6.2)
+      const boardOpen = stage.key === 'feedback' || stage.key === 'closed';
       // 3탭 (제출하기는 탭이 아니라 문제 탭 좌측 버튼으로 이동 — POL-CR-03 §6.2)
       const tabs = [
         { key: 'problem', label: '문제', icon: 'ri-file-list-3-line' },
-        { key: 'board', label: '제출 프로젝트 리스트', icon: 'ri-group-line', locked: !mine },
+        { key: 'board', label: '제출 프로젝트 리스트', icon: 'ri-group-line', locked: !boardOpen },
         { key: 'feedback', label: '받은 피드백', icon: 'ri-chat-3-line' },
       ];
       const tabsEl = document.createElement('div');
@@ -314,18 +316,25 @@
       fp.body.appendChild(card);
     }
 
-    // ===== 수업 제출본 — 본인 맨 앞 + 클릭시 외부 공유 =====
+    // ===== 수업 제출본 — 제출 기간 종료(피드백 기간)부터 전체 공개 · 본인 맨 앞 + 클릭시 외부 공유 =====
     function renderBoardPane(pane, p, sid, mine, subs) {
-      if (!mine) {
+      const stage = stageTag(p);
+      const boardOpen = stage.key === 'feedback' || stage.key === 'closed';
+      if (!boardOpen) {
+        // 제출 기간 중에는 비공개 — 제출 여부와 무관하게 잠금 (베끼기 방지 + 마감 후 일괄 공개)
         const lock = document.createElement('div');
         lock.className = 'lock-card';
+        const submitting = stage.key === 'submitting';
         lock.innerHTML = `
           <div class="lock-icon"><i class="ri-icon ri-lock-2-line"></i></div>
-          <h4>제출 후 열람 가능해요</h4>
-          <p>본인 제출이 완료되면 같은 수업의 다른 학생 제출본을 열람할 수 있어요.<br/>먼저 본인 프로젝트를 제출해보세요.</p>
+          <h4>제출 기간이 끝나면 공개돼요</h4>
+          <p>제출 기간 동안에는 문제 풀이에 집중! <strong>피드백 기간부터</strong> 같은 수업의 모든 제출본이 공개되고,<br/>이때부터는 제출물 수정이 불가능해요.</p>
           <div id="cta"></div>
         `;
-        lock.querySelector('#cta').appendChild(UI.button({ label: '제출하러 가기', icon: 'ri-upload-cloud-line', type: 'solid', color: 'primary', onClick: () => openSubmitForm(p, sid, null, stageTag(p)) }));
+        // 제출 진행 중이고 아직 미제출이면 제출을 독려 (열람 게이트와 별개)
+        if (submitting && !mine) {
+          lock.querySelector('#cta').appendChild(UI.button({ label: '내 프로젝트 제출하러 가기', icon: 'ri-upload-cloud-line', type: 'solid', color: 'primary', onClick: () => openSubmitForm(p, sid, null, stage) }));
+        }
         pane.appendChild(lock);
         return;
       }
@@ -333,7 +342,7 @@
       const head = document.createElement('div');
       head.className = 'section-head';
       head.style.margin = '0 0 16px';
-      head.innerHTML = `<h3>제출 프로젝트 리스트</h3><span class="hint">${MOCK.meta.cohortName} · 총 ${subs.length}건 · 내 프로젝트가 가장 먼저 보여요</span>`;
+      head.innerHTML = `<h3>제출 프로젝트 리스트</h3><span class="hint">${MOCK.meta.cohortName} · 총 ${subs.length}건${mine ? ' · 내 프로젝트가 가장 먼저 보여요' : ''}</span>`;
       pane.appendChild(head);
 
       const board = document.createElement('div');
