@@ -786,16 +786,26 @@
       else renderMgrSupp(body);
     }
 
-    // 퀴즈 발행하기 탭 — 발행 대기 슬롯 리스트 (요약) → 클릭 시 편집/발행 폼
+    // 퀴즈 발행하기 탭 — 발행 예정 / 임시 저장 2서브탭 (Figma 11665:39011 정합 · 2026-06-09)
+    // 분류 기준: scheduled(오늘 자동 08:30 + 미래 예약) = 발행 예정, draft·생성실패 = 임시 저장
     function renderMgrToday(body) {
       const today = MOCK.meta.today;
       const q = MOCK.quizzes[today];
+      const limit = MOCK.todayQuizDailyLimit || 20;
 
+      // 발행 정책 박스 — 📌 제목 + 3 bullet
       const policy = document.createElement('div');
-      policy.className = 'banner banner-info';
-      policy.innerHTML = `<i class="ri-icon ri-information-line"></i><span>정책 — 매일 <strong>08:30</strong> 자동 생성 1세트가 발행됩니다. 강사가 추가 퀴즈를 만들어 <strong>예약·즉시 발행</strong>할 수 있어요. 발행하면 <strong>발행된 퀴즈</strong> 탭으로 이동합니다.</span>`;
+      policy.className = 'banner banner-info banner-policy';
+      policy.innerHTML = `
+        <div class="banner-policy-head"><i class="ri-icon ri-pushpin-line"></i><strong>퀴즈 발행 정책</strong></div>
+        <ul class="banner-policy-list">
+          <li>매일 오전 <strong>08:30</strong>에 AI 퀴즈 1세트가 자동 생성 후 발행됩니다.</li>
+          <li>강사·매니저는 추가 퀴즈를 만들어 <strong>예약·즉시 발행</strong>할 수 있습니다.</li>
+          <li>퀴즈를 발행하면 해당 목록은 <strong>발행된 퀴즈</strong> 탭으로 이동합니다.</li>
+        </ul>`;
       body.appendChild(policy);
 
+      // 자동 생성 실패 — 학생뷰 비노출, 매니저뷰만 + 즉시 재생성 (POL §1.1)
       if (q?.status === 'generation_failed') {
         body.appendChild(UI.banner({ kind: 'error', msg: '오늘 자동 생성에 실패했어요. (학생에게는 노출되지 않아요) 바로 재생성할 수 있어요.', action: { label: '재생성', onClick: () => {
           const set = (q.sets || []).find((s) => s.source === 'auto') || (q.sets || [])[0];
@@ -807,17 +817,14 @@
         } } }));
       }
 
-      // 학습퀴즈는 생성일 기준 하루 최대 20개까지 발행 가능 (W4)
-      const limit = MOCK.todayQuizDailyLimit || 20;
-      const dayCount = (q?.sets || []).length;
-      const remaining = Math.max(0, limit - dayCount);
-
+      // 상단 — 제목 + solid 새 퀴즈 추가 (Figma: primary solid)
       const head = document.createElement('div');
       head.className = 'section-head';
-      head.style.margin = '20px 0 12px';
-      head.innerHTML = `<h3>${UI.fmtDate(today)} · 오늘 발행</h3><span class="row" style="gap:12px; align-items:center;"><span class="hint">오늘 ${dayCount}/${limit}개 · ${remaining}개 더 생성 가능</span><span id="new-set-btn"></span></span>`;
-      head.querySelector('#new-set-btn').appendChild(UI.button({ label: '새 퀴즈 추가', icon: 'ri-add-line', type: 'outline', color: 'primary', size: 'medium', disabled: remaining <= 0, onClick: () => {
-        if (remaining <= 0) { UI.toast(`학습퀴즈는 하루 최대 ${limit}개까지 발행할 수 있어요`, 'danger'); return; }
+      head.style.margin = '20px 0 16px';
+      head.innerHTML = `<h3>퀴즈 발행하기</h3><span id="new-set-btn"></span>`;
+      head.querySelector('#new-set-btn').appendChild(UI.button({ label: '새 퀴즈 추가', icon: 'ri-add-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => {
+        const dayCount = (MOCK.quizzes[today]?.sets || []).length;
+        if (limit - dayCount <= 0) { UI.toast(`학습퀴즈는 하루 최대 ${limit}개까지 발행할 수 있어요`, 'danger'); return; }
         const newSet = { id: `${today}-set-manual-${Date.now()}`, title: '새 퀴즈', source: 'manual', status: 'draft', publishedAt: null, scheduledAt: `${today}T08:30`, questions: [] };
         if (!MOCK.quizzes[today]) MOCK.quizzes[today] = { sets: [] };
         if (!MOCK.quizzes[today].sets) MOCK.quizzes[today].sets = [];
@@ -826,32 +833,102 @@
       } }));
       body.appendChild(head);
 
-      const drafts = (q?.sets || []).filter((s) => s.status !== 'published');
-      if (drafts.length === 0) {
-        body.appendChild(UI.emptyCard({ icon: 'ri-inbox-line', title: '오늘 발행 대기 중인 퀴즈가 없어요', body: '상단 [새 퀴즈 추가]로 만들거나, 발행된 퀴즈 탭에서 발행본을 확인하세요.' }));
-      } else {
-        const list = document.createElement('div');
-        list.className = 'note-list';
-        drafts.forEach((set) => list.appendChild(buildSlotRow(today, set, body)));
-        body.appendChild(list);
-      }
-
-      // 미래 예약 발행 리스트 (W5) — 오늘 이후 일자에 예약된 퀴즈를 하단에 표시
-      const addDays = (iso, n) => { const dt = new Date(iso); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); };
-      const d1 = addDays(today, 1), d3 = addDays(today, 3);
-      const futureScheduled = [
-        { id: 'fut-set-1', date: d1, title: '내일 데일리 퀴즈', source: 'auto', status: 'scheduled', scheduledAt: `${d1}T08:30`, questions: genQuestions(10, '내일 핵심 개념') },
-        { id: 'fut-set-2', date: d3, title: '주간 종합 복습 퀴즈', source: 'manual', status: 'scheduled', scheduledAt: `${d3}T09:00`, questions: genQuestions(15, '주간 종합 복습') },
+      // ===== 서브탭: 발행 예정 / 임시 저장 =====
+      const subDefs = [
+        { key: 'scheduled', label: '발행 예정' },
+        { key: 'draft', label: '임시 저장' },
       ];
-      const fHead = document.createElement('div');
-      fHead.className = 'section-head';
-      fHead.style.margin = '28px 0 12px';
-      fHead.innerHTML = `<h3>예약 발행 (예정)</h3><span class="hint">미래 일자에 예약된 퀴즈 — 발행 전까지 수정 가능</span>`;
-      body.appendChild(fHead);
-      const fList = document.createElement('div');
-      fList.className = 'note-list';
-      futureScheduled.forEach((set) => fList.appendChild(buildSlotRow(set.date, set, body)));
-      body.appendChild(fList);
+      let activeSub = UI.loadState().mgrPublishSub || 'scheduled';
+      const subTabs = document.createElement('div');
+      subTabs.className = 'tabs';
+      subTabs.style.marginBottom = '20px';
+      subDefs.forEach((t) => {
+        const btn = document.createElement('button');
+        btn.className = 'tab' + (activeSub === t.key ? ' is-active' : '');
+        btn.textContent = t.label;
+        btn.dataset.sub = t.key;
+        btn.addEventListener('click', () => {
+          activeSub = t.key; UI.saveState({ mgrPublishSub: t.key });
+          subTabs.querySelectorAll('button').forEach((x) => x.classList.toggle('is-active', x.dataset.sub === t.key));
+          drawPane();
+        });
+        subTabs.appendChild(btn);
+      });
+      body.appendChild(subTabs);
+
+      const pane = document.createElement('section');
+      body.appendChild(pane);
+
+      // 발행 예정 데모: 오늘 자동 scheduled + 미래 예약본 (발행일시순) — 페이지네이션 시연용 다건
+      const addDays = (iso, n) => { const dt = new Date(iso); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10); };
+      const futTopics = ['SQL Window 함수 — ROW_NUMBER · LAG · LEAD', 'pandas 결측치·이상치 처리', '정규화와 인덱스 설계', 'EDA — 분포·상관·이탈 신호', 'scikit-learn 파이프라인'];
+      const futCounts = [10, 15, 5, 10, 10];
+      const futureScheduled = Array.from({ length: 11 }, (_, i) => {
+        const day = addDays(today, Math.floor(i / 3) + 1);
+        const hh = ['07:00', '12:00', '18:00'][i % 3];
+        return { id: `fut-set-${i + 1}`, date: day, title: futTopics[i % futTopics.length], source: i % 3 === 0 ? 'auto' : 'manual', status: 'scheduled', scheduledAt: `${day}T${hh}`, questions: genQuestions(futCounts[i % futCounts.length], futTopics[i % futTopics.length]) };
+      });
+
+      function drawPane() {
+        pane.innerHTML = '';
+        const sets = (MOCK.quizzes[today]?.sets || []);
+        if (activeSub === 'scheduled') {
+          const scheduled = sets.filter((s) => s.status === 'scheduled').map((s) => ({ date: today, set: s }))
+            .concat(futureScheduled.map((s) => ({ date: s.date, set: s })))
+            .sort((a, b) => (a.set.scheduledAt || '').localeCompare(b.set.scheduledAt || ''));
+          const dayCount = sets.length;
+          const remaining = Math.max(0, limit - dayCount);
+          const h = document.createElement('div');
+          h.className = 'section-head';
+          h.style.margin = '0 0 12px';
+          h.innerHTML = `<h3>발행 예정 목록</h3><span class="hint">오늘 생성 퀴즈 수 · <strong style="color:var(--lk-color-fg-strong);">${dayCount}</strong> / ${limit}${remaining === 0 ? ' · 한도 도달' : ''}</span>`;
+          pane.appendChild(h);
+          if (scheduled.length === 0) {
+            pane.appendChild(UI.emptyCard({ icon: 'ri-calendar-schedule-line', title: '발행 예정인 퀴즈가 없어요', body: '상단 [새 퀴즈 추가]로 만들어 예약·즉시 발행할 수 있어요.' }));
+            return;
+          }
+          const list = document.createElement('div');
+          list.className = 'note-list';
+          pane.appendChild(list);
+          const pager = document.createElement('div');
+          pager.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:14px; margin-top:20px;';
+          pane.appendChild(pager);
+          const pageSize = 10; let page = 1;
+          const drawList = () => {
+            const totalPages = Math.max(1, Math.ceil(scheduled.length / pageSize));
+            if (page > totalPages) page = totalPages;
+            const start = (page - 1) * pageSize;
+            list.innerHTML = '';
+            scheduled.slice(start, start + pageSize).forEach(({ date, set }) => list.appendChild(buildSlotRow(date, set, body)));
+            pager.innerHTML = '';
+            if (totalPages > 1) {
+              pager.appendChild(UI.button({ label: '이전', icon: 'ri-arrow-left-s-line', type: 'ghost', color: 'neutral', size: 'small', disabled: page <= 1, onClick: () => { page--; drawList(); } }));
+              const lbl = document.createElement('span'); lbl.className = 'hint';
+              lbl.textContent = `${page} / ${totalPages} · 총 ${scheduled.length}건`;
+              pager.appendChild(lbl);
+              pager.appendChild(UI.button({ label: '다음', icon: 'ri-arrow-right-s-line', type: 'ghost', color: 'neutral', size: 'small', disabled: page >= totalPages, onClick: () => { page++; drawList(); } }));
+            }
+          };
+          drawList();
+        } else {
+          // 임시 저장 = draft + 생성 실패 (예약·발행 전)
+          const drafts = sets.filter((s) => s.status !== 'published' && s.status !== 'scheduled');
+          const h = document.createElement('div');
+          h.className = 'section-head';
+          h.style.margin = '0 0 12px';
+          h.innerHTML = `<h3>임시 저장 목록</h3><span class="hint">예약·발행 전 상태 — 클릭해 이어서 편집</span>`;
+          pane.appendChild(h);
+          if (drafts.length === 0) {
+            pane.appendChild(UI.emptyCard({ icon: 'ri-draft-line', title: '임시 저장된 퀴즈가 없어요', body: '상단 [새 퀴즈 추가]로 만들면 여기에 임시 저장돼요.' }));
+            return;
+          }
+          const list = document.createElement('div');
+          list.className = 'note-list';
+          drafts.forEach((set) => list.appendChild(buildSlotRow(today, set, body)));
+          pane.appendChild(list);
+        }
+      }
+      drawPane();
     }
 
     // 요약 슬롯 행 — 상태(임시저장/예약발행/생성실패)·예약 일시·이름·문항수. 클릭 시 편집/발행 폼.
