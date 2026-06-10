@@ -566,6 +566,33 @@ html, body {
   color: var(--lk-color-yellow-700);
 }
 
+/* ===== 오답노트 리스트(드롭다운) — Figma 11457·11478 ===== */
+.wrong-list { display: flex; flex-direction: column; gap: 10px; }
+.wrong-row { border: 1px solid var(--lk-color-border-weak); border-radius: 12px; background: var(--lk-color-bg-white); overflow: hidden; }
+.wrong-row-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; }
+.wrong-row-head:hover { background: var(--lk-color-bg-normal); }
+.wrong-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.wrong-row-meta { font-size: 12px; color: var(--lk-color-fg-alternative); }
+.wrong-row-title { font-size: 15px; font-weight: 700; color: var(--lk-color-fg-strong); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-btn { width: 32px; height: 32px; border: 0; background: transparent; border-radius: 8px; cursor: pointer; color: var(--lk-color-fg-assistive); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.icon-btn:hover { background: var(--lk-color-bg-normal); color: var(--lk-color-fg-neutral); }
+.icon-btn.is-on { color: var(--lk-color-fg-strong); }
+.icon-btn .ri-icon { font-size: 18px; }
+.wrong-row-body { padding: 0 18px 18px; }
+.wrong-choices { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 6px; }
+.wrong-choice { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 13px; background: var(--lk-color-bg-normal); }
+.wrong-choice .c { flex: 1; min-width: 0; }
+.wrong-choice .mk { font-weight: 600; font-size: 12px; }
+.wrong-choice.is-answer { background: var(--lk-color-bg-lightgreen); color: var(--lk-color-light-green-700); font-weight: 600; }
+.wrong-choice.is-mine { background: var(--lk-color-bg-red); color: var(--lk-color-red-700); font-weight: 600; }
+.wrong-explain { font-size: 13px; color: var(--lk-color-fg-neutral); background: var(--lk-color-bg-normal); padding: 12px 14px; border-radius: 8px; line-height: 1.7; }
+.wrong-explain strong { color: var(--lk-color-fg-strong); }
+.wrong-explain p { margin: 6px 0 0; }
+.wrong-row-body .memo { background: var(--lk-color-bg-yellow); padding: 8px 10px; border-radius: 6px; font-size: 12px; color: var(--lk-color-yellow-700); margin-top: 12px; }
+.memo-edit { margin-top: 12px; }
+.memo-edit label { display: block; font-size: 13px; font-weight: 600; color: var(--lk-color-fg-normal); margin-bottom: 6px; }
+.memo-edit textarea { width: 100%; border: 1px solid var(--lk-color-border-normal); border-radius: 8px; padding: 10px 12px; font-family: inherit; font-size: 13px; resize: vertical; }
+
 /* ===== AI Note 매니저 편집기 ===== */
 .editor-split {
   display: grid;
