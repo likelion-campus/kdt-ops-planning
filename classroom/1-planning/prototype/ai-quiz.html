@@ -998,21 +998,18 @@
       row.className = 'quiz-row';
       row.style.cursor = 'pointer';
       const st = slotState(set);
-      const srcTag = set.source === 'auto' ? { cls: 'tag-weak-progressing', label: '자동 생성' } : { cls: 'tag-weak-enabled', label: '강사 작성' };
       const sched = set.status === 'scheduled' && set.scheduledAt
         ? `예약 ${set.scheduledAt.slice(5, 10).replace('-', '/')} ${set.scheduledAt.slice(11, 16)}`
         : '임시저장';
       row.innerHTML = `
         <div class="quiz-date"><i class="ri-icon ${set.status === 'scheduled' ? 'ri-calendar-check-line' : 'ri-draft-line'}"></i><span data-slot="sch"></span></div>
         <div class="quiz-title" data-slot="t"></div>
-        <span class="tag tag-small ${srcTag.cls}" data-slot="src"></span>
         <span class="tag tag-small tag-weak-neutral" data-slot="qc"></span>
         <span class="tag tag-small ${st.cls}" data-slot="st"></span>
         <i class="ri-icon ri-arrow-right-s-line" style="color: var(--lk-color-fg-assistive);"></i>
       `;
       row.querySelector('[data-slot="sch"]').textContent = sched;
       row.querySelector('[data-slot="t"]').textContent = set.title;
-      row.querySelector('[data-slot="src"]').textContent = srcTag.label;
       row.querySelector('[data-slot="qc"]').textContent = `${set.questions.length}문항`;
       row.querySelector('[data-slot="st"]').textContent = st.label;
       row.addEventListener('click', () => openDraftEditor(date, set, () => { body.innerHTML = ''; renderMgrToday(body); }));
@@ -1068,7 +1065,6 @@
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
           <span class="card-meta" data-slot="d"></span>
           <span class="tag tag-small" data-slot="state"></span>
-          <span class="tag tag-small ${set.source === 'auto' ? 'tag-weak-progressing' : 'tag-weak-enabled'}">${set.source === 'auto' ? '자동 생성' : '강사 작성'}</span>
         </div>
         <input type="text" id="title" style="width:100%; max-width:620px; font-size:24px; font-weight:700; border:1px solid var(--lk-color-border-normal); border-radius:10px; padding:10px 14px; letter-spacing:-0.01em;" />
         <p class="text-mute" style="font-size:12px; margin:10px 0 16px;">발행 이후에는 텍스트(문제·보기·해설)만 수정 — 정답·보기 번호 잠금</p>
@@ -1579,13 +1575,11 @@
           row.innerHTML = `
             <div class="quiz-date"><i class="ri-icon ri-calendar-line"></i><span data-slot="d"></span></div>
             <div class="quiz-title" data-slot="t"></div>
-            <span class="tag tag-small ${set.source === 'auto' ? 'tag-weak-progressing' : 'tag-weak-enabled'}" data-slot="src"></span>
             <span class="tag tag-small tag-weak-neutral" data-slot="qc"></span>
             <span class="tag tag-small tag-weak-success" data-slot="rt"></span>
           `;
           row.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
           row.querySelector('[data-slot="t"]').textContent = set.title;
-          row.querySelector('[data-slot="src"]').textContent = set.source === 'auto' ? '자동' : '강사 작성';
           row.querySelector('[data-slot="qc"]').textContent = `${set.questions.length}문항`;
           row.querySelector('[data-slot="rt"]').textContent = `${submitted}/${total} 응시 · 평균 ${(MOCK.students.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[d]?.score || 0), 0) / total).toFixed(1)}/10`;
           row.addEventListener('click', () => openPublishedDetail(d, set));
@@ -1622,7 +1616,6 @@
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
           <span class="card-meta" data-slot="d"></span>
           <span class="tag tag-small tag-weak-success">발행됨</span>
-          <span class="tag tag-small ${set?.source === 'auto' ? 'tag-weak-progressing' : 'tag-weak-enabled'}" data-slot="src"></span>
         </div>
         <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 20px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
 
@@ -1635,7 +1628,6 @@
       `;
       fp.body.querySelector('[data-slot="d"]').textContent = UI.fmtDate(targetDate);
       fp.body.querySelector('[data-slot="t"]').textContent = set?.title || MOCK.aiNotes[targetDate]?.title || '퀴즈';
-      fp.body.querySelector('[data-slot="src"]').textContent = set?.source === 'auto' ? '자동 생성' : '강사 작성';
 
       const pane = fp.body.querySelector('#pd-pane');
       function renderPdPane(k) {
