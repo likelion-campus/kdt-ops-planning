@@ -110,7 +110,7 @@
     }
     // 퀴즈 1문항을 마크다운 한 블록으로 변환
     function quizBlockMd(q, num, isWrong) {
-      return `### 학습퀴즈 복습 — 문항 ${num} (${isWrong ? '오답' : '정답'})\n- 문제: ${q.stem}\n- 정답: ${q.choices[q.answer]}\n- 해설: ${q.explanation}`;
+      return `### 강의퀴즈 복습 — 문항 ${num} (${isWrong ? '오답' : '정답'})\n- 문제: ${q.stem}\n- 정답: ${q.choices[q.answer]}\n- 해설: ${q.explanation}`;
     }
 
     // ============================================================
@@ -485,12 +485,12 @@
       pane.appendChild(wrap);
     }
 
-    // ===== 컨텍스트 2: 학습퀴즈 결과 =====
+    // ===== 컨텍스트 2: 강의퀴즈 결과 =====
     function renderCtxQuiz(pane, sid, date) {
       const quiz = MOCK.quizzes[date];
       const attempt = MOCK.attempts[sid]?.[date];
       if (!quiz) {
-        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-list-check-2"></i></div><h4>학습퀴즈가 없어요</h4></div>';
+        pane.innerHTML = '<div class="empty" style="padding: 32px 16px;"><div class="icon"><i class="ri-icon ri-list-check-2"></i></div><h4>강의퀴즈가 없어요</h4></div>';
         return;
       }
       if (!attempt?.submitted) {
@@ -512,7 +512,7 @@
         <div class="spread" style="margin-bottom: 10px;"><span class="card-meta"><strong>문항 전체</strong> <span class="text-mute" style="font-weight:400;">· 클릭하면 상세, [붙여넣기]로 TIL 본문에 추가</span></span><span class="row" style="gap:8px; align-items:center;"><span class="card-meta" data-slot="qtotal"></span><span data-slot="paste-all"></span></span></div>
         <div id="wlist" class="col" style="gap: 8px;"></div>
       `;
-      wrap.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[date]?.title || '학습퀴즈';
+      wrap.querySelector('[data-slot="t"]').textContent = MOCK.aiNotes[date]?.title || '강의퀴즈';
       wrap.querySelector('[data-slot="st"]').textContent = '제출 완료';
       wrap.querySelector('[data-slot="score"]').textContent = `${attempt.score} / 10`;
       wrap.querySelector('[data-slot="rate"]').textContent = `${attempt.score * 10}%`;
@@ -545,7 +545,7 @@
       });
       // 퀴즈 결과 전체를 TIL 본문에 한 번에 붙여넣기
       wrap.querySelector('[data-slot="paste-all"]').appendChild(UI.button({ label: '전체 붙여넣기', icon: 'ri-clipboard-line', type: 'outline', color: 'primary', size: 'small', onClick: () => {
-        const header = `## 오늘의 학습퀴즈 복습 (${attempt.score}/10 · 정답률 ${attempt.score * 10}%)`;
+        const header = `## 오늘의 강의퀴즈 복습 (${attempt.score}/10 · 정답률 ${attempt.score * 10}%)`;
         const blocks = qs.map((q, i) => quizBlockMd(q, i + 1, wrongSet.has(q.id)));
         insertIntoTilBody([header, ...blocks].join('\n\n'));
       } }));
