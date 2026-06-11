@@ -815,6 +815,86 @@
       }
     }
 
+    // 수업용 '퀴즈 풀이' — 발행본을 강사가 학생과 함께 한 문제씩 풀고,
+    // 답을 고른 뒤 넘기면 그 문항의 정답·해설을 즉시 공개한다.
+    // 학생 응시(openTaking)와 달리 채점·집계·오답 누적이 없는 매니저뷰 전용 진행 도구.
+    function openSolveAlong(date, set) {
+      const questions = (set && set.questions) || MOCK.quizzes[date]?.questions || [];
+      const total = questions.length;
+      if (!total) { UI.toast('문항이 없어 퀴즈 풀이를 시작할 수 없어요', 'error'); return; }
+      let cur = 0;
+      let revealed = false;   // 현재 문항 정답 공개 여부
+      const picks = {};       // 강의 중 함께 고른 보기 (시연용 — 저장·집계 안 함)
+      const fp = UI.openFullPage({ backLabel: '발행된 퀴즈' });
+
+      function paint() {
+        const q = questions[cur];
+        const picked = picks[cur];
+        fp.actions.innerHTML = '';
+        const progress = document.createElement('div');
+        progress.style.cssText = 'font-size: 13px; color: var(--lk-color-fg-strong);';
+        progress.innerHTML = `<strong>${cur + 1}</strong> <span class="text-mute">/ ${total}</span> <span class="text-primary" style="margin-left: 8px;">${Math.round((cur + 1) / total * 100)}%</span>`;
+        fp.actions.appendChild(progress);
+
+        fp.body.innerHTML = `
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <span class="tag tag-small tag-solid-primary"><i class="ri-icon ri-presentation-line"></i> 퀴즈 풀이 · 수업용</span>
+            <span class="card-meta" data-slot="t"></span>
+          </div>
+          <div class="quiz-bar"><i style="width: ${(cur + 1) / total * 100}%"></i></div>
+          <div class="quiz-card" style="max-width: 720px; margin: 0 auto;">
+            <span class="quiz-type tag tag-small tag-solid-primary">객관식 · 문항 ${cur + 1}</span>
+            <p class="quiz-stem" data-slot="stem"></p>
+            <div id="choices"></div>
+            <div id="reveal"></div>
+            <div class="row row-end" style="margin-top: 24px;"><span id="nav-btn"></span></div>
+          </div>
+        `;
+        fp.body.querySelector('[data-slot="t"]').textContent = set?.title || UI.fmtDate(date);
+        fp.body.querySelector('[data-slot="stem"]').textContent = q.stem;
+
+        const choicesEl = fp.body.querySelector('#choices');
+        q.choices.forEach((c, idx) => {
+          const el = document.createElement('div');
+          el.className = 'choice' + (!revealed && picked === idx ? ' is-selected' : '');
+          el.innerHTML = `<span class="num">${idx + 1}</span><span class="label" data-slot="t"></span>`;
+          el.querySelector('[data-slot="t"]').textContent = c;
+          if (revealed) {
+            if (idx === q.answer) { el.style.background = 'var(--lk-color-bg-lightgreen)'; el.style.borderColor = 'var(--lk-color-state-success)'; }
+            else if (picked === idx) { el.style.background = 'var(--lk-color-bg-lightred, #fdecec)'; el.style.borderColor = 'var(--lk-color-state-danger)'; }
+            el.style.cursor = 'default';
+          } else {
+            el.addEventListener('click', () => { picks[cur] = idx; paint(); });
+          }
+          choicesEl.appendChild(el);
+        });
+
+        // 정답·해설 (정답 확인 이후 노출)
+        const reveal = fp.body.querySelector('#reveal');
+        if (revealed) {
+          const ok = picked === q.answer;
+          reveal.innerHTML = `
+            <div class="banner ${ok ? 'banner-success' : 'banner-info'}" style="margin: 16px 0 0;">
+              <i class="ri-icon ${ok ? 'ri-checkbox-circle-line' : 'ri-information-line'}"></i>
+              <span><strong>정답: ${q.answer + 1}번</strong>${picked != null ? (ok ? ' · 함께 고른 답이 정답이에요' : ` · 고른 답 ${picked + 1}번`) : ''}</span>
+            </div>
+            <div style="font-size: 13px; color: var(--lk-color-fg-neutral); line-height: 1.7; background: var(--lk-color-bg-normal); padding: 12px 14px; border-radius: 8px; margin-top: 12px;" data-slot="ex"></div>
+          `;
+          reveal.querySelector('[data-slot="ex"]').innerHTML = `<strong>해설:</strong> ${q.explanation}`;
+        }
+
+        const navWrap = fp.body.querySelector('#nav-btn');
+        if (!revealed) {
+          navWrap.appendChild(UI.button({ label: '정답 확인', icon: 'ri-eye-line', size: 'large', type: 'solid', color: 'primary', disabled: picked == null, onClick: () => { revealed = true; paint(); } }));
+        } else if (cur < total - 1) {
+          navWrap.appendChild(UI.button({ label: '다음 문항', icon: 'ri-arrow-right-line', size: 'large', type: 'solid', color: 'primary', onClick: () => { cur++; revealed = false; paint(); } }));
+        } else {
+          navWrap.appendChild(UI.button({ label: '퀴즈 풀이 마치기', icon: 'ri-check-line', size: 'large', type: 'solid', color: 'primary', onClick: () => { UI.closeFullPage(); UI.toast('퀴즈 풀이를 마쳤어요 (채점·집계에는 반영되지 않아요)', 'success'); } }));
+        }
+      }
+      paint();
+    }
+
     // ============================================================
     // 매니저뷰
     // ============================================================
@@ -1594,6 +1674,8 @@
       if (set) {
         // 발행본은 텍스트만 수정 (정답·보기 잠금)
         fp.actions.appendChild(UI.button({ label: '퀴즈 수정', icon: 'ri-edit-line', type: 'outline', color: 'neutral', size: 'medium', onClick: () => openDraftEditor(targetDate, set, null) }));
+        // 수업용 '퀴즈 풀이' — 강사가 학생과 함께 한 문제씩 풀고, 답 선택 후 넘기면 정답·해설을 즉시 공개 (채점·집계 없음)
+        fp.actions.appendChild(UI.button({ label: '퀴즈 풀이', icon: 'ri-presentation-line', type: 'outline', color: 'primary', size: 'medium', onClick: () => openSolveAlong(targetDate, set) }));
         // 유사 퀴즈를 새로 만들어 '퀴즈 발행하기'에 추가
         fp.actions.appendChild(UI.button({ label: '추가 퀴즈 생성', icon: 'ri-add-circle-line', type: 'solid', color: 'primary', size: 'medium', onClick: () => {
           const today = MOCK.meta.today;
