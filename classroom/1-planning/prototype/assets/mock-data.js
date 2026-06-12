@@ -524,6 +524,7 @@
 - 인사이트의 설득력 (30%)
 - 코드 가독성·재현성 (20%)
 - 발표 영상 명확성 (10%)`,
+      registeredAt: '2026-04-22',
       submitFrom: '2026-04-29', submitTo: '2026-05-06',
       feedbackFrom: '2026-05-07', feedbackTo: '2026-05-13',
       status: '종료',
@@ -566,6 +567,7 @@
 - 파이프라인 재현성 (20%)
 - 대시보드 UX (20%)
 - 발표 영상 (15%)`,
+      registeredAt: '2026-05-01',
       submitFrom: '2026-05-10', submitTo: '2026-05-20',
       feedbackFrom: '2026-05-25', feedbackTo: '2026-06-08',
       status: '피드백 진행',
@@ -613,6 +615,7 @@
 - 본인 기여의 명확성 (25%)
 - 사용자 가치·UX (20%)
 - 발표 (10%)`,
+      registeredAt: '2026-05-18',
       submitFrom: '2026-05-25', submitTo: '2026-06-15',
       feedbackFrom: '2026-06-16', feedbackTo: '2026-06-22',
       status: '제출 진행',
@@ -643,6 +646,7 @@
 - 기여의 의미성 (40%)
 - 회고의 솔직성 (40%)
 - 다음 기여 계획 (20%)`,
+      registeredAt: '2026-05-08',
       submitFrom: '2026-05-15', submitTo: '2026-05-31',
       feedbackFrom: '2026-06-01', feedbackTo: '2026-06-05',
       status: '제출 진행',
