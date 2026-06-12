@@ -587,7 +587,7 @@
             </div>
             <div style="height:8px; border-radius:9999px; background:var(--lk-color-bg-normal); overflow:hidden;"><div data-slot="bar" style="height:100%; background:var(--lk-color-bg-primary); border-radius:9999px;"></div></div>
             <div style="font-size:13px; color:var(--lk-color-fg-neutral);"><i class="ri-icon ri-team-line"></i> 제출 훈련생 <strong data-slot="sc"></strong></div>
-            <div style="font-size:11px; color:var(--lk-color-fg-alternative);">전체 인원은 중도포기자 제외</div>
+            <div style="font-size:11px; color:var(--lk-color-fg-alternative);">프로젝트 시작일(${UI.fmtDate(p.submitFrom, { compact: true })}) 기준 재적</div>
           </div>
         `;
         card.querySelector('[data-slot="round"]').textContent = round.label;
@@ -633,7 +633,7 @@
           <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
             <span style="font-size:22px; font-weight:800; color:var(--lk-color-fg-primary);" data-slot="rate"></span>
             <span style="font-size:13px; color:var(--lk-color-fg-neutral);">제출 <strong data-slot="sc"></strong></span>
-            <span style="font-size:12px; color:var(--lk-color-fg-alternative);">(중도포기자 제외)</span>
+            <span style="font-size:12px; color:var(--lk-color-fg-alternative);">프로젝트 시작일(${UI.fmtDate(p.submitFrom, { compact: true })}) 기준 재적</span>
           </div>
         </div>
 
@@ -737,7 +737,7 @@
       const head = document.createElement('div');
       head.className = 'section-head';
       head.style.margin = '0 0 16px';
-      head.innerHTML = `<h3>미제출명단</h3><span class="hint">전체 ${activeStudents.length}명 중 미제출 ${unsubmitted.length}명 · 중도포기자 제외</span>`;
+      head.innerHTML = `<h3>미제출명단</h3><span class="hint">전체 ${activeStudents.length}명 중 미제출 ${unsubmitted.length}명 · 프로젝트 시작일(${UI.fmtDate(p.submitFrom, { compact: true })}) 기준 재적</span>`;
       pane.appendChild(head);
 
       if (unsubmitted.length === 0) {
