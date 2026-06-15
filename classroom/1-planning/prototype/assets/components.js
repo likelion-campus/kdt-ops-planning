@@ -354,6 +354,16 @@
     }
     return false;
   }
+  // 특정 시점(YYYY-MM-DD) 기준 중도포기 여부 — 그 시점에 이미 포기 확정이면 true (퀴즈 매니저뷰 '생성 시점 기준' 집계용, POL-CR-03 v1.12).
+  // droppedAt 미지정 시 dropped=true를 전 기간 포기로 간주. dateStr 없으면 현시점(live)과 동일하게 동작.
+  function isDroppedAsOf(arg, dateStr) {
+    const students = (window.MOCK && window.MOCK.students) || [];
+    const id = typeof arg === 'string' ? arg : (arg && (arg.id || arg.studentId));
+    const s = students.find((x) => x.id === id) || (arg && arg.dropped !== undefined ? arg : null);
+    if (!s || !s.dropped) return false;
+    if (!s.droppedAt || !dateStr) return true;
+    return String(s.droppedAt).slice(0, 10) <= String(dateStr).slice(0, 10);
+  }
   // 이름 표기. 기본: "이름 (전화 뒷자리4)". 중도포기 확정 시 "이름 (중도포기)"로 대체(전화 숨김).
   // 학생뷰 등 중도포기를 감출 곳은 { hideDropout: true } 전달 → 항상 전화번호 형태(매니저 전용 정책).
   function displayName(arg, opts = {}) {
@@ -754,7 +764,7 @@
     openSlide, closeSlide, openModal,
     openFullPage, closeFullPage, closeAllFullPages,
     select, multiSelect, demoStateToggle,
-    md, fmtDate, relTime, displayName, isDropped, dropoutTag, sortDropoutLast, isMobile, pcOnly, pcOnlyNotice, markdownEditor,
+    md, fmtDate, relTime, displayName, isDropped, isDroppedAsOf, dropoutTag, sortDropoutLast, isMobile, pcOnly, pcOnlyNotice, markdownEditor,
     renderHeatmap, renderLegend, emptyCard, banner,
     getView, setView, loadState, saveState,
     stateFlag,

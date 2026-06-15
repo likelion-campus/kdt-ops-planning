@@ -43,7 +43,10 @@
     const phone4 = String((i * 7919 + 3271) % 10000).padStart(4, '0');
     // 중도포기자 (admin에서 별도 설정 가정) — 데모로 위험군 2명 지정
     const dropped = (i === 26 || i === 29); // s27, s30
-    return { id, name, no: i + 1, phone4, dropped, baseActivity: Math.max(0.15, baseActivity) };
+    // 중도포기 확정일 — 퀴즈 매니저뷰 '생성 시점 기준' 집계용(POL-CR-03 v1.12). 미지정 시 전 기간 포기로 간주.
+    // s30(5/12) → 5/12 이후 생성 퀴즈에서 제외, s27(5/20) → 5/20 이후 제외. 그 전 생성 퀴즈는 응시 점수 보존·표시.
+    const droppedAt = i === 26 ? '2026-05-20' : (i === 29 ? '2026-05-12' : null);
+    return { id, name, no: i + 1, phone4, dropped, droppedAt, baseActivity: Math.max(0.15, baseActivity) };
   });
 
   // ---------- AI 노트 ----------
