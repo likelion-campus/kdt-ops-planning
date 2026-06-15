@@ -1646,8 +1646,10 @@
       list.className = 'note-list';
       const dates = MOCK.days.filter((d) => MOCK.quizzes[d]?.status === 'published').sort().reverse();
       dates.forEach((d) => {
-        const submitted = MOCK.students.filter((s) => MOCK.attempts[s.id]?.[d]?.submitted).length;
-        const total = MOCK.students.length;
+        // 퀴즈 생성 시점(d) 기준 재적생만 분모로 집계 (POL-CR-03 v1.12). 발행본 상세와 숫자 일치.
+        const roster = MOCK.students.filter((s) => !UI.isDroppedAsOf(s, d));
+        const submitted = roster.filter((s) => MOCK.attempts[s.id]?.[d]?.submitted).length;
+        const total = roster.length;
         (MOCK.quizzes[d]?.sets || []).forEach((set) => {
           if (set.status !== 'published') return;
           const row = document.createElement('div');
@@ -1661,7 +1663,7 @@
           row.querySelector('[data-slot="d"]').textContent = UI.fmtDate(d);
           row.querySelector('[data-slot="t"]').textContent = set.title;
           row.querySelector('[data-slot="qc"]').textContent = `${set.questions.length}문항`;
-          row.querySelector('[data-slot="rt"]').textContent = `${submitted}/${total} 응시 · 평균 ${(MOCK.students.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[d]?.score || 0), 0) / total).toFixed(1)}/10`;
+          row.querySelector('[data-slot="rt"]').textContent = `${submitted}/${total} 응시 · 평균 ${(total ? roster.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[d]?.score || 0), 0) / total : 0).toFixed(1)}/10`;
           row.addEventListener('click', () => openPublishedDetail(d, set));
           list.appendChild(row);
         });
@@ -1688,9 +1690,12 @@
           openDraftEditor(today, newSet, null);
         } }));
       }
-      const submitted = MOCK.students.filter((s) => MOCK.attempts[s.id]?.[targetDate]?.submitted).length;
-      const total = MOCK.students.length;
-      const avg = MOCK.students.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[targetDate]?.score || 0), 0) / total;
+      // 퀴즈 매니저뷰는 '퀴즈 생성 시점(targetDate)' 기준 재적생만 집계·표시한다 (POL-CR-03 v1.12).
+      // 생성 후 중도포기자는 응시 점수가 보존돼 그대로 노출, 생성 전 포기자는 제외(출결현황에서 확인).
+      const roster = MOCK.students.filter((s) => !UI.isDroppedAsOf(s, targetDate));
+      const submitted = roster.filter((s) => MOCK.attempts[s.id]?.[targetDate]?.submitted).length;
+      const total = roster.length;
+      const avg = total ? roster.reduce((sum, s) => sum + (MOCK.attempts[s.id]?.[targetDate]?.score || 0), 0) / total : 0;
       const missing = total - submitted;
 
       // 탭: 결과 요약 / 학생별 점수 / 미응시 명단
@@ -1699,7 +1704,11 @@
           <span class="card-meta" data-slot="d"></span>
           <span class="tag tag-small tag-weak-success">발행됨</span>
         </div>
-        <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 20px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
+        <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 10px; color: var(--lk-color-fg-strong); letter-spacing: -0.02em;" data-slot="t"></h1>
+        <div style="font-size:12px; color:var(--lk-color-fg-alternative); margin:0 0 20px; display:flex; align-items:center; gap:6px;">
+          <i class="ri-icon ri-information-line"></i>
+          <span>집계·명단은 <strong>퀴즈 생성 시점(${UI.fmtDate(targetDate, { compact: true })}) 기준 재적생</strong>만 포함합니다. 중도포기자는 <strong>출결현황</strong>에서 확인하세요.</span>
+        </div>
 
         <div class="tabs" style="margin-bottom: 24px;">
           <button class="tab is-active" data-pt="summary"><i class="ri-icon ri-bar-chart-box-line"></i> 퀴즈 결과 요약</button>
@@ -1728,7 +1737,7 @@
       // ----- 탭1: 퀴즈 결과 요약 (KPI + 문항별 오답률 분포) -----
       function renderSummaryPane(pane) {
         // 응시자 소요시간 평균 + 하위권 비율(60점 미만 = score<6)
-        const subAttempts = MOCK.students
+        const subAttempts = roster
           .map((s) => MOCK.attempts[s.id]?.[targetDate])
           .filter((a) => a?.submitted);
         const durs = subAttempts.filter((a) => a.durationSec != null).map((a) => a.durationSec);
@@ -1771,7 +1780,7 @@
         const qs = set?.questions || MOCK.quizzes[targetDate]?.questions || [];
         qs.slice(0, 5).forEach((q, i) => {
           const dist = [0, 0, 0, 0];
-          MOCK.students.forEach((s) => {
+          roster.forEach((s) => {
             const a = MOCK.attempts[s.id]?.[targetDate];
             if (!a?.submitted) return;
             const correct = !a.wrongIds?.includes(q.id);
@@ -1825,10 +1834,10 @@
         card.appendChild(scoreList);
         pane.appendChild(card);
 
-        const submittedStudents = MOCK.students
+        const submittedStudents = roster
           .map((s) => ({ s, a: MOCK.attempts[s.id]?.[targetDate] }))
           .filter((x) => x.a?.submitted)
-          .sort((a, b) => ((UI.isDropped(a.s) ? 1 : 0) - (UI.isDropped(b.s) ? 1 : 0)) || ((b.a.score || 0) - (a.a.score || 0)));
+          .sort((a, b) => (b.a.score || 0) - (a.a.score || 0));
         if (submittedStudents.length === 0) {
           scoreList.appendChild(UI.emptyCard({ icon: 'ri-user-line', title: '아직 응시한 학생이 없어요', body: '응시가 시작되면 점수가 표시됩니다.' }));
           return;
@@ -1838,7 +1847,6 @@
           const row = document.createElement('div');
           row.className = 'quiz-row';
           row.style.cursor = 'pointer';
-          if (UI.isDropped(s)) row.style.opacity = '0.6';
           const scoreCls = score >= 8 ? 'tag-weak-success' : score >= 5 ? 'tag-weak-warning' : 'tag-weak-error';
           row.innerHTML = `
             <div class="quiz-date"><span style="min-width:28px; text-align:center; font-weight:700; color:var(--lk-color-fg-neutral);" data-slot="rank"></span></div>
@@ -1869,7 +1877,7 @@
         card.appendChild(missList);
         pane.appendChild(card);
 
-        const missStudents = UI.sortDropoutLast(MOCK.students.filter((s) => !MOCK.attempts[s.id]?.[targetDate]?.submitted));
+        const missStudents = roster.filter((s) => !MOCK.attempts[s.id]?.[targetDate]?.submitted);
         if (missStudents.length === 0) {
           missList.appendChild(UI.emptyCard({ icon: 'ri-check-double-line', title: '전원 응시했어요 🎉', body: '미응시자가 없습니다.' }));
           return;
@@ -1877,7 +1885,6 @@
         missStudents.forEach((s) => {
           const row = document.createElement('div');
           row.className = 'quiz-row';
-          if (UI.isDropped(s)) row.style.opacity = '0.6';
           row.innerHTML = `
             <div class="quiz-date"><i class="ri-icon ri-user-line"></i><span data-slot="no"></span></div>
             <div class="quiz-title" data-slot="name"></div>
