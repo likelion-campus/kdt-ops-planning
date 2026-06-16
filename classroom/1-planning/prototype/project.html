@@ -816,7 +816,19 @@
     }
 
     // 프로젝트 정보 수정 모달 (등록 시 입력 항목 전체 수정)
+    // 잠금 정책(POL-CR-03 §6.7): 잠금 판정 = 저장된(초기) 날짜 + 제출물 존재(submitCount>0).
+    //   - 제출 시작일: 제출물 존재 또는 시작일 경과(≤today) 시 잠금(재오픈 방지)
+    //   - 제출 마감일: 항상 수정 가능, 단 제출물 존재 시 기존 마감일보다 앞당기기 ✕(연장만)
+    //   - 피드백 시작일: 시작일 경과(≤today) 시 잠금(안 지났으면 제출물 있어도 수정 가능)
+    //   - 피드백 마감일: 항상 자유(하한선 없음 — 피드백은 기간 무관 작성, 표시용)
+    //   - 제출 항목 토글: 제출물 존재 시 잠금
     function openProjectEditModal(p) {
+      const today = MOCK.meta.today;
+      const hasSubmit = (MOCK.projectSubmissions[p.id] || []).length > 0;
+      const elapsed = (d) => !!d && d <= today; // 저장된 날짜가 오늘 이하면 그 단계는 이미 진행된 것으로 본다
+      const lockSubmitFrom = hasSubmit || elapsed(p.submitFrom);
+      const lockFeedbackFrom = elapsed(p.feedbackFrom);
+      const opt = p.submitOptions || { projectUrl: true, demoVideo: true, attachment: false };
       const node = UI.openModal(`
         <h3 class="card-title" style="margin-bottom:16px;">프로젝트 정보 수정</h3>
         <div class="field"><label>회차 종류</label><div id="round-sel"></div></div>
@@ -824,12 +836,21 @@
         <div class="field"><label>한 줄 소개</label><input type="text" id="e-ol" /></div>
         <div class="field"><label>문제 설명</label><div id="e-desc-mount"></div></div>
         <div class="field-row">
-          <div class="field"><label>제출 시작</label><input type="date" id="e-sf" /></div>
-          <div class="field"><label>제출 마감</label><input type="date" id="e-st" /></div>
+          <div class="field"><label>제출 시작</label><input type="date" id="e-sf" /><p class="text-mute" id="note-sf" style="font-size:12px; margin-top:4px; display:none;"></p></div>
+          <div class="field"><label>제출 마감</label><input type="date" id="e-st" /><p class="text-mute" id="note-st" style="font-size:12px; margin-top:4px; display:none;"></p></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>피드백 시작</label><input type="date" id="e-ff" /></div>
+          <div class="field"><label>피드백 시작</label><input type="date" id="e-ff" /><p class="text-mute" id="note-ff" style="font-size:12px; margin-top:4px; display:none;"></p></div>
           <div class="field"><label>피드백 마감</label><input type="date" id="e-ft" /></div>
+        </div>
+        <div class="field">
+          <label>제출 항목 — 학생 제출 시 필수</label>
+          <div style="display:flex; flex-direction:column; gap:10px; padding:12px 14px; background:var(--lk-color-bg-normal); border-radius:10px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px;"><input type="checkbox" id="e-opt-url" /> 프로젝트 URL 필수</label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px;"><input type="checkbox" id="e-opt-vid" /> 시연 영상 URL 필수</label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px;"><input type="checkbox" id="e-opt-att" /> 첨부파일 필수</label>
+          </div>
+          <p class="text-mute" id="note-opts" style="font-size:12px; margin-top:4px; display:none;"></p>
         </div>
         <div class="row row-end" style="gap:8px; margin-top:8px;" id="e-actions"></div>
       `);
@@ -837,12 +858,31 @@
       node.querySelector('#e-title').value = p.title;
       node.querySelector('#e-ol').value = p.oneLiner || '';
       node.querySelector('#e-desc-mount').appendChild(UI.markdownEditor(p.description || '', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
-      node.querySelector('#e-sf').value = p.submitFrom;
-      node.querySelector('#e-st').value = p.submitTo;
-      node.querySelector('#e-ff').value = p.feedbackFrom;
-      node.querySelector('#e-ft').value = p.feedbackTo;
+      const sf = node.querySelector('#e-sf'), st = node.querySelector('#e-st'), ff = node.querySelector('#e-ff'), ft = node.querySelector('#e-ft');
+      sf.value = p.submitFrom; st.value = p.submitTo; ff.value = p.feedbackFrom; ft.value = p.feedbackTo;
+      const ou = node.querySelector('#e-opt-url'), ov = node.querySelector('#e-opt-vid'), oa = node.querySelector('#e-opt-att');
+      ou.checked = !!opt.projectUrl; ov.checked = !!opt.demoVideo; oa.checked = !!opt.attachment;
+
+      function showNote(id, msg) { const n = node.querySelector('#' + id); n.textContent = msg; n.style.display = 'block'; }
+      // 날짜 잠금
+      if (lockSubmitFrom) { sf.disabled = true; showNote('note-sf', '🔒 제출물이 있거나 제출이 시작되어 수정할 수 없어요'); }
+      else { sf.min = today; }
+      if (lockFeedbackFrom) { ff.disabled = true; showNote('note-ff', '🔒 피드백이 시작되어 수정할 수 없어요'); }
+      else { ff.min = today; }
+      // 제출 마감: 항상 수정 가능. 제출물 존재 시 기존 마감일보다 앞당기기 ✕(캘린더 minDate + 검증 이중)
+      if (hasSubmit) { st.min = p.submitTo; showNote('note-st', `제출물이 있어 기존 마감일(${UI.fmtDate(p.submitTo, { compact: true })})보다 앞당길 수 없어요`); }
+      else { st.min = sf.value; }
+      // 제출 항목 토글 잠금
+      if (hasSubmit) { [ou, ov, oa].forEach((c) => { c.disabled = true; }); showNote('note-opts', '🔒 제출물이 있어 제출 항목 설정은 수정할 수 없어요'); }
+
       node.querySelector('#e-actions').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => node.remove() }));
-      node.querySelector('#e-actions').appendChild(UI.button({ label: '저장', icon: 'ri-check-line', type: 'solid', color: 'primary', onClick: () => { node.remove(); UI.toast('프로젝트 정보가 수정되었어요', 'success'); } }));
+      node.querySelector('#e-actions').appendChild(UI.button({ label: '저장', icon: 'ri-check-line', type: 'solid', color: 'primary', onClick: () => {
+        // 잠긴(이미 과거) 필드는 값 유지·검증 통과. 강제 변경만 차단.
+        if (hasSubmit && st.value && st.value < p.submitTo) { UI.toast('제출물이 있어 기존 마감일보다 앞당길 수 없어요', 'danger'); return; }
+        if (!st.disabled && st.value && sf.value && st.value < sf.value) { UI.toast('제출 마감일은 제출 시작일 이후여야 해요', 'danger'); return; }
+        // 피드백 마감은 하한선 없음(기간 무관 표시용) — 순서 검증하지 않음
+        node.remove(); UI.toast('프로젝트 정보가 수정되었어요', 'success');
+      } }));
     }
 
     // 매니저 회차 등록
@@ -856,8 +896,8 @@
           <div class="field"><label>한 줄 소개<span class="req">*</span></label><input type="text" placeholder="예: 도메인 데이터로 모델을 학습하고 결과를 대시보드로 가시화합니다." /></div>
           <div class="field"><label>문제 설명<span class="req">*</span></label><div id="desc-mount"></div></div>
           <div class="field-row">
-            <div class="field"><label>제출 시작</label><input type="datetime-local" /></div>
-            <div class="field"><label>제출 마감</label><input type="datetime-local" /></div>
+            <div class="field"><label>제출 시작</label><input type="datetime-local" id="c-sf" /></div>
+            <div class="field"><label>제출 마감</label><input type="datetime-local" id="c-st" /></div>
           </div>
           <div class="field">
             <label>제출 폼 옵션 — 학생 제출 시 필수 항목</label>
@@ -869,16 +909,27 @@
             </div>
           </div>
           <div class="field-row">
-            <div class="field"><label>피드백 시작</label><input type="datetime-local" /></div>
-            <div class="field"><label>피드백 마감</label><input type="datetime-local" /></div>
+            <div class="field"><label>피드백 시작</label><input type="datetime-local" id="c-ff" /></div>
+            <div class="field"><label>피드백 마감</label><input type="datetime-local" id="c-ft" /></div>
           </div>
           <div class="row row-end" style="gap: 8px; margin-top: 8px;" id="actions"></div>
         </div>
       `;
       fp.body.querySelector('#round-sel').appendChild(UI.select({ options: [{ value: '기초', label: '기초' }, { value: '심화', label: '심화' }, { value: '파이널', label: '파이널' }, { value: '기타', label: '기타' }], value: '심화' }));
       fp.body.querySelector('#desc-mount').appendChild(UI.markdownEditor('', { placeholder: '배경 / 문제 정의 / 요구 사항 / 제출물 / 평가 기준' }).el);
+      // 등록 날짜 제약(POL-CR-03 §6.7): 제출 시작·피드백 시작 = 오늘 이상(당일 포함), 마감 = 각 시작 이상
+      const today = MOCK.meta.today; // 'YYYY-MM-DD'
+      const csf = fp.body.querySelector('#c-sf'), cst = fp.body.querySelector('#c-st'), cff = fp.body.querySelector('#c-ff'), cft = fp.body.querySelector('#c-ft');
+      csf.min = today + 'T00:00'; cff.min = today + 'T00:00';
+      csf.addEventListener('change', () => { cst.min = csf.value || (today + 'T00:00'); });
+      cff.addEventListener('change', () => { cft.min = cff.value || (today + 'T00:00'); });
       fp.body.querySelector('#actions').appendChild(UI.button({ label: '취소', type: 'outline', color: 'neutral', onClick: () => UI.closeFullPage() }));
       fp.body.querySelector('#actions').appendChild(UI.button({ label: '등록', icon: 'ri-add-line', type: 'solid', color: 'primary', onClick: () => {
+        const sf = csf.value, st = cst.value, ff = cff.value, ft = cft.value;
+        if (sf && sf.slice(0, 10) < today) { UI.toast('제출 시작일은 오늘 이상으로 설정해주세요', 'danger'); return; }
+        if (sf && st && st < sf) { UI.toast('제출 마감일은 제출 시작일 이후여야 해요', 'danger'); return; }
+        if (ff && ff.slice(0, 10) < today) { UI.toast('피드백 시작일은 오늘 이상으로 설정해주세요', 'danger'); return; }
+        if (ff && ft && ft < ff) { UI.toast('피드백 마감일은 피드백 시작일 이후여야 해요', 'danger'); return; }
         const req = ['제목', '소개', '설명', '이미지'];
         if (fp.body.querySelector('#opt-url').checked) req.push('URL');
         if (fp.body.querySelector('#opt-vid').checked) req.push('시연영상');
