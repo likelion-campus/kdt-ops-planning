@@ -54,7 +54,7 @@
 
 ---
 
-### 1) `classroom_home_entered`
+### 1) `kdt_classroom_home_entered`
 - **페이지**: 클래스룸 홈 (로그인 후 가장 먼저 만나는 단일 진입점 대시보드)
 - **발화 시점**: 홈 라우트 진입 후 메인 컴포넌트 마운트 완료 → 화면 표시되는 순간
 - **발생 위치**: 클라이언트
@@ -62,7 +62,7 @@
 - **고유 속성**: `entry_source` (enum: `direct` / `notification` / `internal_link`)
 - **Notion**: https://app.notion.com/p/38344860a4f48152b357fe26802225b7
 
-### 2) `daily_quiz_started`
+### 2) `kdt_daily_quiz_started`
 - **페이지**: 데일리 퀴즈 (매일 오전 제공되는 5문제 퀴즈)
 - **발화 시점**: '퀴즈 시작' 버튼 클릭 → 첫 문항이 렌더링되는 순간
 - **발생 위치**: 클라이언트
@@ -70,15 +70,15 @@
 - **고유 속성**: `quiz_id` (string), `question_count` (number)
 - **Notion**: https://app.notion.com/p/38344860a4f4813c86bad663207dde0a
 
-### 3) `daily_quiz_submitted`
+### 3) `kdt_daily_quiz_submitted`
 - **페이지**: 데일리 퀴즈
 - **발화 시점**: 마지막 문항 응답 후 '제출' 클릭 → 채점 확정되는 순간
 - **발생 위치**: 클라이언트 (점수는 서버 채점 결과 수신 후 첨부)
-- **발화 규칙**: 제출 1회만. 중도 이탈·미제출 발화 안 함. `duration_sec` = `daily_quiz_started`~제출 경과
+- **발화 규칙**: 제출 1회만. 중도 이탈·미제출 발화 안 함. `duration_sec` = `kdt_daily_quiz_started`~제출 경과
 - **고유 속성**: `quiz_id` (string), `question_count` (number), `correct_count` (number), `score` (number, 0~100), `duration_sec` (number), `is_completion_eligible` (boolean, 응시 80% 충족)
 - **Notion**: https://app.notion.com/p/38344860a4f481d0b747fbaf1709fb78
 
-### 4) `quiz_explanation_viewed`
+### 4) `kdt_quiz_explanation_viewed`
 - **페이지**: 데일리 퀴즈 결과·해설 화면 (제출 직후 자동 표시)
 - **발화 시점**: 특정 문항 해설을 펼치거나 클릭하여 해설 본문 노출되는 순간
 - **발생 위치**: 클라이언트
@@ -86,7 +86,7 @@
 - **고유 속성**: `quiz_id` (string), `question_id` (string)
 - **Notion**: https://app.notion.com/p/38344860a4f4814a8cb5c14a323d793d
 
-### 5) `wrong_answer_note_viewed`
+### 5) `kdt_wrong_answer_note_viewed`
 - **페이지**: 오답노트 탭 (데일리 퀴즈와 분리된 별도 탭. 객관식 전체·본인 선택·정답·해설 한 화면, 다시 풀기 없음)
 - **발화 시점**: 오답노트 탭 진입 → 목록/상세 화면 표시되는 순간
 - **발생 위치**: 클라이언트
@@ -94,7 +94,7 @@
 - **고유 속성**: `entry_source` (enum: `quiz_result` / `menu`, 선택)
 - **Notion**: https://app.notion.com/p/38344860a4f481439b83f1b66b3b491f
 
-### 6) `supplementary_quiz_submitted`
+### 6) `kdt_supplementary_quiz_submitted`
 - **페이지**: 보충 퀴즈 탭 (오답노트와 분리. 학생이 누적 오답 기반으로 직접 생성하는 보충 세트. **하루 10세트 한도**, 세트당 5/10/15문제)
 - **발화 시점**: 보충 세트를 풀고 '제출' → 채점 확정되는 순간 (세트 단위)
 - **발생 위치**: 클라이언트
@@ -103,7 +103,7 @@
 - **글로서리 정합**: WrongNote(오답노트, insert-once)와 분리 — 보충 결과는 오답노트에 영향 없음 (`classroom/3-backend/glossary.yml` SupplementaryQuiz 기준)
 - **Notion**: https://app.notion.com/p/38344860a4f481ba9048cd0fc80b0608
 
-### 7) `practice_assigned`
+### 7) `kdt_practice_assigned`
 - **페이지**: 실습 (AI 자동 제안 실습 — 기본/기본2/심화 3종)
 - **발화 시점**: AI 자동 제안 로직이 AI 노트·퀴즈 점수 기반으로 실습을 배정하여 학생 목록에 등록되는 순간
 - **발생 위치**: **서버 (백엔드 이벤트)** — 사용자 액션·클라이언트 렌더 시점 아님
@@ -111,7 +111,7 @@
 - **고유 속성**: `practice_id` (string), `difficulty_level` (enum: `basic`/`basic2`/`advanced`), `assign_reason` (enum: `auto_note`/`quiz_score`)
 - **Notion**: https://app.notion.com/p/38344860a4f481a0b633e277420235e4
 
-### 8) `practice_submitted`
+### 8) `kdt_practice_submitted`
 - **페이지**: 실습
 - **발화 시점**: 결과물 업로드/작성 후 '제출' → 제출 확정되는 순간
 - **발생 위치**: 클라이언트
@@ -119,15 +119,15 @@
 - **고유 속성**: `practice_id` (string), `difficulty_level` (enum), `file_size_mb` (number), `has_external_url` (boolean)
 - **Notion**: https://app.notion.com/p/38344860a4f48143b607d60949f9a10b
 
-### 9) `til_submitted`
+### 9) `kdt_til_submitted`
 - **페이지**: TIL/회고 작성 (오후 회고. 산출물 URL·외부 복붙 입력 가능)
 - **발화 시점**: 본문 작성 후 '게시'(최초 제출) 클릭 → TIL 게시되는 순간
 - **발생 위치**: 클라이언트
-- **발화 규칙**: **최초 1회만**. 게시 후 수정은 `til_updated`. `has_external_paste`는 작성 중 외부 텍스트 붙여넣기 감지 시 true
+- **발화 규칙**: **최초 1회만**. 게시 후 수정은 `kdt_til_updated`. `has_external_paste`는 작성 중 외부 텍스트 붙여넣기 감지 시 true
 - **고유 속성**: `til_id` (string), `char_count` (number), `has_artifact_url` (boolean), `write_duration_sec` (number, 작성 화면 진입~게시), `has_external_paste` (boolean)
 - **Notion**: https://app.notion.com/p/38344860a4f48118a32af12d897bb902
 
-### 10) `til_updated`
+### 10) `kdt_til_updated`
 - **페이지**: TIL/회고 작성 (게시 후 수정 화면)
 - **발화 시점**: 기존 게시 TIL 편집 후 '수정 저장' → 변경 저장되는 순간
 - **발생 위치**: 클라이언트
@@ -135,7 +135,7 @@
 - **고유 속성**: `til_id` (string), `edit_count` (number)
 - **Notion**: https://app.notion.com/p/38344860a4f48174bb8bd000e1bb5e37
 
-### 11) `attendance_checked`
+### 11) `kdt_attendance_checked`
 - **페이지**: 출석 (QR 휴대폰 본인인증 화면)
 - **발화 시점**: QR 본인인증 시도 → 출석 처리(성공/실패 판정) 완료되는 순간
 - **발생 위치**: 클라이언트 (인증 결과는 서버 응답 기준)
@@ -172,6 +172,6 @@ ALEX는 별점 UI가 없다. `alex_chatbot_message_sent.message_content`가 이�
 - [ ] 로그인 시 User Property 4종 Identify 세팅 (§0.2)
 - [ ] 전 이벤트 공통 속성 8종 자동 첨부 (§0.1) — `is_ops_innovation`은 course 메타 참조
 - [ ] 신규 11종 발화 지점 설치 (§1)
-- [ ] `practice_assigned`는 **서버 사이드** 발화 (백엔드 작업)
+- [ ] `kdt_practice_assigned`는 **서버 사이드** 발화 (백엔드 작업)
 - [ ] QA: 발화 시점·중복 발화·속성 누락 검수 (Amplitude 디버거)
 - [ ] 검수 후 Notion Event Dictionary 단계 `검토 중` → `개발서버 배포` 전환

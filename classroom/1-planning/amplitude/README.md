@@ -22,7 +22,7 @@
 ## 정합성 메모 (중요)
 
 - **글로서리(SSOT) 정렬**: 보충 퀴즈는 `classroom/3-backend/glossary.yml`의 `SupplementaryQuiz` 기준으로 **하루 10세트(세트당 5/10/15문제) 한도**로 정정함. (이전 초안의 "하루 100문제"는 폐기)
-- **⚠️ Notion 동기화 필요**: Notion `supplementary_quiz_submitted` 페이지는 아직 옛 "100문제" 기준 → 본 폴더 기준(10세트)으로 업데이트 필요.
+- **⚠️ Notion 동기화 필요**: Notion `kdt_supplementary_quiz_submitted` 페이지는 아직 옛 "100문제" 기준 → 본 폴더 기준(10세트)으로 업데이트 필요.
 - **명칭 정렬 검토 대상**: 도메인 엔티티는 `AIQuiz`/`QuizAttempt`/`WrongNote`. 현재 이벤트명(`daily_quiz_*`)은 Notion과 맞춘 것으로, 추후 도메인 명칭(`quiz_attempt_*`)으로 통일할지 별도 결정.
 
 ## 후속
