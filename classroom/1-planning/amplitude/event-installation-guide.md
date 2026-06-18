@@ -1,10 +1,10 @@
 # 클래스룸 이벤트 설치 가이드 (개발자 핸드오프) v1
 
-> 대상: KDT 클래스룸 신규 11종 이벤트 계측
+> 대상: KDT 클래스룸 신규 10종 이벤트 계측 (실습 폐지 반영)
 > 분석 도구: **Amplitude** · 서비스명 태깅: `axp saas`
 > 컨벤션: 이벤트명·속성 모두 **snake_case**, 행동은 과거형
 > 원본 지표 설계: [data-instrumentation-v1.md](./data-instrumentation-v1.md)
-> Notion Event Dictionary: 신규 11종 `적용단계 = 검토 중` 등록 완료
+> Notion Event Dictionary: 신규 10종 `적용단계 = 검토 중` 등록
 
 이 문서는 개발자가 **어느 페이지의 어느 시점에** 이벤트를 심어야 하는지 정확히 정의한다. (약어 F-번호 미사용, 실제 페이지 기준)
 
@@ -48,7 +48,7 @@
 
 ---
 
-## 1. 이벤트별 설치 명세 (신규 11종)
+## 1. 이벤트별 설치 명세 (신규 10종)
 
 각 항목: **페이지 / 발화 시점(trigger) / 발생 위치 / 발화 규칙 / 고유 속성 / Notion**
 
@@ -103,23 +103,7 @@
 - **글로서리 정합**: WrongNote(오답노트, insert-once)와 분리 — 보충 결과는 오답노트에 영향 없음 (`classroom/3-backend/glossary.yml` SupplementaryQuiz 기준)
 - **Notion**: https://app.notion.com/p/38344860a4f481ba9048cd0fc80b0608
 
-### 7) `kdt_practice_assigned`
-- **페이지**: 실습 (AI 자동 제안 실습 — 기본/기본2/심화 3종)
-- **발화 시점**: AI 자동 제안 로직이 AI 노트·퀴즈 점수 기반으로 실습을 배정하여 학생 목록에 등록되는 순간
-- **발생 위치**: **서버 (백엔드 이벤트)** — 사용자 액션·클라이언트 렌더 시점 아님
-- **발화 규칙**: 배정 발생 시. 동일 실습 재배정 정책에 따름
-- **고유 속성**: `practice_id` (string), `difficulty_level` (enum: `basic`/`basic2`/`advanced`), `assign_reason` (enum: `auto_note`/`quiz_score`)
-- **Notion**: https://app.notion.com/p/38344860a4f481a0b633e277420235e4
-
-### 8) `kdt_practice_submitted`
-- **페이지**: 실습
-- **발화 시점**: 결과물 업로드/작성 후 '제출' → 제출 확정되는 순간
-- **발생 위치**: 클라이언트
-- **발화 규칙**: 마감·채점 없는 정책이므로 제출 행위 자체만 기록. 첨부 한도 30MB
-- **고유 속성**: `practice_id` (string), `difficulty_level` (enum), `file_size_mb` (number), `has_external_url` (boolean)
-- **Notion**: https://app.notion.com/p/38344860a4f48143b607d60949f9a10b
-
-### 9) `kdt_til_submitted`
+### 7) `kdt_til_submitted`
 - **페이지**: TIL/회고 작성 (오후 회고. 산출물 URL·외부 복붙 입력 가능)
 - **발화 시점**: 본문 작성 후 '게시'(최초 제출) 클릭 → TIL 게시되는 순간
 - **발생 위치**: 클라이언트
@@ -127,7 +111,7 @@
 - **고유 속성**: `til_id` (string), `char_count` (number), `has_artifact_url` (boolean), `write_duration_sec` (number, 작성 화면 진입~게시), `has_external_paste` (boolean)
 - **Notion**: https://app.notion.com/p/38344860a4f48118a32af12d897bb902
 
-### 10) `kdt_til_updated`
+### 8) `kdt_til_updated`
 - **페이지**: TIL/회고 작성 (게시 후 수정 화면)
 - **발화 시점**: 기존 게시 TIL 편집 후 '수정 저장' → 변경 저장되는 순간
 - **발생 위치**: 클라이언트
@@ -135,7 +119,15 @@
 - **고유 속성**: `til_id` (string), `edit_count` (number)
 - **Notion**: https://app.notion.com/p/38344860a4f48174bb8bd000e1bb5e37
 
-### 11) `kdt_attendance_checked`
+### 9) `kdt_project_submitted`
+- **페이지**: 프로젝트 (회차별 제출 — 기초/심화/파이널 3회차 + 기타. 회차당 1건 개인 제출, 팀 프로젝트도 개인 제출)
+- **발화 시점**: 프로젝트 회차 결과물 제출 → 제출 확정되는 순간
+- **발생 위치**: 클라이언트
+- **발화 규칙**: 회차당 1건(개인) 제출. **마일스톤 단위(매일 아님)**. 외부 발행 기본 OFF
+- **고유 속성**: `project_round_id` (string), `project_round_type` (enum: `basic`/`advanced`/`final`/`etc`), `is_external_published` (boolean, 기본 false)
+- **Notion**: https://app.notion.com/p/38344860a4f4816ca4eff8cfbbd8dce0
+
+### 10) `kdt_attendance_checked`
 - **페이지**: 출석 (QR 휴대폰 본인인증 화면)
 - **발화 시점**: QR 본인인증 시도 → 출석 처리(성공/실패 판정) 완료되는 순간
 - **발생 위치**: 클라이언트 (인증 결과는 서버 응답 기준)
@@ -147,7 +139,7 @@
 
 ## 2. 기존 이벤트 재사용 (신규 정의 불필요, 연결만)
 
-I4 'AI 자가학습 활용률'은 이미 운영 중인 이벤트를 그대로 사용한다. **신규 설치 없이 분석 측에서 연결**.
+I3 'AI 자가학습 활용률'은 이미 운영 중인 이벤트를 그대로 사용한다. **신규 설치 없이 분석 측에서 연결**.
 
 | event_name | 용도 | 비고 |
 |---|---|---|
@@ -171,7 +163,7 @@ ALEX는 별점 UI가 없다. `alex_chatbot_message_sent.message_content`가 이�
 - [ ] 코스 마스터에 `is_ops_innovation` 컬럼 추가 + Admin 수업 신설 폼에 "운영혁신 여부" 항목
 - [ ] 로그인 시 User Property 4종 Identify 세팅 (§0.2)
 - [ ] 전 이벤트 공통 속성 8종 자동 첨부 (§0.1) — `is_ops_innovation`은 course 메타 참조
-- [ ] 신규 11종 발화 지점 설치 (§1)
-- [ ] `kdt_practice_assigned`는 **서버 사이드** 발화 (백엔드 작업)
+- [ ] 신규 10종 발화 지점 설치 (§1) — 전부 클라이언트 발화 (서버 이벤트 없음)
+- [ ] `kdt_project_submitted`는 프로젝트 회차 제출 폼에 설치 (마일스톤, 매일 아님)
 - [ ] QA: 발화 시점·중복 발화·속성 누락 검수 (Amplitude 디버거)
 - [ ] 검수 후 Notion Event Dictionary 단계 `검토 중` → `개발서버 배포` 전환

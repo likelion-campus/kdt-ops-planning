@@ -27,25 +27,25 @@
 - kdt_daily_quiz_started / kdt_daily_quiz_submitted (correct_count, score, duration_sec, is_completion_eligible)
 - kdt_quiz_explanation_viewed / kdt_wrong_answer_note_viewed
 - kdt_supplementary_quiz_submitted (set_question_count, daily_set_count, daily_limit_reached)
-- kdt_practice_assigned / kdt_practice_submitted (difficulty_level)
 - kdt_til_submitted (char_count, write_duration_sec, has_external_paste, has_artifact_url) / kdt_til_updated
+- kdt_project_submitted (project_round_type, is_external_published) — 회차 마일스톤
 - kdt_attendance_checked (result)
 - (재사용) alex_chatbot_message_sent, alex_chatbot_dm_clicked, milo_note_content_clicked
 
 ## 만들 차트
 
 ### 1. ⭐ North Star — 일일 학습 루프 완수율 (대표 차트, 최상단)
-- 정의: 같은 날(day) 안에서 kdt_daily_quiz_submitted AND kdt_practice_submitted AND kdt_til_submitted
-  를 모두 수행한 고유 사용자 수 / is_ops_innovation 재적생 수.
-- 구현: 3개 이벤트 모두 수행한 사용자를 Event Segmentation의 "performed all of"
+- 정의: 같은 날(day) 안에서 kdt_daily_quiz_submitted AND kdt_til_submitted
+  를 모두 수행한 고유 사용자 수 / is_ops_innovation 재적생 수. (실습 폐지 → 2종)
+- 구현: 2개 이벤트 모두 수행한 사용자를 Event Segmentation의 "performed all of"
   (또는 마이크로 퍼널/세그먼트 교집합)로 산출 → 재적 모수로 나눈 비율(%)을 일별 라인.
-- 보조 차트: "3종 중 N종 완수" 분포 (0/1/2/3종) 일별 stacked — 어디서 이탈하는지 진단.
+- 보조 차트: "2종 중 N종 완수" 분포 (0/1/2종) 일별 stacked — 어디서 이탈하는지 진단.
 
-### 2. Input Metrics (4종, 일별 라인 + 목표선)
+### 2. Input Metrics (3종, 일별 라인 + 목표선)
 - I1 퀴즈 응시율 = kdt_daily_quiz_submitted 고유 사용자 / 재적 모수. 목표선 80%.
-- I2 실습 제출률 = kdt_practice_submitted 고유 사용자 / 재적 모수.
-- I3 TIL 작성률 = kdt_til_submitted 고유 사용자 / 재적 모수. 목표선 70%.
-- I4 AI 자가학습 활용률 = (alex_chatbot_message_sent OR milo_note_content_clicked) 고유 사용자 / 재적 모수.
+- I2 TIL 작성률 = kdt_til_submitted 고유 사용자 / 재적 모수. 목표선 70%.
+- I3 AI 자가학습 활용률 = (alex_chatbot_message_sent OR milo_note_content_clicked) 고유 사용자 / 재적 모수.
+- (마일스톤·별도) 프로젝트 회차 제출률 = 회차별 kdt_project_submitted 고유 사용자 / 재적 모수. 일일 Input 아님.
 
 ### 3. Health Metrics (경보용, 임계값 표시)
 - 출석·접속 유지율 = kdt_attendance_checked(result=success) 고유 사용자 / 재적 모수. Green≥95 / Yellow 90–95 / Red<90.
@@ -58,7 +58,7 @@
 - TIL 빈껍데기율 = kdt_til_submitted 중 has_external_paste=true 또는 char_count/write_duration_sec 하위 임계값 비율.
 
 ### 5. 보조 — 퍼널 & 리텐션
-- 일일 학습 퍼널: kdt_classroom_home_entered → kdt_daily_quiz_submitted → kdt_practice_submitted → kdt_til_submitted.
+- 일일 학습 퍼널: kdt_classroom_home_entered → kdt_daily_quiz_submitted → kdt_til_submitted.
 - 주차별 리텐션: kdt_classroom_home_entered 기준 N-day retention.
 
 ## 출력
@@ -71,5 +71,5 @@
 
 ## 참고 (에이전트 전달 시 함께 안내)
 - **분모 주의**: 비율 지표 분모는 enrollment 기반(`is_ops_innovation` User Property 보유 재적생)이어야 정확. 활성 사용자 분모로 잡으면 사용률이 과대 계상됨.
-- **북극성 교집합 산출**이 Amplitude UI에서 까다로우면, 3종 이벤트를 일별로 1/0 처리 후 사용자×일 단위 파생 지표(Custom/Computed)로 만드는 방식을 제안.
+- **북극성 교집합 산출**이 Amplitude UI에서 까다로우면, 2종 이벤트를 일별로 1/0 처리 후 사용자×일 단위 파생 지표(Custom/Computed)로 만드는 방식을 제안.
 - **AI 만족도**는 별점 미수집 → 1차는 프록시(멀티턴/에스컬레이션), 정밀 측정은 message_content LLM-as-judge 배치(대시보드 외부).
