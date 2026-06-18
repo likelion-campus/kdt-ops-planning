@@ -3,7 +3,7 @@
 > 대상: KDT 클래스룸 (파일럿 = 백엔드 자바 26기, 2026-06-30 개강)
 > 분석 스택: Amplitude · 서비스명: `axp saas`
 > 컨벤션: 이벤트명·속성 모두 snake_case, 행동은 과거형 (기존 Event Dictionary 준수)
-> 상태: 1차 확정 + 피드백 반영 v1.2 (North Star=3종 모두 완수 / 스코프=핵심 학습루프 14개 / ALEX 기존 이벤트 재사용 / 수업 분리=코스 마스터 `is_ops_innovation` 플래그 / AI 만족도=프록시+LLM-judge)
+> 상태: v1.3 (North Star=퀴즈+TIL 2종 완수 / **실습(practice) 폐지 반영** / 프로젝트는 회차 마일스톤 별도 / 스코프=신규 10종+재사용 3종 / 수업 분리=코스 마스터 `is_ops_innovation` 플래그 / AI 만족도=프록시+LLM-judge)
 
 ---
 
@@ -15,7 +15,7 @@
 | 가설 | 핵심 질문 | 대표 지표 |
 |---|---|---|
 | H1 자기주도학습 ↑ | 강사 시간 줄여도 학습 루프가 돌아가나 | **North Star (학습루프 완수율)** |
-| H2 AXP 자동화 실작동 | AI(ALEX/MILO)가 강사 역할을 실제로 대체하나 | Input I4 (AI 자가학습 활용률) |
+| H2 AXP 자동화 실작동 | AI(ALEX/MILO)가 강사 역할을 실제로 대체하나 | Input I3 (AI 자가학습 활용률) |
 | H3 만족도·수료율 유지 | 자기주도로 바꿔도 품질이 안 떨어지나 | Health/Counter (정답률·만족도·수료율) |
 
 ---
@@ -23,21 +23,21 @@
 ## 2. 핵심 지표 트리
 
 ### ⭐ North Star — 일일 학습 루프 완수율 (Daily Learning-Loop Completion Rate)
-**정의**: `당일 ① 퀴즈 응시 AND ② 실습 제출 AND ③ TIL 작성을 모두 완수한 학생 수 / 당일 재적 학생 수`
-- **active 기준 = 3종 전부 완수 (엄격)** — 가장 보수적으로 자기주도학습을 증명. 초기 수치는 낮게 시작하는 것이 정상이며, 추세 상승이 핵심.
+**정의**: `당일 ① 퀴즈 응시 AND ② TIL 작성을 모두 완수한 학생 수 / 당일 재적 학생 수`
+- **active 기준 = 2종 전부 완수 (엄격)** — 실습 폐지로 일일 학습 루프는 퀴즈+TIL 2종. 가장 보수적으로 자기주도학습을 증명하며, 추세 상승이 핵심.
 - **근거**: 강사 개입 없이 능동 학습 사이클이 도는 직접 증거이자 수료율의 선행지표. 단순 접속(허영지표) 아님.
-- **보조 추적**: "3종 중 N종 완수" 분포도 함께 본다 (1→2→3 전환 깔때기로 어디서 이탈하는지 진단).
+- **보조 추적**: "2종 중 N종 완수"(0/1/2) 분포로 어디서 이탈하는지 진단. 프로젝트(회차)는 일일 루프가 아닌 **마일스톤**(`kdt_project_submitted`)으로 별도 추적.
 
 ### Input Metrics — North Star를 움직이는 레버
 | # | 지표 | 정의 | 기능 | 목표 |
 |---|---|---|---|---|
-| I1 | 퀴즈 응시율 | 당일 퀴즈 응시 학생 / 재적 | F1 | ≥80% (수료조건) |
-| I2 | 실습 제출률 | 당일 실습 제출 학생 / 재적 | F4 | 측정 후 캘리브레이션 |
-| I3 | 회고(TIL) 작성률 | 당일 TIL 작성 학생 / 재적 | F5 | ≥70% |
-| I4 | AI 자가학습 활용률 | ALEX 대화 or MILO 노트 사용 학생 / 재적 | AXP | 측정 후 (H2 핵심) |
+| I1 | 퀴즈 응시율 | 당일 퀴즈 응시 학생 / 재적 | 퀴즈 | ≥80% (수료조건) |
+| I2 | 회고(TIL) 작성률 | 당일 TIL 작성 학생 / 재적 | TIL | ≥70% |
+| I3 | AI 자가학습 활용률 | ALEX 대화 or MILO 노트 사용 학생 / 재적 | AXP | 측정 후 (H2 핵심) |
 
-> Input은 MECE하게 North Star를 설명한다: 완수율 = I1·I2·I3의 교집합, I4는 그 셋을 끌어올리는 자동화 동력.
-> I4는 **신규 이벤트 정의 없이 기존 운영 이벤트를 재사용**한다: `alex_chatbot_message_sent`(ALEX 대화), `milo_note_content_clicked`(노트 열람).
+> Input은 MECE하게 North Star를 설명한다: 완수율 = I1·I2의 교집합, I3는 그 둘을 끌어올리는 자동화 동력.
+> I3은 **신규 이벤트 정의 없이 기존 운영 이벤트를 재사용**한다: `alex_chatbot_message_sent`(ALEX 대화), `milo_note_content_clicked`(노트 열람).
+> **마일스톤 지표(별도)**: 프로젝트 회차 제출률 = 회차별 `kdt_project_submitted` 제출 학생 / 재적 (일일 Input 아님, 회차 단위).
 
 ### Health Metrics — 흔들리면 경보
 | 지표 | 정의 | Green | Yellow | Red | 주기 |
@@ -109,7 +109,7 @@ ALEX는 별점 UI가 없어 만족도를 직접 못 받는다. 단 `alex_chatbot
 
 ---
 
-## 4. 데이터 로깅 이벤트 (1차 = 핵심 학습루프 14개 · 신규 11 + 기존 재사용 3 🔁)
+## 4. 데이터 로깅 이벤트 (1차 = 13종 · 신규 10 + 기존 재사용 3 🔁)
 
 **공통 이벤트 속성** (전 이벤트 기본 첨부, Amplitude 기본 속성 외):
 `user_id`, `user_type`(**trainee/tutor/manager/ca** — 기존 컨벤션 준수), `course_id`, `course_type`(kdt), `cohort_id`, `class_day_index`(개강 후 N일차), `organization_name`, **`is_ops_innovation`(boolean — 코스 마스터에서 자동 전파, §3.1)**
@@ -125,14 +125,13 @@ ALEX는 별점 UI가 없어 만족도를 직접 못 받는다. 단 `alex_chatbot
 | 퀴즈 | `kdt_quiz_explanation_viewed` | 자동해설 열람 | `quiz_id`, `question_id` | 자기주도 |
 | 퀴즈 | `kdt_wrong_answer_note_viewed` | 오답노트 열람 | `entry_source` | 자기주도 |
 | 퀴즈 | `kdt_supplementary_quiz_submitted` | 보충퀴즈 세트 제출 (하루 10세트 한도) | `set_question_count`, `correct_count`, `daily_set_count`, `daily_limit_reached` | Counter (어뷰징) |
-| 실습 | `kdt_practice_assigned` | F4 AI 자동배정 | `practice_id`, `difficulty_level`(basic/basic2/advanced), `assign_reason`(auto_note/quiz_score) | I4 (H2) |
-| 실습 | `kdt_practice_submitted` | 실습 제출 | `practice_id`, `difficulty_level`, `file_size_mb`, `has_external_url` | I2 |
-| 회고 | `kdt_til_submitted` | 17시 TIL 작성 | `til_id`, `char_count`, `has_artifact_url`, `write_duration_sec`, `has_external_paste` | I3, Counter |
-| 회고 | `kdt_til_updated` | TIL 수정 | `til_id`, `edit_count` | I3 |
-| AI | `alex_chatbot_message_sent` 🔁 | ALEX와 대화(메시지 전송) | `message_content`, `course_id`, `user_id` *(기존 운영 이벤트 재사용)* | I4 (H2), 만족도 프록시 |
-| AI | `alex_chatbot_dm_clicked` 🔁 | DM 목록에서 ALEX 진입 | `unread_message`(Hook 경유 vs 자발) *(기존 재사용)* | I4 유입 경로 |
-| AI | `milo_note_content_clicked` 🔁 | MILO AI노트 콘텐츠 클릭 *(기존 운영 이벤트 재사용)* | `ai_note_content_date` | I4 |
-| 출석 | `kdt_attendance_checked` | F9 QR 본인인증 | `method`(qr_auth), `result`(success/fail) | 출석률 |
+| 회고 | `kdt_til_submitted` | TIL 작성(최초 게시) | `til_id`, `char_count`, `has_artifact_url`, `write_duration_sec`, `has_external_paste` | I2, Counter |
+| 회고 | `kdt_til_updated` | TIL 수정 | `til_id`, `edit_count` | I2 |
+| 프로젝트 | `kdt_project_submitted` | 프로젝트 회차 제출 (마일스톤) | `project_round_id`, `project_round_type`(basic/advanced/final/etc), `is_external_published` | 마일스톤 |
+| AI | `alex_chatbot_message_sent` 🔁 | ALEX와 대화(메시지 전송) | `message_content`, `course_id`, `user_id` *(기존 운영 이벤트 재사용)* | I3 (H2), 만족도 프록시 |
+| AI | `alex_chatbot_dm_clicked` 🔁 | DM 목록에서 ALEX 진입 | `unread_message`(Hook 경유 vs 자발) *(기존 재사용)* | I3 유입 경로 |
+| AI | `milo_note_content_clicked` 🔁 | MILO AI노트 콘텐츠 클릭 *(기존 운영 이벤트 재사용)* | `ai_note_content_date` | I3 |
+| 출석 | `kdt_attendance_checked` | QR 본인인증 출석 | `method`(qr_auth), `result`(success/fail) | 출석률 |
 
 ### 2차 이관 (스코프 외 — 핵심 루프 안정화 후)
 - `kdt_til_featured` (우수 TIL 게시) — 품질
@@ -143,17 +142,17 @@ ALEX는 별점 UI가 없어 만족도를 직접 못 받는다. 단 `alex_chatbot
 ---
 
 ## 5. 구현 노트
-- **데이터 소스**: 클라이언트 이벤트 = Amplitude SDK (Campfire 프론트), 서버 사이드 = 퀴즈 채점·실습 배정 등 백엔드 이벤트.
+- **데이터 소스**: 클라이언트 이벤트 = Amplitude SDK (Campfire 프론트), 서버 사이드 = 퀴즈 채점 등 백엔드 이벤트.
 - **서비스명 태깅**: 신규 이벤트 `axp saas`. (재사용 ALEX 이벤트는 기존 `chat.likelion.net` 유지 — `is_ops_innovation` user property로 파일럿 필터)
 - **기존 자산 재사용(🔁)**: ALEX 대화 = `alex_chatbot_message_sent`(+`alex_chatbot_dm_clicked`), 노트 = `milo_note_content_clicked` 등 MILO 계열. 신규 정의 대신 기존 Event Dictionary 항목 연결.
 - **수업 분리(§3.1)**: 코스 마스터 `is_ops_innovation` 플래그가 단일 진실 공급원 → 이벤트 공통 속성 + 로그인 User Property로 자동 전파. 신규 수업 추가 시 대시보드 무수정. 분모(재적생)는 User Property 기준.
 - **AI 만족도(§3.2)**: 별점 직접 수집 불가 → 단기 행동 프록시, 중기 `message_content` LLM-as-judge.
-- **등록 워크플로**: 후속으로 Event Dictionary(`collection://2cd44860-a4f4-8013-a9a1-000be7e9f7e2`)에 신규 11종을 `적용단계 = 검토 중`으로 등록 → 개발서버 배포 시 단계 전환. (이번 차수는 문서화까지)
+- **등록 워크플로**: 후속으로 Event Dictionary(`collection://2cd44860-a4f4-8013-a9a1-000be7e9f7e2`)에 신규 10종을 `적용단계 = 검토 중`으로 등록 → 개발서버 배포 시 단계 전환.
 
 ---
 
 ## 6. 후속 액션 (검증 후)
-- [ ] Event Dictionary에 **신규 11종** 행 등록 (`적용단계 = 검토 중`), ALEX/MILO 3종은 기존 연결
+- [ ] Event Dictionary에 **신규 10종** 행 등록 (`적용단계 = 검토 중`), ALEX/MILO 3종은 기존 연결
 - [ ] 코스 마스터에 `is_ops_innovation` 컬럼 추가 + Admin(F10) 수업 신설 폼에 "운영혁신 여부" 항목 추가
 - [ ] `is_ops_innovation` User Property(Identify) + Event Property 계측 요청서 (§3.1)
 - [ ] 각 Input/Health 지표 Amplitude 차트·대시보드 구성 (분모 = 재적 User Property)
