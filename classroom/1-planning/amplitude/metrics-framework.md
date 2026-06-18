@@ -37,7 +37,7 @@
 | I4 | AI 자가학습 활용률 | ALEX 대화 or MILO 노트 사용 학생 / 재적 | AXP | 측정 후 (H2 핵심) |
 
 > Input은 MECE하게 North Star를 설명한다: 완수율 = I1·I2·I3의 교집합, I4는 그 셋을 끌어올리는 자동화 동력.
-> I4는 **신규 이벤트 정의 없이 기존 운영 이벤트를 재사용**한다: `alex_chatbot_message_sent`(ALEX 대화), `milo_note_viewed`(노트 열람).
+> I4는 **신규 이벤트 정의 없이 기존 운영 이벤트를 재사용**한다: `alex_chatbot_message_sent`(ALEX 대화), `milo_note_content_clicked`(노트 열람).
 
 ### Health Metrics — 흔들리면 경보
 | 지표 | 정의 | Green | Yellow | Red | 주기 |
@@ -52,8 +52,8 @@
 ### Counter Metrics — Goodhart 방지 (완수율만 좇다 빈껍데기 되는지)
 | 지표 | 왜 보나 | 경보 신호 |
 |---|---|---|
-| 퀴즈 무성의 응답률 | 응시율↑ 위해 찍기 | `daily_quiz_submitted.duration_sec` 과소 비율↑, `supplementary_quiz_submitted.daily_limit_reached` ↑ |
-| TIL 형식충족 vs 실질 | 작성률↑ 위해 빈껍데기 | `til_submitted.write_duration_sec` 과소·`has_external_paste=true` 비율↑, `char_count` 과소 |
+| 퀴즈 무성의 응답률 | 응시율↑ 위해 찍기 | `kdt_daily_quiz_submitted.duration_sec` 과소 비율↑, `kdt_supplementary_quiz_submitted.daily_limit_reached` ↑ |
+| TIL 형식충족 vs 실질 | 작성률↑ 위해 빈껍데기 | `kdt_til_submitted.write_duration_sec` 과소·`has_external_paste=true` 비율↑, `char_count` 과소 |
 
 ---
 
@@ -119,33 +119,33 @@ ALEX는 별점 UI가 없어 만족도를 직접 못 받는다. 단 `alex_chatbot
 
 | 그룹 | event_name | 트리거 | 핵심 속성 (공통 외) | 연결 지표 |
 |---|---|---|---|---|
-| 진입 | `classroom_home_entered` | F7 단일진입점 홈 진입 | `entry_source` | 세션 베이스 |
-| 퀴즈 | `daily_quiz_started` | 09시 퀴즈 시작 | `quiz_id`, `question_count` | I1 |
-| 퀴즈 | `daily_quiz_submitted` | 퀴즈 제출 | `quiz_id`, `correct_count`, `score`, `duration_sec`, `is_completion_eligible` | I1, 정답률, Counter |
-| 퀴즈 | `quiz_explanation_viewed` | 자동해설 열람 | `quiz_id`, `question_id` | 자기주도 |
-| 퀴즈 | `wrong_answer_note_viewed` | 오답노트 열람 | `entry_source` | 자기주도 |
-| 퀴즈 | `supplementary_quiz_submitted` | 보충퀴즈 세트 제출 (하루 10세트 한도) | `set_question_count`, `correct_count`, `daily_set_count`, `daily_limit_reached` | Counter (어뷰징) |
-| 실습 | `practice_assigned` | F4 AI 자동배정 | `practice_id`, `difficulty_level`(basic/basic2/advanced), `assign_reason`(auto_note/quiz_score) | I4 (H2) |
-| 실습 | `practice_submitted` | 실습 제출 | `practice_id`, `difficulty_level`, `file_size_mb`, `has_external_url` | I2 |
-| 회고 | `til_submitted` | 17시 TIL 작성 | `til_id`, `char_count`, `has_artifact_url`, `write_duration_sec`, `has_external_paste` | I3, Counter |
-| 회고 | `til_updated` | TIL 수정 | `til_id`, `edit_count` | I3 |
+| 진입 | `kdt_classroom_home_entered` | F7 단일진입점 홈 진입 | `entry_source` | 세션 베이스 |
+| 퀴즈 | `kdt_daily_quiz_started` | 09시 퀴즈 시작 | `quiz_id`, `question_count` | I1 |
+| 퀴즈 | `kdt_daily_quiz_submitted` | 퀴즈 제출 | `quiz_id`, `correct_count`, `score`, `duration_sec`, `is_completion_eligible` | I1, 정답률, Counter |
+| 퀴즈 | `kdt_quiz_explanation_viewed` | 자동해설 열람 | `quiz_id`, `question_id` | 자기주도 |
+| 퀴즈 | `kdt_wrong_answer_note_viewed` | 오답노트 열람 | `entry_source` | 자기주도 |
+| 퀴즈 | `kdt_supplementary_quiz_submitted` | 보충퀴즈 세트 제출 (하루 10세트 한도) | `set_question_count`, `correct_count`, `daily_set_count`, `daily_limit_reached` | Counter (어뷰징) |
+| 실습 | `kdt_practice_assigned` | F4 AI 자동배정 | `practice_id`, `difficulty_level`(basic/basic2/advanced), `assign_reason`(auto_note/quiz_score) | I4 (H2) |
+| 실습 | `kdt_practice_submitted` | 실습 제출 | `practice_id`, `difficulty_level`, `file_size_mb`, `has_external_url` | I2 |
+| 회고 | `kdt_til_submitted` | 17시 TIL 작성 | `til_id`, `char_count`, `has_artifact_url`, `write_duration_sec`, `has_external_paste` | I3, Counter |
+| 회고 | `kdt_til_updated` | TIL 수정 | `til_id`, `edit_count` | I3 |
 | AI | `alex_chatbot_message_sent` 🔁 | ALEX와 대화(메시지 전송) | `message_content`, `course_id`, `user_id` *(기존 운영 이벤트 재사용)* | I4 (H2), 만족도 프록시 |
 | AI | `alex_chatbot_dm_clicked` 🔁 | DM 목록에서 ALEX 진입 | `unread_message`(Hook 경유 vs 자발) *(기존 재사용)* | I4 유입 경로 |
 | AI | `milo_note_content_clicked` 🔁 | MILO AI노트 콘텐츠 클릭 *(기존 운영 이벤트 재사용)* | `ai_note_content_date` | I4 |
-| 출석 | `attendance_checked` | F9 QR 본인인증 | `method`(qr_auth), `result`(success/fail) | 출석률 |
+| 출석 | `kdt_attendance_checked` | F9 QR 본인인증 | `method`(qr_auth), `result`(success/fail) | 출석률 |
 
 ### 2차 이관 (스코프 외 — 핵심 루프 안정화 후)
-- `til_featured` (우수 TIL 게시) — 품질
-- `camera_signal_lost` (카메라OFF/얼굴미감지 10분) — engagement/개입
-- `manager_alert_acted` (매니저 알림 후 행동) — 알림 대응률
-- `instructor_attendance_checked` (F11 강사 근태) — 강사시간(비용) 검증
+- `kdt_til_featured` (우수 TIL 게시) — 품질
+- `kdt_camera_signal_lost` (카메라OFF/얼굴미감지 10분) — engagement/개입
+- `kdt_manager_alert_acted` (매니저 알림 후 행동) — 알림 대응률
+- `kdt_instructor_attendance_checked` (F11 강사 근태) — 강사시간(비용) 검증
 
 ---
 
 ## 5. 구현 노트
 - **데이터 소스**: 클라이언트 이벤트 = Amplitude SDK (Campfire 프론트), 서버 사이드 = 퀴즈 채점·실습 배정 등 백엔드 이벤트.
 - **서비스명 태깅**: 신규 이벤트 `axp saas`. (재사용 ALEX 이벤트는 기존 `chat.likelion.net` 유지 — `is_ops_innovation` user property로 파일럿 필터)
-- **기존 자산 재사용(🔁)**: ALEX 대화 = `alex_chatbot_message_sent`(+`alex_chatbot_dm_clicked`), 노트 = `milo_note_viewed` 등 MILO 계열. 신규 정의 대신 기존 Event Dictionary 항목 연결.
+- **기존 자산 재사용(🔁)**: ALEX 대화 = `alex_chatbot_message_sent`(+`alex_chatbot_dm_clicked`), 노트 = `milo_note_content_clicked` 등 MILO 계열. 신규 정의 대신 기존 Event Dictionary 항목 연결.
 - **수업 분리(§3.1)**: 코스 마스터 `is_ops_innovation` 플래그가 단일 진실 공급원 → 이벤트 공통 속성 + 로그인 User Property로 자동 전파. 신규 수업 추가 시 대시보드 무수정. 분모(재적생)는 User Property 기준.
 - **AI 만족도(§3.2)**: 별점 직접 수집 불가 → 단기 행동 프록시, 중기 `message_content` LLM-as-judge.
 - **등록 워크플로**: 후속으로 Event Dictionary(`collection://2cd44860-a4f4-8013-a9a1-000be7e9f7e2`)에 신규 11종을 `적용단계 = 검토 중`으로 등록 → 개발서버 배포 시 단계 전환. (이번 차수는 문서화까지)
