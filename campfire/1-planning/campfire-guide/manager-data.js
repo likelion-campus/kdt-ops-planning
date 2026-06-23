@@ -38,7 +38,7 @@ const GUIDE_DATA = [
         id: "s1-2", title: "역할별 권한 비교",
         html: `
           <p>매니저가 할 수 있는 일과 다른 역할의 권한 차이입니다.</p>
-          <table class="cf-table">
+          <table class="cf-table matrix">
             <thead><tr><th>기능</th><th>매니저</th><th>강사</th><th>보조강사</th><th>멘토</th><th>수강생</th></tr></thead>
             <tbody>
               <tr><td>채널 생성/삭제</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
@@ -48,7 +48,6 @@ const GUIDE_DATA = [
             </tbody>
           </table>
           <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div>보조강사·멘토는 <strong>수강생과 동일한 권한</strong>입니다. 채널·멤버 관리, 공지 작성, 화상 세션 개설 권한이 없습니다.</div></div>
-          <div class="shot">📸 스크린샷: 권한 매트릭스 예시 화면</div>
         `,
       },
     ],
@@ -93,9 +92,6 @@ const GUIDE_DATA = [
             <li><strong>내 강의실 &gt; 강의목록</strong>에서 해당 훈련 카드의 [캠프파이어 입장하기] 버튼 클릭 (클래스룸 입장하기 버튼 옆)</li>
             <li>본인 전용 토큰으로 자동 인증되어 입장 (<strong>최초 입장 시 비밀번호 설정</strong>)</li>
           </ol>
-          <div class="shot">📸 스크린샷: 어드민 훈련 관리 &gt; 매니저 관리 &gt; 매니저 등록 화면</div>
-          <div class="shot">📸 스크린샷: 최초 입장 시 비밀번호 설정 화면 / 내 강의실 입장 버튼 / 입장 직후 첫 화면</div>
-
           <h4 class="warn-h">⚠️ 입장 관련 예외 케이스</h4>
           <table class="cf-table">
             <thead><tr><th>상황</th><th>영향</th><th>해결 방안</th></tr></thead>
@@ -118,7 +114,6 @@ const GUIDE_DATA = [
             <li>표시 이름은 <strong>수강생·강사·매니저 모두 실명으로 표기</strong>합니다 (별도 접미사 규칙 없음).</li>
           </ul>
           <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>표시 이름은 누구나 자유롭게 변경할 수 있으므로, 가입 시 자동 설정된 실명을 그대로 유지하도록 <strong>기수 시작 시 안내</strong>하는 것을 권장합니다.</div></div>
-          <div class="shot">📸 스크린샷: 프로필 설정 화면</div>
         `,
       },
     ],
@@ -470,7 +465,6 @@ const GUIDE_DATA = [
             <li><strong>신고함</strong>(설정 &gt; 신고함): 멤버가 신고한 건을 처리. <strong>신고는 수강생 포함 모든 멤버</strong>가 메시지 [⋯ 더보기 &gt; 신고] 또는 멤버 케밥(⋮) &gt; 신고에서 <strong>사유(스팸/괴롭힘/부적절한 콘텐츠/기타) + 상세</strong>로 접수. 매니저는 건마다 사유·신고자·시각을 확인하고 <strong>[메시지 삭제] / [강퇴] / [처리완료] / [기각]</strong> 중 선택</li>
             <li><strong>수강생 현황 / 활동 리포트</strong>: 참여·활동 데이터 조회 메뉴(본 가이드에서는 상세 생략)</li>
           </ul>
-          <div class="shot">📸 스크린샷: 설정 &gt; 신고함 — 신고 처리 화면</div>
         `,
       },
       {

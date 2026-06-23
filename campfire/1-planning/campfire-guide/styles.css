@@ -172,6 +172,8 @@ img.logo-img{width:26px;height:26px;object-fit:contain;display:block}
 .cf-table th:last-child,.cf-table td:last-child{border-right:none}
 .cf-table td.y{color:var(--tip);font-weight:700;text-align:center}
 .cf-table td.n{color:var(--negative);text-align:center}
+/* 권한 매트릭스: 첫 칸(기능) 제외한 역할 열은 헤더·값 모두 가운데 정렬 */
+.cf-table.matrix th:not(:first-child),.cf-table.matrix td:not(:first-child){text-align:center}
 
 /* screenshot placeholder + real image */
 .shot{margin:14px 0;border:1.5px dashed var(--line-strong);border-radius:10px;

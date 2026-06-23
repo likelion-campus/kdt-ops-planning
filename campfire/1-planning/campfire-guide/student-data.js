@@ -58,7 +58,7 @@ const GUIDE_DATA = [
             <li><strong>모바일</strong>: 앱(iOS·Android)은 출시 예정. 지금은 PC(Chrome) 이용을 권장해요.</li>
             <li>📢 <strong>공지 채널 알림은 꼭 켜주세요!</strong> 일정 변경·과제 마감 등 중요한 안내를 놓치지 않으려면 필수예요.</li>
           </ul>
-          <div class="shot">📸 스크린샷: 알림 설정 화면</div>` },
+          <div class="shot">📸 스크린샷: 프로필 > 캠프파이어 앱 받기</div>` },
     ],
   },
   {
@@ -108,7 +108,7 @@ const GUIDE_DATA = [
             <li>파일은 입력창의 <strong>📎(클립) 버튼</strong>으로 첨부해요. (용량 제한은 과정 안내 참고)</li>
             <li><strong>코드는 코드 블록으로!</strong> 백틱 3개로 코드를 감싸면 코드 블록으로 보여요. 단, 언어별 색상 강조는 아직 지원되지 않아 <strong>단색</strong>으로 표시돼요(읽는 데는 문제없어요).</li>
           </ul>
-          <div class="shot">📸 스크린샷: 코드 블록 예시</div>` },
+          <div class="shot">📸 스크린샷: 파일 업로드</div>` },
     ],
   },
   {
@@ -133,6 +133,7 @@ const GUIDE_DATA = [
             <li>🖥️ <strong>화면 공유</strong>: 발표·코드 리뷰 차례일 때 내 화면 공유 (강사 안내에 따라)</li>
             <li>🚪 <strong>퇴장</strong>: 수업이 끝나면 나가기</li>
           </ul>
+          <div class="shot">📸 스크린샷: 이해도 체크 (강사 진행 / 수강생 응답)</div>
           <div class="callout callout--tip"><span class="callout__ico">💡</span><div><strong>발표 차례인데 어떻게 하나요?</strong> 따로 '발표자 지정'은 없어요. 강사님이 "OO님 마이크 켜고 말씀하세요"라고 하면 하단 🎤 버튼으로 음소거를 풀고 말하면 됩니다.</div></div>` },
       { id:"s5-3", title:"수업 에티켓",
         html:`

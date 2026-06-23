@@ -33,7 +33,7 @@ const GUIDE_DATA = [
             </tbody>
           </table>
           <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>강사는 좌측 하단 <strong>톱니(⚙️) 공간 설정 메뉴에 들어갈 수 없습니다.</strong> 멤버·채널·자동 메시지 등 모든 운영 설정은 매니저 영역입니다.</div></div>
-          <div class="shot">📸 스크린샷: 강사 시점 메인 화면</div>` },
+          <div class="shot">📸 스크린샷: 캠프파이어 입장 화면</div>` },
     ],
   },
   {
@@ -54,7 +54,7 @@ const GUIDE_DATA = [
             <li><strong>앱 받기</strong>: 좌측 하단 프로필 → [캠프파이어 앱 받기] (접속 OS 자동 감지).</li>
           </ul>
           <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div><strong>강사 등록이 안 됐을 때</strong>: 내 강의실에 입장 카드 자체가 보이지 않습니다 → 담당 매니저에게 강사 부여를 요청하세요.</div></div>
-          <div class="shot">📸 스크린샷: 앱 받기 모달 / 내 강의실 입장 버튼</div>` },
+          <div class="shot">📸 스크린샷: 프로필 > 캠프파이어 앱 받기</div>` },
       { id:"i2-2", title:"프로필 & 표시 이름",
         html:`
           <ul>
@@ -179,8 +179,7 @@ const GUIDE_DATA = [
             <li><strong>멘션</strong>: <strong>@ 하나</strong>로 인원·그룹·역할을 모두 호출 (예: @이름, @1team, @수강생). @everyone은 꼭 필요할 때만.</li>
             <li><strong>이해 확인</strong>: [이해 확인] 버튼 → 수강생 화면에 '👍 이해 / 🤔 어려움' 팝업. 응답을 모아 실시간 이해도 파악, '어려움'이 많으면 보충·속도 조절.</li>
             <li><strong>이모지 리액션</strong>으로도 빠르게 이해도 체크 (예: ✅)</li>
-          </ul>
-          <div class="shot">📸 스크린샷: 코드 블록이 포함된 메시지</div>` },
+          </ul>` },
     ],
   },
   {
