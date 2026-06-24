@@ -116,6 +116,19 @@ const GUIDE_DATA = [
           <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>표시 이름은 누구나 자유롭게 변경할 수 있으므로, 가입 시 자동 설정된 실명을 그대로 유지하도록 <strong>기수 시작 시 안내</strong>하는 것을 권장합니다.</div></div>
         `,
       },
+      {
+        id: "s2-4", title: "알림 설정",
+        html: `
+          <p><strong>프로필(좌측 하단) → 프로필 설정 → 알림 탭</strong>에서 알림 수준을 조정합니다. (모든 역할 공통)</p>
+          <ul>
+            <li><strong>기본값은 '멘션만'</strong>입니다 — 나를 @멘션할 때만 알림이 와요. (필요하면 '전체 메시지' 또는 '끄기'로 변경)</li>
+            <li><strong>채널별 개별 설정</strong>: 사이드바에서 <strong>채널에 마우스를 올리면 나타나는 케밥 메뉴(⋮)</strong>를 클릭 → 해당 채널만 알림을 따로 설정(전체/멘션만/끄기)할 수 있어요.</li>
+          </ul>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>📢 공지 채널은 <strong>'전체 메시지'</strong>로 켜두면 중요한 운영 안내를 놓치지 않아요.</div></div>
+          <div class="shot">📸 스크린샷: 기본 알림 설정 (프로필 > 설정 > 알림 — 멘션만)</div>
+          <div class="shot">📸 스크린샷: 채널별 알림 설정 (채널 케밥 메뉴)</div>
+        `,
+      },
     ],
   },
 
@@ -350,6 +363,19 @@ const GUIDE_DATA = [
             <li>메시지 [⋯ 더보기]: 텍스트 복사 / 링크 복사 / 고정 / 차단 / 신고 / 삭제</li>
           </ul>
           <div class="shot">📸 스크린샷: 더보기 — 고정 메뉴 + 고정 패널 / 스레드 패널</div>
+        `,
+      },
+      {
+        id: "s6-4", title: "1:1 통화 (DM 음성·화상)",
+        html: `
+          <p><strong>다이렉트 메시지(DM·1:1 대화)에서만</strong> 상대에게 음성·화상 통화를 걸 수 있습니다. (채널에서는 사용 불가, 모든 역할 공통)</p>
+          <ol>
+            <li>상대와의 <strong>DM 화면 상단, 이름 옆 📞(음성)·📹(화상) 아이콘</strong> 클릭</li>
+            <li>확인 다이얼로그에서 <strong>[통화 걸기]</strong> → 상대에게 통화 요청 발송</li>
+            <li>상대는 <strong>수신 화면</strong>에서 <strong>수락(초록)/거절(빨강)</strong>을 선택</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>통화 후 DM에 <strong>'통화 시작/종료'</strong> 기록이 남고, 안 받으면 <strong>'부재중 통화'</strong>로 표시돼요. 수강생 1:1 응대에 활용하세요.</div></div>
+          <div class="shot">📸 스크린샷: DM 1:1 통화 (걸기 · 다이얼로그 · 수신)</div>
         `,
       },
     ],

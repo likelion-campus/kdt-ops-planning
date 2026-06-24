@@ -59,6 +59,16 @@ const GUIDE_DATA = [
             <li>📢 <strong>공지 채널 알림은 꼭 켜주세요!</strong> 일정 변경·과제 마감 등 중요한 안내를 놓치지 않으려면 필수예요.</li>
           </ul>
           <div class="shot">📸 스크린샷: 프로필 > 캠프파이어 앱 받기</div>` },
+      { id:"s2-4", title:"알림 설정",
+        html:`
+          <p><strong>왼쪽 아래 프로필 → 프로필 설정 → 알림 탭</strong>에서 알림을 조정할 수 있어요.</p>
+          <ul>
+            <li><strong>기본은 '멘션만'</strong>으로 되어 있어요 — 나를 @멘션할 때만 알림이 와요. ('전체 메시지'로 켜거나 '끄기'도 가능)</li>
+            <li><strong>채널별로 다르게</strong>: 사이드바에서 <strong>채널에 마우스를 올리면 생기는 케밥(⋮) 메뉴</strong>를 눌러 그 채널만 따로 설정할 수 있어요.</li>
+          </ul>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>📢 <strong>공지 채널은 '전체 메시지'로 켜두기!</strong> 일정·과제 안내를 놓치지 않아요.</div></div>
+          <div class="shot">📸 스크린샷: 기본 알림 설정 (프로필 > 설정 > 알림 — 멘션만)</div>
+          <div class="shot">📸 스크린샷: 채널별 알림 설정 (채널 케밥 메뉴)</div>` },
     ],
   },
   {
@@ -109,6 +119,16 @@ const GUIDE_DATA = [
             <li><strong>코드는 코드 블록으로!</strong> 백틱 3개로 코드를 감싸면 코드 블록으로 보여요. 단, 언어별 색상 강조는 아직 지원되지 않아 <strong>단색</strong>으로 표시돼요(읽는 데는 문제없어요).</li>
           </ul>
           <div class="shot">📸 스크린샷: 파일 업로드</div>` },
+      { id:"s4-4", title:"1:1 통화 (DM 음성·화상)",
+        html:`
+          <p><strong>다이렉트 메시지(DM·1:1 대화)에서만</strong> 음성·화상 통화를 걸 수 있어요. (채널에서는 안 돼요)</p>
+          <ol>
+            <li>대화 상대와의 <strong>DM 화면 상단, 이름 옆 📞(음성)·📹(화상) 아이콘</strong>을 눌러요</li>
+            <li>확인 창에서 <strong>[통화 걸기]</strong>를 누르면 상대에게 요청이 가요</li>
+            <li>상대 화면에 <strong>수신 화면</strong>이 떠요 — <strong>초록(수락)/빨강(거절)</strong>으로 받거나 거절해요</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>통화가 끝나면 DM에 '통화 시작/종료' 기록이 남아요. 못 받으면 '부재중 통화'로 표시돼요.</div></div>
+          <div class="shot">📸 스크린샷: DM 1:1 통화 (걸기 · 다이얼로그 · 수신)</div>` },
     ],
   },
   {
