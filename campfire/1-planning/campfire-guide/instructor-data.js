@@ -119,6 +119,16 @@ const GUIDE_DATA = [
             <li>진행 중에는 [강의] 카드가 <strong>[Live]</strong> 표시로 바뀜</li>
           </ul>
           <div class="shot">📸 스크린샷: 강의 열기 및 참여 화면</div>` },
+      { id:"i5-6", title:"수강생 호출 (미입장자 알림)",
+        html:`
+          <p>수업이 시작됐는데 <strong>아직 들어오지 않은 수강생</strong>에게 입장 알림(DM 호출)을 보낼 수 있어요.</p>
+          <ol>
+            <li>강의 화면 하단 <strong>[더보기(⋯)] → [수강생 호출]</strong></li>
+            <li>호출 메시지 작성(기본 문구 제공) → <strong>[발송]</strong></li>
+            <li>강의에 <strong>아직 안 들어온 수강생에게만 DM</strong>으로 전송됩니다.</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>수강생은 <strong>'강의 초대' 알림 + [입장하기] 버튼</strong>을 받고, 누르면 <strong>바로 강의실로 입장</strong>해요.</div></div>
+          <div class="shot">📸 스크린샷: 더보기 > 수강생 호출 → 메시지 작성·발송</div>` },
       { id:"i5-2", title:"화면 공유",
         html:`
           <ul>

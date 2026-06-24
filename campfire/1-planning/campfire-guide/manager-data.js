@@ -43,11 +43,11 @@ const GUIDE_DATA = [
             <tbody>
               <tr><td>채널 생성/삭제</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
               <tr><td>멤버 초대/관리</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
-              <tr><td>화상 세션 개설</td><td class="y">⭕</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
+              <tr><td>화상 세션 개설</td><td class="y">⭕</td><td class="y">⭕</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td></tr>
               <tr><td>공지 작성</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
             </tbody>
           </table>
-          <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div>보조강사·멘토는 <strong>수강생과 동일한 권한</strong>입니다. 채널·멤버 관리, 공지 작성, 화상 세션 개설 권한이 없습니다.</div></div>
+          <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div><strong>멘토</strong>는 수강생과 동일한 권한입니다. <strong>보조강사</strong>는 강사처럼 <strong>화상 세션 개설</strong>이 가능하지만, 채널·멤버 관리·공지 작성 권한은 없습니다.</div></div>
         `,
       },
     ],
@@ -385,6 +385,19 @@ const GUIDE_DATA = [
           </ol>
           <p>강의가 시작·종료되면 <strong>강의봇</strong>이 '강의 중' 채널에 <code>강의가 시작되었습니다</code> / <code>강의가 종료되었습니다</code>를 자동 게시하고, 날짜별 강의 쓰레드가 생성됩니다.</p>
           <div class="shot">📸 스크린샷: 강의 열기 및 참여 화면 (AI 요약 활성화 체크박스)</div>
+        `,
+      },
+      {
+        id: "s7-5", title: "수강생 호출 (미입장자 알림)",
+        html: `
+          <p>수업이 시작됐는데 <strong>아직 강의실에 들어오지 않은 수강생</strong>에게 입장 알림을 보낼 수 있습니다. (매니저·강사 가능)</p>
+          <ol>
+            <li>강의 화면 하단 <strong>[더보기(⋯)] → [수강생 호출]</strong></li>
+            <li>호출 메시지 작성 (기본 문구가 채워져 있어요) → <strong>[발송]</strong></li>
+            <li>강의에 <strong>아직 안 들어온 수강생에게만 DM</strong>으로 호출 메시지가 전송됩니다.</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>수강생은 <strong>'강의 초대' 알림 + [입장하기] 버튼</strong>을 받고, 버튼을 누르면 <strong>바로 강의실로 입장</strong>합니다. 수업 시작 직후 미입장자가 많을 때 쓰면 효과적이에요.</div></div>
+          <div class="shot">📸 스크린샷: 더보기 > 수강생 호출 → 메시지 작성·발송</div>
         `,
       },
       {
