@@ -122,6 +122,15 @@ const GUIDE_DATA = [
           </ol>
           <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강사님이 <strong>수강생 호출</strong>을 보내면 알림이 와요. "아직 안 들어왔어요~" 신호이니 [강의] 버튼으로 들어와 주세요.</div></div>
           <div class="shot">📸 스크린샷: [강의] 버튼(Live) + 입장 직후 마이크/카메라 버튼</div>` },
+      { id:"s5-4", title:"강의 초대 받고 입장하기",
+        html:`
+          <p>수업이 시작되면 강사·매니저가 <strong>'강의 초대'</strong>를 보낼 수 있어요. 아직 강의실에 안 들어왔다면 알림이 와요.</p>
+          <ul>
+            <li><strong>'강의 초대' 알림</strong>의 <strong>[입장하기]</strong> 버튼을 누르면 — <strong>바로 강의실로 이동</strong>해요! (채널을 따로 찾을 필요 없어요)</li>
+            <li>"수업이 곧 시작됩니다. 강의실로 들어와 주세요!" 같은 안내와 함께 와요.</li>
+          </ul>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>알림을 놓쳤다면? 걱정 마세요 — 사이드바 맨 위 <strong>[강의 / Live]</strong> 버튼으로도 언제든 입장할 수 있어요.</div></div>
+          <div class="shot">📸 스크린샷: 강의 초대 알림 (입장하기 버튼)</div>` },
       { id:"s5-2", title:"수업 중 기능 (화면 아래 버튼들)",
         html:`
           <ul>
@@ -150,7 +159,7 @@ const GUIDE_DATA = [
       { id:"s6-0", title:"증상별 해결",
         html:`
           <div class="callout callout--tip"><span class="callout__ico">🌐</span><div><strong>가장 먼저!</strong> 화상·소리·입장 문제 대부분은 브라우저 때문이에요. <strong>PC Chrome 최신 버전</strong>인지부터 확인하세요. (인앱 브라우저로 열었다면 Chrome으로 다시 접속!)</div></div>
-          <details class="faq"><summary>🔇 소리가 안 들려요</summary><div>1. 내 PC·브라우저 볼륨이 음소거인지 확인해요<br>2. 강의 화면에서 다른 사람이 말하고 있는지(마이크 표시) 확인해요<br>3. 그래도 안 되면 강의에서 한 번 나갔다가 다시 들어와 보세요</div></details>
+          <details class="faq"><summary>📷 카메라가 안 켜져요</summary><div><strong>웹(브라우저)에서 카메라가 안 켜지는 흔한 이유예요:</strong><br>1. <strong>브라우저 권한 차단</strong> — Chrome 주소창 왼쪽 자물쇠 🔒 &gt; 사이트 권한에서 카메라 [허용] 확인<br>2. <strong>다른 앱이 카메라 사용 중</strong> — Zoom·Teams 등 카메라 쓰는 프로그램을 모두 종료 (카메라는 한 번에 한 곳만 쓸 수 있어요)<br>3. <strong>잘못된 장치 선택</strong> — 강의 하단 📹 버튼 옆 화살표에서 올바른 카메라 선택<br>4. <strong>노트북 카메라 가림</strong> — 카메라 커버(프라이버시 셔터)나 물리 스위치가 꺼져 있는지 확인<br>5. <strong>웹과 데스크톱 앱에서 동시에 켰을 때 (Windows)</strong> — 카메라는 <strong>한 번에 한 곳에서만</strong> 켜져요. 캠프파이어를 웹과 앱에서 둘 다 열어두면 한쪽에서만 카메라가 잡혀요. <strong>쓸 곳 한 곳만 남기고</strong> 다른 쪽은 창을 닫거나 카메라를 꺼주세요. (이미 다른 화면에서 켜져 있진 않은지 확인!)<br><br><strong>외장(USB) 카메라를 쓴다면?</strong><br>1. USB 카메라는 보통 꽂으면 자동 인식돼요. 안 잡히면 <strong>다른 USB 포트</strong>에 다시 꽂아보세요.<br>2. 그래도 안 되면 <strong>제조사 드라이버 설치</strong>가 필요해요 — 카메라 <strong>모델명으로 검색</strong>해 공식 드라이버를 받아 설치하세요.<br>3. (Windows) <strong>장치 관리자 &gt; 카메라</strong>에 모델이 보이는지 확인 (이름 옆 ⚠️ 표시면 드라이버 문제)<br>4. 드라이버 설치·재연결 후엔 <strong>브라우저를 새로고침</strong>하고 장치 목록에서 다시 선택해요.</div></details>
           <details class="faq"><summary>🎤 제 마이크가 안 돼요</summary><div>1. Chrome 주소창 왼쪽 자물쇠 &gt; 사이트 권한에서 마이크 [허용] 확인<br>2. 강의 하단 🎤 버튼 옆 화살표에서 올바른 마이크 선택 확인<br>3. Zoom 등 마이크를 쓰는 다른 프로그램 종료</div></details>
           <details class="faq"><summary>🚪 입장이 안 돼요 / 채널이 안 보여요</summary><div>1. 내 강의실 &gt; [캠프파이어 입장하기]로 다시 들어와 보세요<br>2. 입장 버튼 자체가 안 보이면 아직 과정 등록이 안 된 것일 수 있어요 → 매니저님에게 문의<br>3. 특정 채널만 안 보이는 건 정상이에요 (비공개 채널은 초대받은 사람만 보여요)</div></details>
           <details class="faq"><summary>📵 자꾸 튕겨요</summary><div>1. 인터넷 연결 확인, 가능하면 유선 인터넷 사용<br>2. 같은 방법(내 강의실 &gt; 입장하기)으로 다시 들어오면 돼요 — 로그인이 풀리지 않아요<br>3. 브라우저 새로고침 또는 데스크톱 앱 사용</div></details>
