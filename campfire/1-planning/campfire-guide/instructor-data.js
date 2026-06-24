@@ -70,6 +70,16 @@ const GUIDE_DATA = [
             <li>입장 후 화상 패널에서 음소거/카메라를 직접 켜고 끔</li>
           </ul>
           <div class="shot">📸 스크린샷: 강의 입장 화면의 장치 선택 드롭다운</div>` },
+      { id:"i2-4", title:"알림 설정",
+        html:`
+          <p><strong>프로필(좌측 하단) → 프로필 설정 → 알림 탭</strong>에서 알림 수준을 조정해요. (모든 역할 공통)</p>
+          <ul>
+            <li><strong>기본값은 '멘션만'</strong> — 나를 @멘션할 때만 알림이 와요. (필요하면 '전체 메시지'·'끄기'로 변경)</li>
+            <li><strong>채널별 개별 설정</strong>: 사이드바에서 <strong>채널에 마우스를 올리면 나타나는 케밥(⋮) 메뉴</strong>를 클릭 → 그 채널만 알림을 따로 설정.</li>
+          </ul>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>질문 채널처럼 답변이 필요한 곳은 <strong>'전체 메시지'</strong>로 켜두면 놓치지 않아요.</div></div>
+          <div class="shot">📸 스크린샷: 기본 알림 설정 (프로필 > 설정 > 알림 — 멘션만)</div>
+          <div class="shot">📸 스크린샷: 채널별 알림 설정 (채널 케밥 메뉴)</div>` },
     ],
   },
   {
@@ -190,6 +200,16 @@ const GUIDE_DATA = [
             <li><strong>이해 확인</strong>: [이해 확인] 버튼 → 수강생 화면에 '👍 이해 / 🤔 어려움' 팝업. 응답을 모아 실시간 이해도 파악, '어려움'이 많으면 보충·속도 조절.</li>
             <li><strong>이모지 리액션</strong>으로도 빠르게 이해도 체크 (예: ✅)</li>
           </ul>` },
+      { id:"i6-1", title:"1:1 통화 (DM 음성·화상)",
+        html:`
+          <p><strong>다이렉트 메시지(DM·1:1 대화)에서만</strong> 음성·화상 통화를 걸 수 있어요. (채널에서는 불가, 모든 역할 공통)</p>
+          <ol>
+            <li>상대와의 <strong>DM 상단, 이름 옆 📞(음성)·📹(화상) 아이콘</strong> 클릭</li>
+            <li>확인 다이얼로그에서 <strong>[통화 걸기]</strong> → 요청 발송</li>
+            <li>상대는 <strong>수신 화면</strong>에서 <strong>수락/거절</strong>을 선택</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>통화 후 DM에 '통화 시작/종료' 기록이 남고, 안 받으면 '부재중 통화'로 표시돼요. 수강생 개별 피드백·상담에 활용하세요.</div></div>
+          <div class="shot">📸 스크린샷: DM 1:1 통화 (걸기 · 다이얼로그 · 수신)</div>` },
     ],
   },
   {
