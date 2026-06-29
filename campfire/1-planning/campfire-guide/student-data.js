@@ -138,7 +138,7 @@ const GUIDE_DATA = [
         html:`
           <ol>
             <li>수업 시간이 되면 강사님이 강의를 열어요. 사이드바 맨 위 <strong>[강의]</strong> 버튼이 <strong>[Live]</strong>로 바뀌면 클릭해서 참여하세요!</li>
-            <li>입장하면 <strong>마이크·카메라는 꺼진 상태</strong>예요. 필요할 때 하단 버튼으로 직접 켜면 됩니다.</li>
+            <li>입장하면 <strong>카메라는 켜진 상태, 마이크는 꺼진 상태</strong>로 시작해요. 발언할 때 하단 🎤 버튼으로 마이크를 켜면 됩니다. (카메라는 출석 확인에 쓰이니 가능하면 켜 두세요)</li>
           </ol>
           <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강사님이 <strong>수강생 호출</strong>을 보내면 알림이 와요. "아직 안 들어왔어요~" 신호이니 [강의] 버튼으로 들어와 주세요.</div></div>
           <div class="shot">📸 스크린샷: [강의] 버튼(Live) + 입장 직후 마이크/카메라 버튼</div>` },
