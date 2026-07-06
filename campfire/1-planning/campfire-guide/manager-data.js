@@ -405,10 +405,10 @@ const GUIDE_DATA = [
         html: `
           <ol>
             <li>사이드바 최상단 <strong>[강의] 카드 &gt; [열기]</strong> → '강의를 열고 참여합니다' 화면</li>
-            <li>장치 선택: <strong>카메라·마이크는 꺼진 상태로 입장</strong>되며 사용할 카메라/마이크를 드롭다운에서 선택</li>
+            <li>장치 선택: <strong>마이크는 꺼진 상태, 카메라는 켜진 상태로 입장</strong>되며 사용할 카메라/마이크를 드롭다운에서 선택</li>
             <li>[강의 열기 및 참여] 클릭 → 시작</li>
           </ol>
-          <div class="callout callout--info"><span class="callout__ico">🎥</span><div>별도 설정 없이 <strong>모든 정식 강의는 자동으로 녹화</strong>되고 <strong>AI 요약·STT</strong>까지 생성됩니다. (예전 '<strong>AI 요약 활성화</strong>' 체크 단계는 없어졌습니다)</div></div>
+          <div class="callout callout--info"><span class="callout__ico">🎥</span><div>별도 설정 없이 <strong>모든 정식 강의는 자동으로 녹화</strong>되고 <strong>AI 요약·STT</strong>까지 생성됩니다.</div></div>
           <p>강의가 시작·종료되면 <strong>강의봇</strong>이 '강의 중' 채널에 <code>강의가 시작되었습니다</code> / <code>강의가 종료되었습니다</code>를 자동 게시하고, 날짜별 강의 쓰레드가 생성됩니다.</p>
           <div class="shot">📸 스크린샷: 강의 열기 및 참여 화면</div>
         `,
@@ -554,7 +554,7 @@ const GUIDE_DATA = [
             <thead><tr><th>증상</th><th>원인 후보</th><th>해결 방법</th></tr></thead>
             <tbody>
               <tr><td>수강생이 입장을 못 해요</td><td>① 어드민 훈련생 등록 누락(입장 버튼 미노출) ② 초대 링크 만료</td><td>① 어드민에서 훈련생 등록 확인 ② 설정 &gt; 멤버에서 새 초대 링크 생성 후 재공유</td></tr>
-              <tr><td>마이크/카메라가 안 돼요</td><td>① 브라우저 권한 차단 ② 잘못된 장치 선택 ③ 다른 앱이 점유</td><td>① Chrome 자물쇠 &gt; 카메라·마이크 [허용] ② 입장 화면 장치 드롭다운에서 올바른 장치 선택 ③ Zoom 등 종료 후 재시도 (강의는 꺼진 상태로 입장되므로 세션 안에서 켜기)</td></tr>
+              <tr><td>마이크/카메라가 안 돼요</td><td>① 브라우저 권한 차단 ② 잘못된 장치 선택 ③ 다른 앱이 점유</td><td>① Chrome 자물쇠 &gt; 카메라·마이크 [허용] ② 입장 화면 장치 드롭다운에서 올바른 장치 선택 ③ Zoom 등 종료 후 재시도 (마이크는 꺼진 상태로 입장되므로 세션 안에서 켜기)</td></tr>
               <tr><td>메시지가 안 보내져요</td><td>① 공지 채널(📢)은 매니저만 게시 ② 비공개 채널 미초대 ③ 네트워크 끊김</td><td>① 공지 채널이면 정상(읽기 전용) ② 일반 채널이면 초대 여부 확인 ③ 새로고침·재접속</td></tr>
               <tr><td>강의(화상)가 안 보여요 / 안 열려요</td><td>강의 열기 권한은 매니저·강사만 — 수강생·보조강사·멘토 불가, 강사가 열기 전이면 참여 불가</td><td>강사·매니저가 [강의] 카드에서 먼저 강의를 열어야 함 (7장)</td></tr>
             </tbody>

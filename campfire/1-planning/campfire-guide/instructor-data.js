@@ -63,7 +63,7 @@ const GUIDE_DATA = [
           </ul>` },
       { id:"i2-3", title:"오디오 / 비디오 장치 점검 ⭐ 첫 수업 전 필수",
         html:`
-          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강의는 <strong>카메라·마이크가 꺼진 상태로 입장</strong>됩니다. 첫 수업 전에 어떤 장치가 잡히는지 미리 확인해두면 시작 직후 버벅이지 않아요.</div></div>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강의는 <strong>마이크는 꺼진 상태, 카메라는 켜진 상태로 입장</strong>됩니다. 첫 수업 전에 어떤 장치가 잡히는지 미리 확인해두면 시작 직후 버벅이지 않아요.</div></div>
           <ul>
             <li>강의 입장 화면의 <strong>장치 드롭다운</strong>에서 사용할 카메라·마이크 선택</li>
             <li>권장 환경: Chrome 최신, 가능하면 유선 인터넷 + 헤드셋(에코 방지)</li>
@@ -120,10 +120,10 @@ const GUIDE_DATA = [
         html:`
           <ol>
             <li>사이드바 최상단 <strong>[강의] 카드 &gt; [열기]</strong> → '강의를 열고 참여합니다' 화면</li>
-            <li><strong>카메라·마이크는 꺼진 상태로 입장</strong>, 사용할 장치를 드롭다운에서 선택</li>
+            <li><strong>마이크는 꺼진 상태, 카메라는 켜진 상태로 입장</strong>, 사용할 장치를 드롭다운에서 선택</li>
             <li><strong>[강의 열기 및 참여]</strong> → 시작</li>
           </ol>
-          <div class="callout callout--info"><span class="callout__ico">🎥</span><div>별도 설정 없이 <strong>모든 정식 강의는 자동으로 녹화</strong>되고 <strong>AI 요약·STT</strong>까지 생성됩니다. (예전 '<strong>AI 요약 활성화</strong>' 체크 단계는 없어졌습니다 · 5-5)</div></div>
+          <div class="callout callout--info"><span class="callout__ico">🎥</span><div>별도 설정 없이 <strong>모든 정식 강의는 자동으로 녹화</strong>되고 <strong>AI 요약·STT</strong>까지 생성됩니다.</div></div>
           <ul>
             <li>시작·종료 시 <strong>강의봇</strong>이 '강의 중' 채널에 자동 게시</li>
             <li>진행 중에는 [강의] 카드가 <strong>[Live]</strong> 표시로 바뀜</li>
