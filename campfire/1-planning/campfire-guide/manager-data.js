@@ -191,7 +191,7 @@ const GUIDE_DATA = [
         html: `
           <ol>
             <li>사이드바 카테고리명 옆 [+] 클릭 → '채널 만들기' 모달</li>
-            <li><strong>채널 유형 선택</strong>: 텍스트 / 공지 / 화상 / 임베드</li>
+            <li><strong>채널 유형 선택</strong>: 텍스트 / 공지 / 화상 / 임베드 / QR 확인 <span style="opacity:.7">(QR 확인 = 얼굴 인증 후 등록한 QR 이미지 확인)</span></li>
             <li><strong>채널 이름 입력</strong> (예: 질문, 3주차-과제)</li>
             <li><strong>카테고리 선택</strong> — 기본값 '채널(기본)', 드롭다운에서 변경</li>
             <li>(선택) <strong>비공개 채널 토글</strong> — 관리자 자동 접근 허용·멤버 초대 옵션 노출</li>
@@ -406,11 +406,11 @@ const GUIDE_DATA = [
           <ol>
             <li>사이드바 최상단 <strong>[강의] 카드 &gt; [열기]</strong> → '강의를 열고 참여합니다' 화면</li>
             <li>장치 선택: <strong>카메라·마이크는 꺼진 상태로 입장</strong>되며 사용할 카메라/마이크를 드롭다운에서 선택</li>
-            <li><strong>AI 요약 활성화</strong> 체크 (아래 녹화 정책 참고)</li>
             <li>[강의 열기 및 참여] 클릭 → 시작</li>
           </ol>
+          <div class="callout callout--info"><span class="callout__ico">🎥</span><div>별도 설정 없이 <strong>모든 정식 강의는 자동으로 녹화</strong>되고 <strong>AI 요약·STT</strong>까지 생성됩니다. (예전 '<strong>AI 요약 활성화</strong>' 체크 단계는 없어졌습니다)</div></div>
           <p>강의가 시작·종료되면 <strong>강의봇</strong>이 '강의 중' 채널에 <code>강의가 시작되었습니다</code> / <code>강의가 종료되었습니다</code>를 자동 게시하고, 날짜별 강의 쓰레드가 생성됩니다.</p>
-          <div class="shot">📸 스크린샷: 강의 열기 및 참여 화면 (AI 요약 활성화 체크박스)</div>
+          <div class="shot">📸 스크린샷: 강의 열기 및 참여 화면</div>
         `,
       },
       {
@@ -430,11 +430,10 @@ const GUIDE_DATA = [
         id: "s7-3", title: "녹화 & AI 요약",
         html: `
           <ul>
-            <li><strong>AI 요약 활성화 ON</strong> → 강의가 <strong>무조건 녹화</strong>되며 영상 + AI 요약·STT(음성→텍스트)까지 생성</li>
-            <li><strong>AI 요약 활성화 OFF</strong> → AI 요약·STT 없이 <strong>영상만 저장</strong></li>
+            <li><strong>모든 정식 강의는 자동으로 녹화</strong>되며, <strong>영상 + AI 요약·STT(음성→텍스트)</strong>가 함께 생성됩니다. (예전 'AI 요약 활성화' 토글은 없어졌고, 별도 설정이 필요 없습니다)</li>
             <li>저장된 녹화는 <strong>사이드바 [강의] 영역 &gt; 녹화 탭</strong>에서 확인. 시작 시각·상태·재생시간·파일 크기·AI 요약이 표시되며 재생(▶)·다운로드(⬇) 가능</li>
           </ul>
-          <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>수강생에게 녹화 사실을 고지하는 것이 좋습니다. AI 요약 ON 시 음성이 텍스트로 기록되므로 개인정보·민감 발언이 남을 수 있습니다.</div></div>
+          <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>모든 강의가 자동으로 녹화·AI 요약되어 음성이 텍스트로 기록됩니다. 개인정보·민감 발언이 남을 수 있으니 <strong>수강생에게 녹화 사실을 미리 고지</strong>하세요.</div></div>
           <div class="shot">📸 스크린샷: 강의 &gt; 녹화 탭 목록</div>
         `,
       },
@@ -575,7 +574,7 @@ const GUIDE_DATA = [
         html: `
           <details class="faq"><summary>Q. 채널을 잘못 삭제했어요. 복구할 수 있나요?</summary><div>채널 삭제 복구 기능 제공 여부는 확인 중입니다. 삭제된 메시지는 복구가 어려울 수 있으므로, 삭제 전 중요 내용은 백업하고 <strong>[보관·이름 변경]으로 먼저 처리한 뒤 정말 필요할 때만 삭제</strong>하는 것을 권장합니다. (정확한 복구 여부는 추후 업데이트)</div></details>
           <details class="faq"><summary>Q. 수강생이 다른 기수 채널을 볼 수 있나요?</summary><div>없습니다. 공간은 <strong>훈련(기수)별로 각각 분리</strong>되며, 수강생은 본인이 등록·초대된 공간에만 입장합니다. (매니저·강사가 여러 훈련을 담당할 때만 디스코드 서버처럼 공간을 전환해 이동)</div></details>
-          <details class="faq"><summary>Q. 녹화 영상은 어디에 저장되나요?</summary><div>강의를 열 때 <strong>AI 요약 활성화</strong>를 켜면 영상 + AI 요약·STT(자막)이 함께, 끄면 영상만 저장됩니다. 저장된 녹화는 <strong>사이드바 [강의] 영역 &gt; 녹화 탭</strong>에서 재생·다운로드할 수 있습니다. (7장 참고)</div></details>
+          <details class="faq"><summary>Q. 녹화 영상은 어디에 저장되나요?</summary><div><strong>모든 정식 강의는 자동으로 녹화</strong>되며 영상 + AI 요약·STT(자막)이 함께 저장됩니다. (예전 'AI 요약 활성화' 설정은 없어졌습니다) 저장된 녹화는 <strong>사이드바 [강의] 영역 &gt; 녹화 탭</strong>에서 재생·다운로드할 수 있습니다. (7장 참고)</div></details>
         `,
       },
     ],

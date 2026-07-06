@@ -121,9 +121,9 @@ const GUIDE_DATA = [
           <ol>
             <li>사이드바 최상단 <strong>[강의] 카드 &gt; [열기]</strong> → '강의를 열고 참여합니다' 화면</li>
             <li><strong>카메라·마이크는 꺼진 상태로 입장</strong>, 사용할 장치를 드롭다운에서 선택</li>
-            <li><strong>AI 요약 활성화</strong> 체크 여부 결정 (5-5)</li>
             <li><strong>[강의 열기 및 참여]</strong> → 시작</li>
           </ol>
+          <div class="callout callout--info"><span class="callout__ico">🎥</span><div>별도 설정 없이 <strong>모든 정식 강의는 자동으로 녹화</strong>되고 <strong>AI 요약·STT</strong>까지 생성됩니다. (예전 '<strong>AI 요약 활성화</strong>' 체크 단계는 없어졌습니다 · 5-5)</div></div>
           <ul>
             <li>시작·종료 시 <strong>강의봇</strong>이 '강의 중' 채널에 자동 게시</li>
             <li>진행 중에는 [강의] 카드가 <strong>[Live]</strong> 표시로 바뀜</li>
@@ -178,12 +178,10 @@ const GUIDE_DATA = [
       { id:"i5-5", title:"녹화 & AI 요약",
         html:`
           <ul>
-            <li><strong>AI 요약 활성화 ON</strong> → <strong>무조건 녹화</strong> + 영상 + AI 요약·STT 생성</li>
-            <li><strong>OFF</strong> → 영상만 저장</li>
-            <li>녹화 시작 여부는 입장 전 체크박스로 결정 → <strong>강의 열 때 한 번 더 확인</strong></li>
+            <li><strong>모든 정식 강의는 자동으로 녹화</strong>되며, 영상 + AI 요약·STT까지 함께 생성됩니다. (예전 'AI 요약 활성화' 토글은 없어졌고, 별도 설정이 필요 없습니다)</li>
             <li>저장된 녹화: <strong>[강의] 영역 &gt; 녹화 탭</strong>에서 재생(▶)·다운로드(⬇)</li>
           </ul>
-          <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>수강생에게 녹화 사실을 고지하세요. AI 요약 ON 시 음성이 텍스트로 기록되어 민감 발언이 남을 수 있습니다.</div></div>
+          <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div>모든 강의가 자동으로 녹화·AI 요약되어 음성이 텍스트로 기록됩니다. 민감 발언이 남을 수 있으니 <strong>수강생에게 녹화 사실을 미리 고지</strong>하세요.</div></div>
           <div class="shot">📸 스크린샷: 강의 &gt; 녹화 탭</div>` },
     ],
   },
@@ -248,7 +246,6 @@ const GUIDE_DATA = [
     sections:[
       { id:"i9-0", title:"자주 묻는 질문",
         html:`
-          <details class="faq"><summary>Q. 녹화를 깜빡했어요. 어떻게 하나요?</summary><div>녹화는 강의를 열 때 'AI 요약 활성화' 체크로 결정되며, 시작 후 소급 녹화는 어렵습니다. 다음 강의부터 [강의 열기 및 참여] 화면에서 체크 여부를 먼저 확인하세요.</div></details>
           <details class="faq"><summary>Q. 수강생 화면을 대신 봐줄 수 있나요? (원격 지원)</summary><div>원격 제어 기능은 제공하지 않습니다. 수강생이 화면을 공유하게 하고 강사가 보며 안내하는 방식을 권장합니다.</div></details>
           <details class="faq"><summary>Q. 소그룹(브레이크아웃)으로 나눌 수 있나요?</summary><div>전용 소그룹 기능은 현재 없습니다. 사이드바의 팀별 화상 채널로 나눠 들어가게 하고 강사가 순회하는 방식을 권장합니다(채널 생성은 매니저에 요청).</div></details>` },
     ],
