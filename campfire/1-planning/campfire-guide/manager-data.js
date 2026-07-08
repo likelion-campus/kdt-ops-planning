@@ -47,7 +47,7 @@ const GUIDE_DATA = [
               <tr><td>공지 작성</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
             </tbody>
           </table>
-          <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div><strong>멘토</strong>는 수강생과 동일한 권한입니다. <strong>보조강사</strong>는 강사처럼 <strong>화상 세션 개설</strong>이 가능하지만, 채널·멤버 관리·공지 작성 권한은 없습니다.</div></div>
+          <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div><strong>멘토</strong>는 수강생과 동일한 권한입니다. <strong>보조강사</strong>는 강사처럼 <strong>화상 세션 개설</strong>이 가능하지만, 채널·멤버 관리·공지 작성 권한은 없습니다.<br>🆕 이 표는 <strong>기본값</strong>이며, <strong>설정(⚙️) &gt; 역할</strong>에서 역할별 권한을 켜고 끌 수 있습니다 (5-3).</div></div>
         `,
       },
     ],
@@ -292,7 +292,33 @@ const GUIDE_DATA = [
         `,
       },
       {
-        id: "s5-3", title: "멤버 내보내기 / 차단",
+        id: "s5-3", title: "역할 권한 & 표시 설정 🆕",
+        html: `
+          <p><strong>설정(⚙️) &gt; 역할</strong>에서 각 역할의 <strong>표시(명칭·색·아이콘·순서)</strong>와 <strong>클래스 내 권한</strong>을 직접 설정할 수 있습니다. 예전에는 고정이던 역할별 권한을 이제 매니저가 켜고 끌 수 있어요.</p>
+          <p><strong>여는 법</strong>: 설정(⚙️) &gt; 역할 → 좌측에서 역할 선택(강사 / 보조강사 / 매니저 / 멘토 / 수강생)</p>
+          <h4>표시 설정</h4>
+          <ul>
+            <li><strong>아이콘·이름·색상</strong> 지정 — 멤버 목록·멘션에 이 색·이름으로 표기됩니다 (예: '매니저' → '운영매니저').</li>
+            <li><strong>순서</strong> — 멤버 목록에서 역할이 노출되는 위/아래 순서(∧∨)를 조정합니다.</li>
+          </ul>
+          <h4>권한 (체크박스 5종)</h4>
+          <table class="cf-table">
+            <thead><tr><th>권한</th><th>켜면 할 수 있는 일</th></tr></thead>
+            <tbody>
+              <tr><td><strong>채널 관리</strong></td><td>채널·카테고리를 만들고 편집·정렬하며, 채널 멤버와 메시지 고정을 관리</td></tr>
+              <tr><td><strong>공지 게시</strong></td><td>공지 채널(📢)에 글을 게시</td></tr>
+              <tr><td><strong>강의 관리</strong></td><td>강의를 열고 닫으며, 참가자 음소거·내보내기·손들기·전체 안내 등 진행 도구 사용</td></tr>
+              <tr><td><strong>모니터링 관리</strong></td><td>화면 캡처 모니터링과 얼굴 확인(출석) 기록을 확인·관리</td></tr>
+              <tr><td><strong>클래스 관리</strong></td><td>클래스 설정, 역할·권한, 멤버, 공지 팝업을 관리</td></tr>
+            </tbody>
+          </table>
+          <p>체크 후 <strong>[저장]</strong>. 원상 복구는 <strong>[표시 기본값으로]</strong> / <strong>[권한 기본값으로]</strong> 버튼으로 되돌립니다. <strong>관리자(ADMIN)</strong>는 이 설정과 무관하게 항상 모든 권한을 가지며, 변경은 <strong>최대 30초 내</strong> 반영됩니다.</p>
+          <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div><strong>권한을 잘못 끄면 운영 사고로 이어집니다.</strong><br>• 매니저 역할의 <strong>클래스 관리</strong>를 끄면 → 설정·역할 화면에 다시 못 들어가 스스로 되돌리기 어려워질 수 있습니다. 매니저 권한은 함부로 축소하지 마세요.<br>• 강사에게서 <strong>강의 관리</strong>를 끄면 → 강사가 강의를 열 수 없습니다. 실수했다면 [권한 기본값으로]로 복구하세요.<br>• 변경이 화면에 안 보이면 최대 30초 반영을 기다린 뒤 새로고침하세요.</div></div>
+          <div class="shot">📸 스크린샷: 설정 &gt; 역할 — 역할 선택 + 표시/권한 체크박스</div>
+        `,
+      },
+      {
+        id: "s5-4", title: "멤버 내보내기 / 차단",
         html: `
           <ul>
             <li><strong>설정 &gt; 멤버</strong>의 내보내기 버튼, 또는 <strong>멤버 목록 케밥(⋮) &gt; [퇴장시키기]</strong></li>
