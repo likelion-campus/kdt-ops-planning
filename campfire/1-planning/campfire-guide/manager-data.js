@@ -143,7 +143,7 @@ const GUIDE_DATA = [
       {
         id: "s3-1", title: "화면 한눈에 보기",
         html: `
-          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>디스코드를 써봤다면 구조가 거의 동일합니다. 왼쪽에서 오른쪽으로: <strong>채널 목록(사이드바) → 대화 영역 → 우측 상단 아이콘(검색·알림·멤버)</strong>.</div></div>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>디스코드를 써봤다면 구조가 거의 동일합니다. 왼쪽에서 오른쪽으로: <strong>채널 목록(사이드바) → 대화 영역 → 우측 상단 아이콘(검색·멘션·파일·알림·멤버)</strong>.</div></div>
           <dl class="anatomy">
             <dt>① 사이드바 (좌측)</dt>
             <dd>
@@ -162,10 +162,23 @@ const GUIDE_DATA = [
             <dd>우측 상단 멤버 아이콘(👥) 클릭 시 표시. <strong>역할별로 구분</strong>되어 보입니다: 매니저 / 강사 / 보조강사 / 멘토 / 수강생.</dd>
             <dt>④ 화상 채널 영역</dt>
             <dd>사이드바 화상 채널 카테고리에 모여 있음 (예: 프로젝트 1~4팀, 회고방). 상세는 7장.</dd>
-            <dt>⑤ 검색 / 알림 (우측 상단)</dt>
-            <dd>🔍 검색(단축키) / @ 멘션 모아보기 / 🔔 알림 / 📌 고정된 메시지</dd>
+            <dt>⑤ 검색 / 파일 / 알림 (우측 상단)</dt>
+            <dd>🔍 검색(단축키) / @ 멘션 모아보기 / 📁 파일(채널 파일 모아보기·3-2) / 🔔 알림 / 📌 고정된 메시지</dd>
           </dl>
           <div class="shot">📸 스크린샷: 전체 화면에 ①~⑤ 번호를 오버레이한 이미지 1장</div>
+        `,
+      },
+      {
+        id: "s3-2", title: "채널 파일 모아보기",
+        html: `
+          <p>채널 <strong>상단 우측 툴바의 파일 버튼(📁)</strong>을 누르면, 그 채널에 올라온 <strong>모든 파일을 한 곳에서 모아보고 다운로드</strong>할 수 있습니다. (위치: 검색 · @멘션 · <strong>파일</strong> · 알림 사이)</p>
+          <ol>
+            <li>채널 <strong>상단 우측의 파일 버튼</strong> 클릭</li>
+            <li>오른쪽에 <strong>[파일] 패널</strong>이 열리며 채널의 파일 목록이 표시됩니다.</li>
+            <li><strong>파일명 검색</strong>으로 원하는 파일을 찾고, 각 파일의 <strong>다운로드(⬇) 아이콘</strong>으로 저장합니다.</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>과제·자료가 채팅에 묻혀 찾기 어려울 때, 파일 버튼으로 채널별 자료를 한눈에 모아 관리하세요.</div></div>
+          <div class="shot">📸 스크린샷: 상단 파일 버튼 → 채널 파일 목록·검색·다운로드</div>
         `,
       },
     ],

@@ -93,6 +93,16 @@ const GUIDE_DATA = [
             </tbody>
           </table>
           <div class="callout callout--tip"><span class="callout__ico">💡</span><div>채널 구성은 과정마다 조금씩 달라요. 맨 위 [강의] 버튼은 <strong>강사님이 여는 정식 수업</strong>, 🎤 화상 채널은 <strong>팀별 모임</strong>용이에요.</div></div>` },
+      { id:"s3-1", title:"채널 파일 모아보기",
+        html:`
+          <p>채널 <strong>맨 위 오른쪽 파일 버튼(📁)</strong>을 누르면, 그 채널에 올라온 <strong>파일을 한 곳에서 모아보고 다운로드</strong>할 수 있어요.</p>
+          <ol>
+            <li>채널 <strong>오른쪽 위 파일 버튼</strong>을 눌러요.</li>
+            <li>오른쪽에 <strong>[파일] 목록</strong>이 열려요.</li>
+            <li><strong>파일명으로 검색</strong>하고, <strong>다운로드(⬇)</strong>로 저장하면 돼요.</li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강의 자료·과제 파일이 채팅에 묻혔을 때, 파일 버튼으로 한 번에 찾을 수 있어요!</div></div>
+          <div class="shot">📸 스크린샷: 상단 파일 버튼 → 채널 파일 목록·검색·다운로드</div>` },
     ],
   },
   {

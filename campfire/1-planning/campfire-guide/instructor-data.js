@@ -87,7 +87,7 @@ const GUIDE_DATA = [
     sections:[
       { id:"i3-0", title:"화면 한눈에 보기",
         html:`
-          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>디스코드와 구조가 거의 같습니다. 왼쪽에서 오른쪽으로: <strong>채널 목록 → 대화 영역 → 우측 상단 아이콘(검색·알림·멤버)</strong>.</div></div>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>디스코드와 구조가 거의 같습니다. 왼쪽에서 오른쪽으로: <strong>채널 목록 → 대화 영역 → 우측 상단 아이콘(검색·멘션·파일·알림·멤버)</strong>.</div></div>
           <ul>
             <li><strong>① 사이드바</strong>: 최상단 현재 훈련(공간) 이름, 그 아래 <strong>[강의] 카드</strong>(열기/Live), 카테고리별 채널, 화상 채널, 하단 DM·내 프로필</li>
             <li><strong>② 메시지 영역</strong>: 메시지 스트림, 하단 입력창(📎 첨부·이모지), [최하단으로 이동]</li>
@@ -96,6 +96,15 @@ const GUIDE_DATA = [
             <li>강사에게만 보이는 컨트롤: <strong>[강의] 카드의 [열기] 버튼</strong> (강의 개설은 매니저·강사만)</li>
           </ul>
           <div class="shot">📸 스크린샷: 강사 화면 전체, ①~④ 번호 오버레이</div>` },
+      { id:"i3-1", title:"채널 파일 모아보기",
+        html:`
+          <p>채널 상단 우측 <strong>파일 버튼(📁)</strong>으로 그 채널의 <strong>모든 파일을 모아보고 다운로드</strong>할 수 있습니다. (검색 · @멘션 · <strong>파일</strong> · 알림 사이)</p>
+          <ol>
+            <li>채널 상단 우측 툴바의 <strong>파일 버튼</strong> 클릭</li>
+            <li>오른쪽 <strong>[파일] 패널</strong>에 파일 목록 표시 → <strong>파일명 검색</strong> + <strong>다운로드(⬇)</strong></li>
+          </ol>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>수업 자료·과제 파일을 채널별로 한눈에 모아 확인·공유할 수 있어요.</div></div>
+          <div class="shot">📸 스크린샷: 상단 파일 버튼 → 채널 파일 목록·검색·다운로드</div>` },
     ],
   },
   {
