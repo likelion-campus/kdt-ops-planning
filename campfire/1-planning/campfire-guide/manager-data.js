@@ -47,7 +47,7 @@ const GUIDE_DATA = [
               <tr><td>공지 작성</td><td class="y">⭕</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td><td class="n">❌</td></tr>
             </tbody>
           </table>
-          <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div><strong>멘토</strong>는 수강생과 동일한 권한입니다. <strong>보조강사</strong>는 강사처럼 <strong>화상 세션 개설</strong>이 가능하지만, 채널·멤버 관리·공지 작성 권한은 없습니다.<br>🆕 이 표는 <strong>기본값</strong>이며, <strong>설정(⚙️) &gt; 역할</strong>에서 역할별 권한을 켜고 끌 수 있습니다 (5-3).</div></div>
+          <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div><strong>멘토</strong>는 수강생과 동일한 권한입니다. <strong>보조강사</strong>는 강사처럼 <strong>화상 세션 개설</strong>이 가능하지만, 채널·멤버 관리·공지 작성 권한은 없습니다.<br>이 표는 <strong>기본값</strong>이며, <strong>설정(⚙️) &gt; 역할</strong>에서 역할별 권한을 켜고 끌 수 있습니다 (5-3).</div></div>
         `,
       },
     ],
@@ -66,7 +66,7 @@ const GUIDE_DATA = [
             <li>캠프파이어 공간은 어드민에서 <strong>훈련을 생성할 때 자동으로 함께 생성</strong>됩니다.</li>
             <li>매니저의 입장 권한은 어드민의 <strong>매니저 등록</strong>으로 부여됩니다.</li>
             <li>입장 경로는 <strong>내 강의실 → [캠프파이어 입장하기] 버튼</strong>이 기본입니다 (토큰 자동 인증).</li>
-            <li><strong>최초 입장 시 비밀번호 설정 화면</strong>이 나오며, 여기서 정한 비밀번호로 <strong>데스크톱 앱과 PC(웹)에서 동일 계정 로그인</strong>이 가능합니다. (모바일 앱은 출시 예정)</li>
+            <li><strong>최초 입장 시 비밀번호 설정 화면</strong>이 나오며, 여기서 정한 비밀번호로 <strong>데스크톱 앱·PC(웹)·모바일 앱에서 동일 계정 로그인</strong>이 가능합니다. <strong>모바일 앱이 출시</strong>되어 App Store·Google Play에서 설치할 수 있어요.</li>
             <li>여러 훈련을 담당하면 훈련별로 공간이 각각 생성되며, 입장 후에는 <strong>디스코드 서버처럼 공간 간 자유롭게 이동</strong>할 수 있습니다.</li>
           </ul>
           <p><strong>입장 흐름 요약</strong></p>
@@ -78,8 +78,12 @@ const GUIDE_DATA = [
             <span>(최초 1회)<br>비밀번호 설정</span><i>→</i>
             <span>입장 ✅</span>
           </div>
-          <p><strong>지원 환경 &amp; 앱 받기</strong> — Chrome 브라우저 권장. 좌측 하단 <strong>내 프로필 클릭 → [캠프파이어 앱 받기]</strong>에서 다운로드. 데스크톱 앱은 접속 OS를 자동 감지해 해당 버전을 보여줍니다([다른 OS 버전 보기]로 수동 선택 가능).</p>
-          <div class="shot">📸 스크린샷: 프로필 &gt; 캠프파이어 앱 받기 모달</div>
+          <p><strong>지원 환경 &amp; 앱 받기</strong> — Chrome 브라우저 권장. 좌측 하단 <strong>내 프로필 클릭 → [캠프파이어 앱 받기]</strong>에서 다운로드.</p>
+          <ul>
+            <li><strong>데스크톱 앱</strong> — 접속 OS를 자동 감지해 해당 버전을 보여줍니다 ([다른 OS 버전 보기]로 수동 선택 가능).</li>
+            <li><strong>모바일 앱</strong> — 같은 모달의 <strong>QR을 스캔하거나 눌러서 App Store·Google Play</strong>에서 설치. 캠에서 쓰던 워크스페이스 그대로 <strong>같은 계정으로 로그인</strong>하면 됩니다.</li>
+          </ul>
+          <div class="shot">📸 스크린샷: 프로필 &gt; 캠프파이어 앱 받기 모달 (데스크톱 + 모바일 QR)</div>
         `,
       },
       {
@@ -147,7 +151,7 @@ const GUIDE_DATA = [
                 <li><strong>최상단</strong>: 현재 입장한 훈련(공간) 이름 — 여기서 다른 공간으로 전환 (디스코드 서버 전환과 동일)</li>
                 <li><strong>강의 카드</strong>: 닫혀 있을 때 [열기]로 강의 시작, <strong>진행 중에는 [Live] 표시</strong>로 바뀜</li>
                 <li><strong>채널 목록</strong>: 카테고리(채널 / 강의 / 행정 / 기타)별 그룹화</li>
-                <li><strong>채널 아이콘</strong>: # 텍스트 / 📢 공지 / 🔒 비공개 / 🎤 화상</li>
+                <li><strong>채널 아이콘</strong>: # 텍스트 / 📢 공지 / 🎤 화상 / 🌐 임베드 / 🔳 QR 확인 / 🔒 비공개</li>
                 <li><strong>하단</strong>: DM 목록</li>
                 <li><strong>최하단</strong>: 내 프로필(상태 변경·앱 받기·로그아웃). 프로필 옆 <strong>톱니(⚙️)는 공간 설정</strong>(운영 메뉴)으로 서로 다릅니다.</li>
               </ul>
@@ -174,14 +178,17 @@ const GUIDE_DATA = [
       {
         id: "s4-1", title: "채널 종류 이해하기",
         html: `
-          <p>채널 타입 4종 (생성 시 선택):</p>
+          <p>채널 타입 5종 (생성 시 선택):</p>
           <ul>
             <li><strong># 텍스트</strong> — 메시지·이미지·파일을 공유하는 기본 채널</li>
             <li><strong>📢 공지</strong> — <strong>매니저만 게시</strong>할 수 있는 공지 채널</li>
             <li><strong>🎤 화상</strong> — 화상·음성·화면 공유</li>
             <li><strong>🌐 임베드</strong> — 외부 페이지(부트캠프·YouTube 등)를 채널 안에 표시</li>
+            <li><strong>🔳 QR 확인</strong> — 수강생이 <strong>얼굴 인증 후 조퇴·외출을 스스로 신청</strong>하는 출결 채널</li>
           </ul>
+          <div class="callout callout--info"><span class="callout__ico">🔳</span><div><strong>QR 확인 채널이란?</strong> 수강생이 <strong>본인 얼굴을 인증</strong>한 뒤 <strong>조퇴·외출을 스스로 신청</strong>하는 출결 시스템입니다. 강사·매니저에게 매번 QR을 요청하지 않아도 돼요.<br>• <strong>수강생</strong>: 채널 입장 → 카메라로 <strong>본인 얼굴 인식이 성공해야</strong> 사유(조퇴·외출 등)를 입력하고 <strong>QR 코드를 직접 발급</strong>받습니다.<br>• <strong>매니저(전용)</strong>: QR을 찍은 수강생의 <strong>얼굴·시각 기록</strong>은 채널 <strong>하단 [모니터링] 버튼 → [QR 조회] 탭</strong>으로만 들어가 확인합니다. <strong>매니저만 열람</strong> 가능합니다.<br>• <strong>얼굴 인식 실패 시</strong>: 얼굴이 정상 인식돼야만 진행되며, 인식이 안 되면 <strong>[QR 확인하기] 버튼이 활성화되지 않습니다</strong>(사유 입력·QR 발급 불가).</div></div>
           <div class="callout callout--info"><span class="callout__ico">ℹ️</span><div><strong>비공개</strong>는 타입이 아니라 <strong>옵션</strong>입니다 — 어떤 타입이든 생성 시 비공개 설정 가능(🔒). <strong>익명</strong>은 <strong>텍스트 유형에만</strong> 적용되는 옵션입니다.</div></div>
+          <div class="shot">📸 스크린샷: 매니저 [모니터링] 버튼 → [QR 조회] 탭 (수강생 QR 인증 기록)</div>
           <p>채널은 <strong>카테고리</strong>(채널 / 강의 / 행정 / 기타 / 화상 채널)로 묶어 정리할 수 있습니다.</p>
           <p><strong>권장 구조 예시(멋사 표준)</strong>: 📢 공지 / 💬 자유수다 / ❓질문 / 🎥 강의실 / 팀별 채널 …</p>
         `,
@@ -191,7 +198,7 @@ const GUIDE_DATA = [
         html: `
           <ol>
             <li>사이드바 카테고리명 옆 [+] 클릭 → '채널 만들기' 모달</li>
-            <li><strong>채널 유형 선택</strong>: 텍스트 / 공지 / 화상 / 임베드 / QR 확인 <span style="opacity:.7">(QR 확인 = 얼굴 인증 후 등록한 QR 이미지 확인)</span></li>
+            <li><strong>채널 유형 선택</strong>: 텍스트 / 공지 / 화상 / 임베드 / QR 확인 <span style="opacity:.7">(QR 확인 = 수강생 얼굴 인증 기반 셀프 조퇴·외출 출결 · 상세 4-1)</span></li>
             <li><strong>채널 이름 입력</strong> (예: 질문, 3주차-과제)</li>
             <li><strong>카테고리 선택</strong> — 기본값 '채널(기본)', 드롭다운에서 변경</li>
             <li>(선택) <strong>비공개 채널 토글</strong> — 관리자 자동 접근 허용·멤버 초대 옵션 노출</li>
@@ -279,7 +286,7 @@ const GUIDE_DATA = [
         html: `
           <ul>
             <li>역할 종류(기본 5종): <strong>매니저 / 강사 / 보조강사 / 멘토 / 수강생</strong></li>
-            <li>🆕 역할 표시 이름은 <strong>설정(⚙️) &gt; 역할</strong>에서 변경 가능 (예: '매니저' → '운영매니저'). 화면 이름이 다르면 대응해 읽으세요.</li>
+            <li>역할 표시 이름은 <strong>설정(⚙️) &gt; 역할</strong>에서 변경 가능 (예: '매니저' → '운영매니저'). 화면 이름이 다르면 대응해 읽으세요.</li>
           </ul>
           <p><strong>역할 부여 방법 3가지</strong></p>
           <ol>
@@ -292,7 +299,7 @@ const GUIDE_DATA = [
         `,
       },
       {
-        id: "s5-3", title: "역할 권한 & 표시 설정 🆕",
+        id: "s5-3", title: "역할 권한 & 표시 설정",
         html: `
           <p><strong>설정(⚙️) &gt; 역할</strong>에서 각 역할의 <strong>표시(명칭·색·아이콘·순서)</strong>와 <strong>클래스 내 권한</strong>을 직접 설정할 수 있습니다. 예전에는 고정이던 역할별 권한을 이제 매니저가 켜고 끌 수 있어요.</p>
           <p><strong>여는 법</strong>: 설정(⚙️) &gt; 역할 → 좌측에서 역할 선택(강사 / 보조강사 / 매니저 / 멘토 / 수강생)</p>

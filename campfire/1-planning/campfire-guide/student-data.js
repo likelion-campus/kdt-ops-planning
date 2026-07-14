@@ -35,7 +35,7 @@ const GUIDE_DATA = [
             <li>듣고 있는 과정 카드에서 <strong>[캠프파이어 입장하기]</strong> 버튼 클릭</li>
             <li>자동으로 입장돼요!</li>
           </ol>
-          <div class="callout callout--tip"><span class="callout__ico">💡</span><div><strong>처음 입장하면 비밀번호를 설정하는 화면이 나와요.</strong> 이 비밀번호로 앞으로 데스크톱 앱·PC에서 로그인할 수 있어요 (모바일 앱은 곧 출시 예정!). 비밀번호는 꼭 기억해 주세요!</div></div>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div><strong>처음 입장하면 비밀번호를 설정하는 화면이 나와요.</strong> 이 비밀번호로 앞으로 데스크톱 앱·PC·모바일 앱에서 로그인할 수 있어요 (모바일 앱도 출시됐어요!). 비밀번호는 꼭 기억해 주세요!</div></div>
           <h4>매니저님이 초대 링크를 준 경우</h4>
           <ul>
             <li>받은 링크를 클릭하면 바로 입장할 수 있어요.</li>
@@ -55,7 +55,7 @@ const GUIDE_DATA = [
           <ul>
             <li><strong>앱 받기</strong>: 왼쪽 아래 프로필 → [캠프파이어 앱 받기]. 데스크톱 앱은 내 컴퓨터 OS를 자동 인식해 맞는 버튼을 보여줘요. 같은 계정으로 로그인하면 웹에서 쓰던 그대로예요.</li>
             <li><strong>PC</strong>: 앱이 없어도 <strong>Chrome 브라우저</strong>로 충분히 사용 가능 (Chrome 권장!).</li>
-            <li><strong>모바일</strong>: 앱(iOS·Android)은 출시 예정. 지금은 PC(Chrome) 이용을 권장해요.</li>
+            <li><strong>모바일</strong>: 앱(iOS·Android)이 <strong>출시됐어요!</strong> [캠프파이어 앱 받기] 모달의 <strong>QR을 스캔하거나 눌러서 App Store·Google Play</strong>에서 설치하고, 같은 계정으로 로그인하면 돼요. (수업 참여는 화면이 큰 PC·Chrome을 권장!)</li>
             <li>📢 <strong>공지 채널 알림은 꼭 켜주세요!</strong> 일정 변경·과제 마감 등 중요한 안내를 놓치지 않으려면 필수예요.</li>
           </ul>
           <div class="shot">📸 스크린샷: 프로필 > 캠프파이어 앱 받기</div>` },
@@ -138,7 +138,7 @@ const GUIDE_DATA = [
         html:`
           <ol>
             <li>수업 시간이 되면 강사님이 강의를 열어요. 사이드바 맨 위 <strong>[강의]</strong> 버튼이 <strong>[Live]</strong>로 바뀌면 클릭해서 참여하세요!</li>
-            <li>입장하면 <strong>카메라는 켜진 상태, 마이크는 꺼진 상태</strong>로 시작해요. 발언할 때 하단 🎤 버튼으로 마이크를 켜면 됩니다. (카메라는 출석 확인에 쓰이니 가능하면 켜 두세요)</li>
+            <li>입장하면 <strong>마이크는 꺼진 상태, 카메라는 켜진 상태</strong>로 시작해요. 발언할 때 하단 🎤 버튼으로 마이크를 켜면 됩니다. (카메라는 출석 확인에 쓰이니 수업 중에는 끄지 마세요)</li>
           </ol>
           <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강사님이 <strong>수강생 호출</strong>을 보내면 알림이 와요. "아직 안 들어왔어요~" 신호이니 [강의] 버튼으로 들어와 주세요.</div></div>
           <div class="shot">📸 스크린샷: [강의] 버튼(Live) + 입장 직후 마이크/카메라 버튼</div>` },
@@ -171,6 +171,18 @@ const GUIDE_DATA = [
             <li>📸 <strong>출석은 카메라 화면 자동 캡처로 확인돼요</strong>: 수업 시간대에 약 <strong>10분마다 카메라 화면이 캡처</strong>돼 출석으로 기록돼요. 카메라가 꺼져 있으면 '스킵'으로 남아 출석 누락이 될 수 있으니 <strong>과정 규칙에 따라 카메라를 켜 두세요.</strong></li>
             <li>질문은 손들기 ✋ 또는 채팅 💬을 활용해요</li>
           </ul>` },
+      { id:"s5-5", title:"조퇴·외출할 때 (QR 스스로 받기)",
+        html:`
+          <p>이제 <strong>조퇴·외출</strong>이 필요할 때 매니저·강사님께 매번 QR을 요청하지 않아도 돼요. 사이드바의 <strong>QR 확인 채널</strong>에서 <strong>본인 얼굴만 인증하면 QR 코드를 직접 받을 수 있어요!</strong></p>
+          <ol>
+            <li>사이드바에서 <strong>QR 확인 채널</strong>에 들어가요.</li>
+            <li><strong>카메라로 본인 얼굴을 인증</strong>해요 — 얼굴이 정상적으로 인식돼야 다음 단계로 넘어가요.</li>
+            <li><strong>사유(조퇴·외출 등)를 입력</strong>해요.</li>
+            <li><strong>[QR 확인하기]</strong>를 눌러 <strong>내 QR 코드를 발급</strong>받아요.</li>
+          </ol>
+          <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div><strong>얼굴 인식이 안 되면 [QR 확인하기] 버튼이 눌리지 않아요.</strong> 밝은 곳에서 얼굴이 화면에 잘 보이도록 한 뒤 다시 시도하고, 계속 안 되면 매니저·강사님께 문의해 주세요.</div></div>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>QR을 언제 받았는지(얼굴·시간)는 매니저님이 확인할 수 있어요. 본인 확인용이니 <strong>꼭 본인이</strong> 인증해 주세요.</div></div>
+          <div class="shot">📸 스크린샷: QR 확인 채널 — 얼굴 인증 + [QR 확인하기]</div>` },
     ],
   },
   {
@@ -191,9 +203,9 @@ const GUIDE_DATA = [
     sections:[
       { id:"s7-0", title:"자주 묻는 질문",
         html:`
-          <details class="faq"><summary>Q. 지난 수업 녹화는 어디서 보나요?</summary><div>수업은 강사님이 녹화 설정을 켜면 녹화돼요. 녹화 영상을 보는 방법은 과정마다 다를 수 있으니(공유 링크, 별도 안내 등) 매니저님·강사님의 안내를 따라주세요.</div></details>
+          <details class="faq"><summary>Q. 지난 수업 녹화는 어디서 보나요?</summary><div>수업(정식 강의)은 별도 설정 없이 자동으로 녹화돼요. 녹화 영상을 보는 방법은 과정마다 다를 수 있으니(공유 링크, 별도 안내 등) 매니저님·강사님의 안내를 따라주세요.</div></details>
           <details class="faq"><summary>Q. 닉네임을 바꾸고 싶어요</summary><div>프로필에서 표시 이름을 바꿀 수 있어요. 다만 출석 확인·소통에 혼선이 생길 수 있으니 되도록 본명을 유지해 주세요.</div></details>
-          <details class="faq"><summary>Q. 모바일로도 수업을 들을 수 있나요?</summary><div>모바일 앱(iOS·Android)은 현재 출시 예정이에요. 출시되면 최초 입장 시 설정한 비밀번호로 앱에서도 로그인할 수 있어요. 지금은 화면이 큰 PC(Chrome 권장)로 참여하는 것을 추천해요.</div></details>` },
+          <details class="faq"><summary>Q. 모바일로도 수업을 들을 수 있나요?</summary><div>모바일 앱(iOS·Android)이 출시됐어요! [캠프파이어 앱 받기] 모달의 QR로 App Store·Google Play에서 설치하고, 최초 입장 시 설정한 비밀번호(같은 계정)로 로그인하면 돼요. 다만 수업 참여는 화면이 큰 PC(Chrome 권장)를 추천해요.</div></details>` },
     ],
   },
 ];

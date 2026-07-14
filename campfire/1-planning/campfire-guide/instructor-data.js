@@ -49,9 +49,9 @@ const GUIDE_DATA = [
             <li>담당 훈련 카드의 <strong>[캠프파이어 입장하기]</strong> → 자동 입장</li>
           </ol>
           <ul>
-            <li><strong>최초 입장 시 비밀번호 설정 화면</strong>이 나옵니다. 이 비밀번호로 데스크톱 앱·PC(웹)에서 동일 계정 로그인 (모바일 앱 출시 예정).</li>
+            <li><strong>최초 입장 시 비밀번호 설정 화면</strong>이 나옵니다. 이 비밀번호로 데스크톱 앱·PC(웹)·모바일 앱에서 동일 계정 로그인이 가능합니다.</li>
             <li>토큰은 유효기간이 없어 만료로 인한 실패는 없습니다. 입장이 안 되면 <strong>강사 등록 여부</strong>부터 매니저에게 확인하세요.</li>
-            <li><strong>앱 받기</strong>: 좌측 하단 프로필 → [캠프파이어 앱 받기] (접속 OS 자동 감지).</li>
+            <li><strong>앱 받기</strong>: 좌측 하단 프로필 → [캠프파이어 앱 받기]. 데스크톱 앱은 접속 OS를 자동 감지하고, 모바일 앱은 같은 모달의 QR로 App Store·Google Play에서 설치할 수 있어요.</li>
           </ul>
           <div class="callout callout--warn"><span class="callout__ico">⚠️</span><div><strong>강사 등록이 안 됐을 때</strong>: 내 강의실에 입장 카드 자체가 보이지 않습니다 → 담당 매니저에게 강사 부여를 요청하세요.</div></div>
           <div class="shot">📸 스크린샷: 프로필 > 캠프파이어 앱 받기</div>` },
@@ -63,7 +63,7 @@ const GUIDE_DATA = [
           </ul>` },
       { id:"i2-3", title:"오디오 / 비디오 장치 점검 ⭐ 첫 수업 전 필수",
         html:`
-          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강의는 <strong>마이크는 꺼진 상태, 카메라는 켜진 상태로 입장</strong>됩니다. 첫 수업 전에 어떤 장치가 잡히는지 미리 확인해두면 시작 직후 버벅이지 않아요.</div></div>
+          <div class="callout callout--tip"><span class="callout__ico">💡</span><div>강의에 입장하면 <strong>마이크는 꺼진 상태, 카메라는 켜진 상태</strong>입니다. 첫 수업 전에 어떤 장치가 잡히는지 미리 확인해두면 시작 직후 버벅이지 않아요.</div></div>
           <ul>
             <li>강의 입장 화면의 <strong>장치 드롭다운</strong>에서 사용할 카메라·마이크 선택</li>
             <li>권장 환경: Chrome 최신, 가능하면 유선 인터넷 + 헤드셋(에코 방지)</li>
