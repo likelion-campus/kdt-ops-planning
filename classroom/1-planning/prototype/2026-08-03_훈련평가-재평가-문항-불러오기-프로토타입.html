@@ -1,0 +1,758 @@
+<!--
+  목적: 커뮤니케이션용 프로토타입 — 관련자(PD·개발자)에게 "재평가 등록 시 원본 평가 문항 불러오기" 기능의
+        존재와 대략적 흐름을 빠르게 이해시키기 위한 클릭 데모. 픽셀 완성도·완전한 동작은 목표가 아니다.
+  기준 문서: 기획서(SSOT) 2026-08-03_훈련평가-재평가-문항-불러오기-기획서.md v1.7
+             화면정의서 2026-08-03_훈련평가-재평가-문항-불러오기-화면정의서.md v1.7
+  포함 화면 ID: SC-201 (재평가 등록/수정 화면, 기존 화면 델타) — SC-201-01 ~ SC-201-10
+  개정: '평가 시험' 선택(최초/변경) 시 즉시 로드하지 않고 선택 모달[문항 불러오기 / 불러오지 않고
+        직접 작성 / 취소]을 노출하는 정책으로 변경(자동 불러오기 폐기). 기존 문항 존재 시 같은 모달에
+        경고 문구를 병기하며, 별도 덮어쓰기 모달은 이 모달로 통합했다. 문항 0건 원본 선택 시 모달에
+        "이 평가에는 등록된 문항이 없습니다" 안내와 함께 [문항 불러오기] 비활성 처리. 동일 원본 재선택 시에도
+        선택 모달을 다시 노출한다. [문항 불러오기]·[직접 작성] 진행 시 능력명과 함께 평가 제목도 원본
+        평가 제목으로 자동 입력(편집 가능, 취소 시 미수행)한다.
+  제외 범위: 미리보기, 대상자 선택, 헤더 메뉴, 드래그 정렬, 보기 항목 추가/편집, 라디오(보조설명·문제유형·정답)
+             선택 변경 등은 클릭 시 안내만 노출하며 실제 동작하지 않는다. 조회 실패(SC-201-08)·연타 처리
+             (SC-201-07)는 화면 흐름 시연 범위에서 제외했다(위임 지시 (c) 범위 밖).
+  주의: 동작 정의의 SSOT는 기획서·화면정의서이며, 본 파일과 실제 정의가 다르면 문서가 우선한다.
+        색상·폰트·아이콘 형태는 근사 placeholder이며 디자인 확정안이 아니다. 문항 데이터는 전부 목데이터다.
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>재평가 등록/수정 — 프로토타입 (SC-201)</title>
+<style>
+  :root{
+    --orange:#FF7710;
+    --orange-dark:#E5670A;
+    --bg:#F7F7F8;
+    --white:#FFFFFF;
+    --border:#E5E5E8;
+    --text:#222222;
+    --text-sub:#767680;
+    --gray-light:#F0F0F1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+
+  /* 프로토타입 시나리오 바 */
+  .proto-bar{
+    background:#DADADE;
+    color:#3A3A40;
+    padding:8px 20px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:13px;
+    flex-wrap:wrap;
+  }
+  .proto-bar-label{font-weight:700;}
+  .proto-bar-toggle{display:flex;gap:6px;}
+  .scenario-btn{
+    border:1px solid #B5B5BC;
+    background:#fff;
+    color:#3A3A40;
+    padding:5px 10px;
+    border-radius:6px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .scenario-btn.active{
+    background:#3A3A40;
+    color:#fff;
+    border-color:#3A3A40;
+  }
+
+  /* 헤더 */
+  .app-header{
+    background:var(--white);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    padding:0 24px;
+    height:56px;
+    gap:24px;
+  }
+  .logo-mark{
+    width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,var(--orange),#FFA34D);
+    display:inline-block;
+    position:relative;
+  }
+  .logo-mark::before,.logo-mark::after{
+    content:"";
+    position:absolute;top:-4px;
+    width:8px;height:8px;border-radius:50%;
+    background:var(--orange);
+  }
+  .logo-mark::before{left:2px;}
+  .logo-mark::after{right:2px;}
+  .logo-group{display:flex;align-items:center;gap:8px;cursor:default;}
+  .logo-text{font-weight:800;color:var(--orange);font-size:15px;}
+  .header-menu{display:flex;gap:20px;font-size:14px;color:#555;}
+  .header-menu a{color:#555;text-decoration:none;cursor:pointer;}
+  .header-menu a:hover{color:var(--orange);}
+  .profile-icon{
+    width:32px;height:32px;border-radius:50%;
+    background:var(--gray-light);
+    border:1px solid var(--border);
+    margin-left:auto;cursor:pointer;
+  }
+
+  /* 페이지 타이틀 */
+  .screen-title-bar{
+    max-width:1200px;margin:20px auto 0;padding:0 24px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .screen-title-bar h1{font-size:19px;margin:0;}
+  .sc-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    color:var(--orange-dark);
+    background:#FFF1E5;
+    border:1px solid #FFD9B3;
+    border-radius:4px;
+    padding:1px 6px;
+    letter-spacing:.2px;
+  }
+  .sc-tag.large{font-size:12px;padding:3px 8px;}
+  .subnote{
+    max-width:1200px;margin:2px auto 16px;padding:0 24px;
+    font-size:12px;color:var(--text-sub);
+  }
+
+  /* 본문 2컬럼 */
+  .page{
+    max-width:1200px;margin:0 auto;padding:0 24px 60px;
+    display:flex;gap:20px;align-items:flex-start;
+  }
+  .col-left{flex:1;min-width:0;}
+  .col-right{width:320px;flex-shrink:0;}
+
+  .card{
+    background:var(--white);
+    border-radius:12px;
+    padding:24px;
+    margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+
+  /* 상단 카드 */
+  .field-plain{
+    width:100%;border:none;border-bottom:1px solid var(--border);
+    padding:10px 2px;font-size:16px;color:var(--text);
+    background:transparent;outline:none;
+  }
+  .field-plain::placeholder{color:#B9B9C0;}
+  .field-plain:focus{border-bottom-color:var(--orange);}
+  .field-title{font-size:18px;font-weight:700;}
+  .date-row{display:flex;align-items:center;gap:10px;margin-top:16px;}
+  .date-row input[type=date]{
+    border:1px solid var(--border);border-radius:8px;
+    padding:9px 10px;font-size:14px;color:var(--text);
+    background:var(--white);
+  }
+  .date-sep{color:var(--text-sub);}
+
+  /* 문항 영역 헤더 */
+  .q-section-head{
+    display:flex;align-items:center;gap:8px;margin:4px 0 12px;
+  }
+  .q-section-head span.label{font-size:13px;color:var(--text-sub);}
+
+  /* 문항 카드 */
+  .q-card{
+    background:var(--white);
+    border-radius:12px;
+    padding:28px 22px 18px;
+    margin-bottom:16px;
+    position:relative;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  .q-drag{
+    position:absolute;top:6px;left:50%;transform:translateX(-50%);
+    color:#C9C9CE;font-size:16px;cursor:grab;user-select:none;
+  }
+  .q-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .q-name-row{border-bottom:1px solid var(--border);padding-bottom:10px;}
+  .q-num{font-weight:700;font-size:14px;color:var(--orange-dark);}
+  .q-required{color:var(--orange);}
+  .q-name-input{
+    flex:1;min-width:200px;border:none;outline:none;font-size:15px;background:transparent;
+  }
+  .field-label{font-size:13px;color:var(--text-sub);min-width:70px;}
+  .radio{display:flex;align-items:center;gap:4px;font-size:13px;color:#444;cursor:default;}
+  .radio input[type=radio]{accent-color:var(--orange);margin:0;}
+  .radio.checked span{color:var(--orange-dark);font-weight:600;}
+
+  .options-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .option-row{display:flex;align-items:center;gap:8px;}
+  .option-num{
+    width:22px;height:22px;border-radius:50%;background:var(--gray-light);
+    font-size:12px;display:flex;align-items:center;justify-content:center;color:#777;flex-shrink:0;
+  }
+  .option-input{
+    flex:1;border:1px solid var(--border);border-radius:8px;
+    padding:8px 10px;font-size:13px;outline:none;
+  }
+  .option-input:focus{border-color:var(--orange);}
+  .answer-radio{flex-shrink:0;}
+
+  .add-option-btn{
+    width:100%;border:1px dashed var(--orange);color:var(--orange-dark);
+    background:#FFF8F2;border-radius:8px;padding:9px;font-size:13px;
+    cursor:pointer;margin-bottom:14px;
+  }
+  .add-option-btn:hover{background:#FFEFDF;}
+
+  .short-answer-input{
+    flex:1;border:1px solid var(--border);border-radius:8px;
+    padding:8px 10px;font-size:13px;outline:none;min-width:180px;
+  }
+  .short-answer-input:focus{border-color:var(--orange);}
+
+  .q-explanation-input{
+    flex:1;border:1px solid var(--border);border-radius:8px;
+    padding:9px 10px;font-size:13px;outline:none;min-width:200px;
+  }
+  .q-explanation-input:focus{border-color:var(--orange);}
+
+  .q-footer{
+    display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--border);padding-top:12px;margin-top:4px;
+  }
+  .score-box{
+    display:flex;align-items:center;gap:6px;font-size:13px;color:#444;
+    border:1px solid var(--border);border-radius:8px;padding:6px 10px;
+  }
+  .score-box input{width:44px;border:none;outline:none;text-align:right;font-size:13px;}
+  .trash-btn{
+    border:1px solid var(--border);background:var(--white);color:#B23B3B;
+    border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;
+  }
+  .trash-btn:hover{background:#FDECEC;}
+
+  /* 빈 상태 / 로딩 */
+  .empty-notice{
+    background:var(--white);border:1px dashed var(--border);border-radius:12px;
+    padding:40px 20px;text-align:center;color:var(--text-sub);font-size:14px;
+    margin-bottom:16px;
+  }
+  .loading-box{
+    background:var(--white);border-radius:12px;padding:36px 20px;
+    text-align:center;color:var(--text-sub);font-size:14px;margin-bottom:16px;
+  }
+  .spinner{
+    width:22px;height:22px;border:3px solid var(--gray-light);
+    border-top-color:var(--orange);border-radius:50%;
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* 우측 사이드 카드 */
+  .side-card h3{margin:0 0 16px;font-size:15px;}
+  .side-field{margin-bottom:16px;}
+  .side-label{font-size:13px;color:var(--text-sub);margin-bottom:6px;display:block;}
+  select{
+    width:100%;border:1px solid var(--border);border-radius:8px;
+    padding:10px;font-size:14px;background:var(--white);color:var(--text);
+    outline:none;
+  }
+  select:focus{border-color:var(--orange);}
+  select:disabled{background:var(--gray-light);color:#9A9AA2;cursor:not-allowed;}
+  .link-select{
+    color:var(--orange-dark);text-decoration:underline;font-size:13px;cursor:pointer;
+  }
+  .side-note{
+    font-size:12px;color:#B23B3B;background:#FDECEC;border-radius:8px;
+    padding:10px;margin-top:8px;line-height:1.5;
+  }
+
+  .btn-row{display:flex;gap:8px;}
+  .btn-outline,.btn-solid{
+    flex:1;border-radius:8px;padding:12px;font-size:14px;font-weight:600;
+    cursor:pointer;border:1px solid var(--orange);
+  }
+  .btn-outline{background:var(--white);color:var(--orange-dark);}
+  .btn-outline:hover{background:#FFF3E8;}
+  .btn-solid{background:var(--orange);color:var(--white);}
+  .btn-solid:hover{background:var(--orange-dark);}
+  .btn-solid:disabled{background:#F0C29C;border-color:#F0C29C;cursor:not-allowed;}
+
+  /* 모달 */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.42);
+    display:flex;align-items:center;justify-content:center;z-index:50;
+  }
+  .modal-overlay[hidden]{display:none;}
+  .modal-box{
+    background:var(--white);border-radius:12px;padding:24px;width:360px;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);
+  }
+  .modal-box{position:relative;}
+  .modal-close{
+    position:absolute;top:10px;right:12px;border:none;background:none;
+    font-size:20px;line-height:1;color:#9A9AA2;cursor:pointer;padding:4px;
+  }
+  .modal-close:hover{color:#555;}
+  .modal-tag{margin:0 0 8px;}
+  .modal-msg{font-size:14px;line-height:1.6;color:var(--text);margin:4px 0 12px;}
+  .modal-warning{
+    font-size:12px;color:#B23B3B;background:#FDECEC;border-radius:8px;
+    padding:8px 10px;margin:0 0 16px;line-height:1.5;
+  }
+  .modal-btns{display:flex;gap:8px;}
+  .modal-btns button{flex:1;}
+  .modal-btns-col{flex-direction:column;}
+  .modal-btns-col button{flex:none;}
+
+  /* 토스트 */
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%);
+    background:#333;color:#fff;padding:12px 20px;border-radius:8px;
+    font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;
+    z-index:60;max-width:420px;text-align:center;line-height:1.5;
+  }
+  .toast.show{opacity:1;}
+  .toast.error{background:#C24444;}
+  .toast.success{background:#2F7D53;}
+  .toast.info{background:#4A4A52;}
+</style>
+</head>
+<body>
+
+  <div class="proto-bar">
+    <span class="proto-bar-label">프로토타입 — 시나리오 전환</span>
+    <div class="proto-bar-toggle">
+      <button id="scenarioNewBtn" class="scenario-btn active" onclick="setScenario('new')">신규 등록</button>
+      <button id="scenarioBlockedBtn" class="scenario-btn" onclick="setScenario('blocked')">수정 (차단: 평가기간 진행 중)</button>
+    </div>
+    <span style="margin-left:auto;color:#5A5A62;">문항·평가 데이터는 전부 목데이터이며, 실제 저장·조회는 발생하지 않습니다.</span>
+  </div>
+
+  <header class="app-header">
+    <div class="logo-group">
+      <span class="logo-mark"></span>
+      <span class="logo-text">멋사 부트캠프</span>
+    </div>
+    <nav class="header-menu">
+      <a onclick="noop()">부트캠프 ▾</a>
+      <a onclick="noop()">취업지원</a>
+      <a onclick="noop()">블로그 ▾</a>
+      <a onclick="noop()">내일배움카드</a>
+    </nav>
+    <div class="profile-icon" onclick="noop()"></div>
+  </header>
+
+  <div class="screen-title-bar">
+    <span class="sc-tag large">SC-201</span>
+    <h1>훈련평가 등록/수정</h1>
+  </div>
+  <div class="subnote">재평가 등록/수정 화면(기존 화면) 델타 프로토타입 — 동작 정의의 SSOT는 기획서·화면정의서입니다.</div>
+
+  <main class="page">
+    <div class="col-left">
+      <div class="card">
+        <input class="field-plain field-title" id="titleInput" placeholder="[필수] 평가 제목을 입력해주세요. (최대 20자)" maxlength="20">
+        <input class="field-plain" id="abilityInput" placeholder="[필수] 능력명을 입력해주세요.">
+        <div class="date-row">
+          <input type="date" id="startDate">
+          <span class="date-sep">~</span>
+          <input type="date" id="endDate">
+        </div>
+      </div>
+
+      <div class="q-section-head">
+        <span class="sc-tag">SC-201-01 / SC-201-05 / SC-201-06</span>
+        <span class="label">원본 평가 선택 시 불러오기 확인 모달이 노출되며, [문항 불러오기]를 선택한 경우에만 아래 문항 편집기가 채워집니다(문항 0건 원본은 안내만 노출).</span>
+      </div>
+
+      <div id="loadingBox" class="loading-box" hidden>
+        <div class="spinner"></div>
+        문항을 불러오는 중입니다...
+      </div>
+
+      <div id="noExamNotice" class="empty-notice">
+        평가 시험(원본 평가)을 선택하면 문항이 자동으로 채워집니다.
+      </div>
+
+      <div id="emptyNotice" class="empty-notice" hidden>
+        원본 평가에 등록된 문항이 없습니다.
+      </div>
+
+      <div id="questionList"></div>
+    </div>
+
+    <aside class="col-right">
+      <div class="card side-card">
+        <h3>평가 상세</h3>
+        <div class="side-field">
+          <label class="side-label">평가 타입</label>
+          <select id="evalType" onchange="onEvalTypeChange()">
+            <option value="">선택</option>
+            <option value="eval">평가</option>
+            <option value="reeval">재평가</option>
+          </select>
+        </div>
+        <div id="reevalFields" hidden>
+          <div class="side-field">
+            <label class="side-label">평가 시험 <span class="sc-tag">SC-201-01</span></label>
+            <select id="sourceExam" onchange="onSourceExamChange(event)" onmousedown="onSourceExamMousedown(event)" onblur="onSourceExamBlur(event)">
+              <option value="">선택</option>
+              <option value="w1">1주차 훈련평가 — 능력명: 파이썬 프로그래밍, 문항 5개</option>
+              <option value="w2">2주차 훈련평가 — 능력명: 데이터 분석 기초, 문항 0개</option>
+            </select>
+            <div id="sourceExamNote" class="side-note" hidden>
+              <span class="sc-tag">SC-201-10</span><br>
+              평가기간이 시작된 재평가는 문항을 변경할 수 없습니다. 문항 변경이 필요하면 신규 재평가를 생성하세요.
+            </div>
+          </div>
+          <div class="side-field">
+            <label class="side-label">대상자</label>
+            <span class="link-select" onclick="noop()">선택</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-outline" onclick="noop()">미리보기</button>
+        <button class="btn-solid" id="saveBtn" onclick="handleSave()">저장하기</button>
+      </div>
+    </aside>
+  </main>
+
+  <div id="sourceModal" class="modal-overlay" hidden>
+    <div class="modal-box">
+      <button class="modal-close" onclick="onModalCancel()" title="취소">&times;</button>
+      <p class="modal-tag"><span class="sc-tag">SC-201-01 / SC-201-03</span></p>
+      <p class="modal-msg" id="sourceModalMsg"></p>
+      <p class="modal-warning" id="sourceModalWarning" hidden></p>
+      <div class="modal-btns modal-btns-col">
+        <button class="btn-solid" id="sourceModalLoadBtn" onclick="onModalLoad()">문항 불러오기</button>
+        <button class="btn-outline" onclick="onModalSkip()">불러오지 않고 직접 작성</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+  // ---- 목데이터: 원본 평가 뱅크 ----
+  var examBank = {
+    w1: {
+      title: "1주차 훈련평가",
+      ability: "파이썬 프로그래밍",
+      questions: [
+        { qType:"multiple", qname:"다음 중 파이썬의 자료형이 아닌 것은?", hint:"none",
+          options:[{text:"int",isAnswer:false},{text:"str",isAnswer:false},{text:"float",isAnswer:false},{text:"array",isAnswer:true},{text:"dict",isAnswer:false}],
+          explanation:"array는 파이썬 기본 자료형이 아니라 별도 모듈(array)에서 제공됩니다.", score:20 },
+        { qType:"multiple", qname:"리스트 끝에 요소를 추가할 때 사용하는 메서드는?", hint:"none",
+          options:[{text:"append()",isAnswer:true},{text:"add()",isAnswer:false},{text:"push()",isAnswer:false},{text:"insert_end()",isAnswer:false}],
+          explanation:"append()는 리스트 끝에 요소를 추가합니다.", score:20 },
+        { qType:"multiple", qname:"다음 코드의 실행 결과로 옳은 것을 고르세요.", hint:"code",
+          options:[{text:"0",isAnswer:false},{text:"1",isAnswer:true},{text:"오류 발생",isAnswer:false}],
+          explanation:"반복문 실행 후 카운터 값은 1이 됩니다.", score:20 },
+        { qType:"short", qname:"0부터 9까지 정수를 생성하는 range() 함수의 인자를 작성하세요.", hint:"none",
+          answerText:"range(10)", explanation:"range(10)은 0부터 9까지의 정수를 생성합니다.", score:20 },
+        { qType:"short", qname:"딕셔너리에서 key로 값을 조회하는 문법을 예시로 작성하세요.", hint:"none",
+          answerText:"dict[key]", explanation:"대괄호 안에 key를 넣어 값을 조회합니다.", score:20 }
+      ]
+    },
+    w2: {
+      title: "2주차 훈련평가",
+      ability: "데이터 분석 기초",
+      questions: []
+    }
+  };
+
+  var state = {
+    questions: [],
+    loadedExamId: null,   // 마지막으로 확인(문항 불러오기 또는 직접 작성)된 '평가 시험' 선택값 — 취소 시 롤백 기준
+    hasLoadedOnce: false  // 실제로 문항 불러오기가 1회라도 수행됐는지 — SC-201-05 안내 문구 노출 조건
+  };
+  var qIdSeq = 1;
+  var pendingExamId = null;
+  var toastTimer = null;
+
+  var els = {};
+  function cacheEls(){
+    els.titleInput = document.getElementById("titleInput");
+    els.abilityInput = document.getElementById("abilityInput");
+    els.startDate = document.getElementById("startDate");
+    els.endDate = document.getElementById("endDate");
+    els.evalType = document.getElementById("evalType");
+    els.reevalFields = document.getElementById("reevalFields");
+    els.sourceExam = document.getElementById("sourceExam");
+    els.sourceExamNote = document.getElementById("sourceExamNote");
+    els.loadingBox = document.getElementById("loadingBox");
+    els.noExamNotice = document.getElementById("noExamNotice");
+    els.emptyNotice = document.getElementById("emptyNotice");
+    els.questionList = document.getElementById("questionList");
+    els.saveBtn = document.getElementById("saveBtn");
+    els.sourceModal = document.getElementById("sourceModal");
+    els.sourceModalMsg = document.getElementById("sourceModalMsg");
+    els.sourceModalWarning = document.getElementById("sourceModalWarning");
+    els.sourceModalLoadBtn = document.getElementById("sourceModalLoadBtn");
+    els.toast = document.getElementById("toast");
+  }
+
+  function escapeHtml(str){
+    return String(str || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function showToast(msg, type){
+    els.toast.textContent = msg;
+    els.toast.className = "toast show " + (type || "info");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){
+      els.toast.classList.remove("show");
+    }, 2600);
+  }
+
+  function noop(){
+    showToast("동작 정의는 기획서 참조 — 이번 프로토타입 범위 밖입니다.", "info");
+  }
+
+  // ---- 평가 타입 ----
+  function onEvalTypeChange(){
+    els.reevalFields.hidden = els.evalType.value !== "reeval";
+  }
+
+  // ---- 원본 평가 선택 ----
+  // 정책 변경: 자동 불러오기 폐기. 선택(최초/변경/동일 원본 재선택) 시 항상 선택 모달을 먼저 띄운다(SC-201-01/03 통합).
+  // 동일 값을 다시 선택해도 네이티브 select는 change 이벤트를 재발생시키지 않으므로,
+  // mousedown 시점에 값을 임시로 비워 재선택도 change로 인식되게 한다(닫힘 시 blur에서 복원).
+  function onSourceExamMousedown(e){
+    if (e.target.disabled) return;
+    e.target.dataset.reopen = "1";
+    e.target.value = "";
+  }
+  function onSourceExamBlur(e){
+    if (e.target.disabled) return;
+    if (e.target.value === "" && state.loadedExamId){
+      e.target.value = state.loadedExamId;
+    }
+  }
+  function onSourceExamChange(e){
+    var newVal = e.target.value;
+    if (!newVal){
+      e.target.value = state.loadedExamId || "";
+      return;
+    }
+    pendingExamId = newVal;
+    openSourceModal(newVal);
+  }
+
+  function openSourceModal(examId){
+    var exam = examBank[examId];
+    var count = exam.questions.length;
+    if (count === 0){
+      els.sourceModalMsg.textContent = "이 평가에는 등록된 문항이 없습니다.";
+    } else {
+      els.sourceModalMsg.textContent = "원본 평가의 문항 " + count + "개를 불러올까요?";
+    }
+    if (count > 0 && state.questions.length > 0){
+      els.sourceModalWarning.textContent = "불러오기 시 현재 작성된 문항 " + state.questions.length + "개는 삭제되고 대체됩니다.";
+      els.sourceModalWarning.hidden = false;
+    } else {
+      els.sourceModalWarning.hidden = true;
+    }
+    els.sourceModalLoadBtn.disabled = (count === 0);
+    els.sourceModal.hidden = false;
+  }
+
+  // [문항 불러오기] — 기존 로딩 → 문항 채움 흐름 그대로 진행
+  function onModalLoad(){
+    els.sourceModal.hidden = true;
+    doLoad(pendingExamId);
+    pendingExamId = null;
+  }
+
+  // [불러오지 않고 직접 작성] — 문항 로드 없이 닫힘, 기존 문항 유지(없으면 빈 편집기 유지), 능력명만 자동 입력
+  function onModalSkip(){
+    els.sourceModal.hidden = true;
+    var exam = examBank[pendingExamId];
+    els.titleInput.value = exam.title;
+    els.abilityInput.value = exam.ability;
+    state.loadedExamId = pendingExamId;
+    els.sourceExam.value = pendingExamId;
+    pendingExamId = null;
+    renderQuestions();
+  }
+
+  // X(취소) — '평가 시험' 선택값을 직전 값으로 롤백, 능력명 미변경
+  function onModalCancel(){
+    els.sourceModal.hidden = true;
+    els.sourceExam.value = state.loadedExamId || "";
+    pendingExamId = null;
+  }
+
+  function doLoad(examId){
+    els.emptyNotice.hidden = true;
+    els.noExamNotice.hidden = true;
+    els.questionList.innerHTML = "";
+    els.loadingBox.hidden = false;
+    els.saveBtn.disabled = true;
+
+    setTimeout(function(){
+      var exam = examBank[examId];
+      els.loadingBox.hidden = true;
+      els.saveBtn.disabled = false;
+
+      els.titleInput.value = exam.title;
+      els.abilityInput.value = exam.ability;
+      state.questions = exam.questions.map(function(q){
+        var copy = JSON.parse(JSON.stringify(q));
+        copy.id = qIdSeq++;
+        return copy;
+      });
+      state.loadedExamId = examId;
+      state.hasLoadedOnce = true;
+      els.sourceExam.value = examId;
+      renderQuestions();
+    }, 800);
+  }
+
+  // ---- 문항 렌더링 ----
+  function renderQuestions(){
+    if (state.questions.length === 0){
+      els.questionList.innerHTML = "";
+      if (!state.hasLoadedOnce){
+        els.noExamNotice.hidden = false;
+        els.emptyNotice.hidden = true;
+      } else {
+        els.noExamNotice.hidden = true;
+        els.emptyNotice.hidden = false;
+      }
+      return;
+    }
+    els.noExamNotice.hidden = true;
+    els.emptyNotice.hidden = true;
+    els.questionList.innerHTML = state.questions.map(renderCard).join("");
+  }
+
+  function renderCard(q, idx){
+    var num = String(idx + 1).padStart(2, "0");
+    var body = q.qType === "multiple" ? renderOptions(q) : renderShortAnswer(q);
+    return "" +
+      '<div class="q-card" data-id="' + q.id + '">' +
+        '<div class="q-drag" onclick="noop()" title="드래그 정렬">&#8801;</div>' +
+        '<div class="q-row q-name-row">' +
+          '<span class="q-num">' + num + '</span>' +
+          '<span class="q-required">*</span>' +
+          '<input type="text" class="q-name-input" value="' + escapeHtml(q.qname) + '" placeholder="질문명을 입력해주세요.">' +
+        '</div>' +
+        '<div class="q-row">' +
+          '<span class="field-label">보조 설명 *</span>' +
+          '<label class="radio ' + (q.hint === "none" ? "checked" : "") + '"><input type="radio" disabled ' + (q.hint === "none" ? "checked" : "") + '><span>없음</span></label>' +
+          '<label class="radio ' + (q.hint === "code" ? "checked" : "") + '"><input type="radio" disabled ' + (q.hint === "code" ? "checked" : "") + '><span>코드</span></label>' +
+        '</div>' +
+        '<div class="q-row">' +
+          '<span class="field-label">문제 유형 *</span>' +
+          '<label class="radio ' + (q.qType === "multiple" ? "checked" : "") + '"><input type="radio" disabled ' + (q.qType === "multiple" ? "checked" : "") + '><span>객관식</span></label>' +
+          '<label class="radio ' + (q.qType === "short" ? "checked" : "") + '"><input type="radio" disabled ' + (q.qType === "short" ? "checked" : "") + '><span>주관식</span></label>' +
+        '</div>' +
+        body +
+        '<div class="q-row">' +
+          '<span class="field-label">해설</span>' +
+          '<input type="text" class="q-explanation-input" value="' + escapeHtml(q.explanation) + '" placeholder="해설을 입력해주세요.">' +
+        '</div>' +
+        '<div class="q-footer">' +
+          '<div class="score-box">배점 * <input type="number" value="' + q.score + '"> 점</div>' +
+          '<button class="trash-btn" onclick="deleteQuestion(' + q.id + ')">삭제</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function renderOptions(q){
+    var rows = q.options.map(function(opt, i){
+      return '<div class="option-row">' +
+        '<span class="option-num">' + (i + 1) + '</span>' +
+        '<input type="text" class="option-input" value="' + escapeHtml(opt.text) + '">' +
+        '<label class="radio answer-radio ' + (opt.isAnswer ? "checked" : "") + '"><input type="radio" disabled ' + (opt.isAnswer ? "checked" : "") + '><span>정답</span></label>' +
+      '</div>';
+    }).join("");
+    return '<div class="q-row"><span class="field-label">보기 *</span></div>' +
+      '<div class="options-wrap">' + rows + '</div>' +
+      '<button type="button" class="add-option-btn" onclick="noop()">+ 보기 항목 추가 (최대 5개)</button>';
+  }
+
+  function renderShortAnswer(q){
+    return '<div class="q-row"><span class="field-label">정답 *</span>' +
+      '<input type="text" class="short-answer-input" value="' + escapeHtml(q.answerText) + '"></div>';
+  }
+
+  function deleteQuestion(id){
+    state.questions = state.questions.filter(function(q){ return q.id !== id; });
+    renderQuestions();
+  }
+
+  // ---- 저장 ----
+  function handleSave(){
+    if (state.questions.length === 0){
+      showToast("재평가는 최소 1문항 이상 등록해야 저장할 수 있습니다. (SC-201-09)", "error");
+      return;
+    }
+    showToast("저장되었습니다 (프로토타입 — 실제 저장 없음)", "success");
+  }
+
+  // ---- 시나리오 전환 ----
+  function setScenario(mode){
+    document.getElementById("scenarioNewBtn").classList.toggle("active", mode === "new");
+    document.getElementById("scenarioBlockedBtn").classList.toggle("active", mode === "blocked");
+
+    els.sourceModal.hidden = true;
+    els.loadingBox.hidden = true;
+    pendingExamId = null;
+
+    if (mode === "new"){
+      els.titleInput.value = "";
+      els.abilityInput.value = "";
+      els.startDate.value = "";
+      els.endDate.value = "";
+      els.evalType.value = "";
+      els.reevalFields.hidden = true;
+      els.sourceExam.value = "";
+      els.sourceExam.disabled = false;
+      els.sourceExamNote.hidden = true;
+      state.questions = [];
+      state.loadedExamId = null;
+      state.hasLoadedOnce = false;
+      renderQuestions();
+      els.saveBtn.disabled = false;
+    } else {
+      els.titleInput.value = "1주차 파이썬 재평가";
+      els.startDate.value = "2026-08-10";
+      els.endDate.value = "2026-08-14";
+      els.evalType.value = "reeval";
+      els.reevalFields.hidden = false;
+      els.sourceExam.value = "w1";
+      els.sourceExam.disabled = true;
+      els.sourceExamNote.hidden = false;
+
+      var exam = examBank.w1;
+      els.abilityInput.value = exam.ability;
+      state.questions = exam.questions.map(function(q){
+        var copy = JSON.parse(JSON.stringify(q));
+        copy.id = qIdSeq++;
+        return copy;
+      });
+      state.loadedExamId = "w1";
+      state.hasLoadedOnce = true;
+      renderQuestions();
+      els.saveBtn.disabled = false;
+    }
+  }
+
+  // ---- 초기화 ----
+  cacheEls();
+  setScenario("new");
+</script>
+</body>
+</html>
