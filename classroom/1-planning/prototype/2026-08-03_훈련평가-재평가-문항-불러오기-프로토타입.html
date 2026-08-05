@@ -1,14 +1,15 @@
 <!--
   목적: 커뮤니케이션용 프로토타입 — 관련자(PD·개발자)에게 "재평가 등록 시 원본 평가 문항 불러오기" 기능의
         존재와 대략적 흐름을 빠르게 이해시키기 위한 클릭 데모. 픽셀 완성도·완전한 동작은 목표가 아니다.
-  기준 문서: 기획서(SSOT) 2026-08-03_훈련평가-재평가-문항-불러오기-기획서.md v1.6
-             화면정의서 2026-08-03_훈련평가-재평가-문항-불러오기-화면정의서.md v1.5
+  기준 문서: 기획서(SSOT) 2026-08-03_훈련평가-재평가-문항-불러오기-기획서.md v1.7
+             화면정의서 2026-08-03_훈련평가-재평가-문항-불러오기-화면정의서.md v1.7
   포함 화면 ID: SC-201 (재평가 등록/수정 화면, 기존 화면 델타) — SC-201-01 ~ SC-201-10
   개정: '평가 시험' 선택(최초/변경) 시 즉시 로드하지 않고 선택 모달[문항 불러오기 / 불러오지 않고
         직접 작성 / 취소]을 노출하는 정책으로 변경(자동 불러오기 폐기). 기존 문항 존재 시 같은 모달에
         경고 문구를 병기하며, 별도 덮어쓰기 모달은 이 모달로 통합했다. 문항 0건 원본 선택 시 모달에
         "이 평가에는 등록된 문항이 없습니다" 안내와 함께 [문항 불러오기] 비활성 처리. 동일 원본 재선택 시에도
-        선택 모달을 다시 노출한다.
+        선택 모달을 다시 노출한다. [문항 불러오기]·[직접 작성] 진행 시 능력명과 함께 평가 제목도 원본
+        평가 제목으로 자동 입력(편집 가능, 취소 시 미수행)한다.
   제외 범위: 미리보기, 대상자 선택, 헤더 메뉴, 드래그 정렬, 보기 항목 추가/편집, 라디오(보조설명·문제유형·정답)
              선택 변경 등은 클릭 시 안내만 노출하며 실제 동작하지 않는다. 조회 실패(SC-201-08)·연타 처리
              (SC-201-07)는 화면 흐름 시연 범위에서 제외했다(위임 지시 (c) 범위 밖).
@@ -445,6 +446,7 @@
   // ---- 목데이터: 원본 평가 뱅크 ----
   var examBank = {
     w1: {
+      title: "1주차 훈련평가",
       ability: "파이썬 프로그래밍",
       questions: [
         { qType:"multiple", qname:"다음 중 파이썬의 자료형이 아닌 것은?", hint:"none",
@@ -463,6 +465,7 @@
       ]
     },
     w2: {
+      title: "2주차 훈련평가",
       ability: "데이터 분석 기초",
       questions: []
     }
@@ -575,6 +578,7 @@
   function onModalSkip(){
     els.sourceModal.hidden = true;
     var exam = examBank[pendingExamId];
+    els.titleInput.value = exam.title;
     els.abilityInput.value = exam.ability;
     state.loadedExamId = pendingExamId;
     els.sourceExam.value = pendingExamId;
@@ -601,6 +605,7 @@
       els.loadingBox.hidden = true;
       els.saveBtn.disabled = false;
 
+      els.titleInput.value = exam.title;
       els.abilityInput.value = exam.ability;
       state.questions = exam.questions.map(function(q){
         var copy = JSON.parse(JSON.stringify(q));
