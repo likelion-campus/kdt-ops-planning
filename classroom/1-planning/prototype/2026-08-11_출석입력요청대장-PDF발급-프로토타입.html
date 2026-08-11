@@ -6,7 +6,8 @@
 <!--
   출석입력요청대장 PDF 자동 발급 — 어드민 공결신청 상세 화면 프로토타입
 
-  기준 문서(SSOT): docs/출석입력요청대장-기획서.md v1.5
+  기준 문서(SSOT): docs/출석입력요청대장-기획서.md v1.8 (기획서 동시 개정 중 — 표기 차이 발생 시 문서가 우선)
+  참고: docs/reference/별지13호-작성요령-원문.md (별지 13호 서식 원본 전사본, 2026-08-11 사용자 제공)
   화면정의서: docs/admin/screens/AS-001-공결신청-상세.md
   포함 화면: AS-001 공결신청 상세 (어드민) 1개
   제외 범위: 공결신청 목록 화면, 클래스룸(훈련생) 화면, 알림, 검색 등
@@ -79,6 +80,25 @@
   .field-row .label { color: #777; }
   .field-row .value { color: #222; }
   .card-desc { font-size: 12px; color: #888; margin: -6px 0 12px 0; }
+
+  /* 카드 내 상태별 조회/편집 겸용 행 (공결일·신청일) */
+  .field-block { margin-bottom: 2px; }
+  .field-block .field-row { padding-bottom: 2px; }
+  .field-block .fb-hint,
+  .field-block .fb-orig,
+  .field-block .fb-err {
+    font-size: 11px; padding: 0 0 6px 142px;
+  }
+  .field-block .fb-hint { color: #999; }
+  .field-block .fb-orig { color: #999; display: none; }
+  .field-block .fb-err { color: #d33; font-size: 12px; display: none; }
+  .field-block.has-error .fb-err { display: block; }
+  .field-block.has-error input[type="date"] { border-color: #d33; }
+  .field-block input[type="date"] {
+    padding: 5px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; max-width: 200px;
+  }
+  .field-block input[type="date"]:disabled { background: #f4f4f4; color: #666; }
 
   .badge {
     display: inline-block;
@@ -236,7 +256,7 @@
 
 <div class="page-title">
   <h1>AS-001 공결신청 상세 <span class="badge badge-outscope">프로토타입</span></h1>
-  <div class="note">기준 문서(SSOT): docs/출석입력요청대장-기획서.md v1.5 · 화면정의서: docs/admin/screens/AS-001-공결신청-상세.md · 더미 데이터</div>
+  <div class="note">기준 문서(SSOT): docs/출석입력요청대장-기획서.md v1.8 · 화면정의서: docs/admin/screens/AS-001-공결신청-상세.md · 더미 데이터</div>
   <div class="demo-switcher">
     <span class="badge badge-outscope">시연용 컨트롤 — 실제 기능 아님</span>
     <button class="btn" onclick="demoSetState('접수')">접수로 보기</button>
@@ -264,52 +284,45 @@
       <div class="field-row"><div class="label">KDT 훈련명</div><div class="value">(예시) AI 활용 백엔드 개발자 양성과정</div></div>
       <div class="field-row"><div class="label">HRD-NET 훈련과정명</div><div class="value" id="f-hrdnet">(예시) AI 활용 백엔드 개발자 양성과정 6기</div></div>
       <div class="field-row"><div class="label">훈련 기간</div><div class="value" id="f-period">2026-01-05 ~ 2026-07-03</div></div>
-      <div class="field-row"><div class="label">훈련 시간</div><div class="value">960시간 <span style="color:#aaa;font-size:11px;">(조회 전용 — 수기 보완 훈련시간과 다른 필드, §4-1 참고)</span></div></div>
+      <div class="field-row"><div class="label">훈련 시간</div><div class="value"><span id="f-course-hours">960시간</span> <span style="color:#aaa;font-size:11px;">(조회 전용 — 별지 13호 ③ 훈련시간에 그대로 연동, §4-1·§10-27 참고)</span></div></div>
       <div class="field-row"><div class="label">실시 회차</div><div class="value">6회차</div></div>
     </div>
 
-    <!-- ③ 공결 신청 내역 -->
+    <!-- ③ 공결 신청 내역 (공결일·신청일은 확인중 상태에서 행 내 직접 수정) -->
     <div class="card">
-      <h2>공결 신청 내역 <span class="badge badge-outscope">조회 전용</span></h2>
-      <div class="field-row"><div class="label">공결일</div><div class="value" id="f-absence-date">2026-07-15</div></div>
+      <h2>공결 신청 내역 <span class="badge badge-outscope" id="badge-card3">조회 전용</span></h2>
+
+      <div class="field-block" id="block-absence">
+        <div class="field-row">
+          <div class="label">공결일 *</div>
+          <div class="value" id="cell-absence"></div>
+        </div>
+        <div class="fb-hint">* 양식 ⑥ 발생일 칸에 인쇄됩니다. 실제 사유 발생일과 다를 경우 수정하세요.</div>
+        <div class="fb-orig" id="orig-absence"></div>
+        <div class="fb-err">공결일을 입력해 주세요.</div>
+      </div>
+
+      <div class="field-block" id="block-apply">
+        <div class="field-row">
+          <div class="label">신청일 *</div>
+          <div class="value" id="cell-apply"></div>
+        </div>
+        <div class="fb-hint">* HRD-Net 시스템 입력일과 실제 신청일이 다른 경우 수정하세요.</div>
+        <div class="fb-orig" id="orig-apply"></div>
+        <div class="fb-err">신청일을 입력해 주세요.</div>
+      </div>
+
       <div class="field-row"><div class="label">신청 항목</div><div class="value" id="f-reason-type">공가</div></div>
       <div class="field-row"><div class="label">상세 사유</div><div class="value" id="f-reason-detail">본인 질병/입원</div></div>
       <div class="field-row"><div class="label">추가 사유</div><div class="value" id="f-reason-extra">몸살로 병원 진료</div></div>
     </div>
 
-    <!-- ④ 수기 보완 (상태에 따라 노출) -->
+    <!-- ④ 외출/귀원 시간 (상태에 따라 노출) -->
     <div class="card" id="card-manual" style="display:none;">
-      <h2>출석입력요청대장 수기 보완</h2>
-      <div class="card-desc">고용노동부 별지 13호 양식에 따라 필요한 항목을 보완 및 수정합니다.</div>
-
-      <div class="manual-field" id="mf-absence">
-        <label>공결일 수정 *</label>
-        <input type="date" id="in-absence-date" value="2026-07-15">
-        <div class="hint">양식 ⑥ 발생일 칸에 인쇄됩니다. 실제 사유 발생일과 다를 경우 수정하세요.</div>
-        <div class="err">공결일을 입력해 주세요.</div>
-      </div>
-
-      <div class="manual-field" id="mf-apply">
-        <label>신청일 수정 *</label>
-        <input type="date" id="in-apply-date" value="2026-07-14">
-        <div class="hint">HRD-Net 시스템 입력일과 실제 신청일이 다른 경우 수정하세요.</div>
-        <div class="err">신청일을 입력해 주세요.</div>
-      </div>
-
-      <div class="manual-field" id="mf-hours">
-        <label>훈련시간 * <span class="badge badge-fixed" title="숫자 입력 + '시간' 접미사 고정 UI로 형식 강제, 자유 텍스트 입력 폐기 — 확정">숫자 전용 · §10-12</span></label>
-        <!-- 개발 참고: 입력 컴포넌트는 숫자 전용(type=number, 비숫자 제거) + 접미사 '시간' 고정 표기. 기획서 §10-12 확정 사항, 화면 안내 문구는 정본(§4-1)을 그대로 사용한다. -->
-        <div class="hours-wrap">
-          <input type="number" id="in-hours" placeholder="예: 640" min="0" step="1"
-                 oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-          <span class="suffix">시간</span>
-        </div>
-        <div class="hint">* 별지 13호 양식 ③ 훈련시간 항목에 그대로 인쇄됩니다. 필수 입력 항목입니다.</div>
-        <div class="err">훈련시간을 입력해 주세요.</div>
-      </div>
+      <h2>외출/귀원 시간</h2>
+      <div class="card-desc">외출(중간 이탈 후 복귀)이 있었던 경우에만 입력합니다. 입력하지 않으면 대장에 '미적용'으로 인쇄됩니다.</div>
 
       <div class="manual-field">
-        <label>외출/귀원 시간</label>
         <div class="outing-wrap">
           <div>
             <div class="sub-label">입실시간</div>
@@ -320,7 +333,7 @@
             <input type="time" id="in-checkout-time">
           </div>
         </div>
-        <div class="hint">입력된 시간은 PDF 생성 시 대장의 입실/퇴실 항목에 반영됩니다. 미입력 시 "미적용"으로 인쇄됩니다. (확정 — 기획서 §10-13)</div>
+        <div class="hint">별지 13호 양식 ⑩입실시간(외출시간)·⑪퇴실시간(귀원시간) 항목에 반영됩니다. (확정 — 기획서 §10-13·§10-26)</div>
       </div>
     </div>
 
@@ -368,12 +381,12 @@
     <div class="form13">
       <div class="f-header">■ 현장 실무인재 양성을 위한 직업능력개발훈련 운영규정 [별지 제13호 서식]</div>
       <div class="f-title">출석입력요청대장</div>
-      <div class="f-org">( 훈련기관명 <span class="badge badge-unconfirmed" title="기획서 §10-1 — 개발 착수 시 사용자가 명칭 제공 예정">자산 제공 대기(개발 착수 시 제공)</span> )</div>
+      <div class="f-org">(0000훈련기관) <span class="badge badge-unconfirmed" title="기획서 §10-1 — 훈련기관명 미수령, 개발 착수 시 사용자 제공 예정">자산 제공 대기(훈련기관명)</span></div>
 
       <div class="top-grid">
         <div class="cell"><span class="k">① 훈련과정명</span><span id="pdf-course-name"></span></div>
         <div class="cell"><span class="k">② 훈련기간</span><span id="pdf-period"></span></div>
-        <div class="cell"><span class="k">③ 훈련시간</span><span id="pdf-hours"></span></div>
+        <div class="cell"><span class="k">③ 훈련시간</span><span id="pdf-hours"></span> <span class="badge badge-unconfirmed" title="인쇄 문자열 규칙(단위 표기 등) 미확정 — 훈련 과정 정보 카드 연동값 그대로 사용">§10-27</span></div>
         <div class="cell"><span class="k">④ 대장관리자</span><span>장지연 <span class="badge badge-fixed">고정값</span></span></div>
       </div>
 
@@ -385,8 +398,8 @@
             <th>⑦ 신청일 <span class="badge badge-unconfirmed" title="인쇄 형식(YYYY년 MM월 DD일)은 기획서 §10-17 확정 전 제안값">§10-17</span></th>
             <th>⑧ 훈련생 성명</th>
             <th>⑨ 사유</th>
-            <th>⑩ 입실시간</th>
-            <th>⑪ 퇴실시간</th>
+            <th>⑩입실시간(외출시간)</th>
+            <th>⑪퇴실시간(귀원시간)</th>
             <th>⑫ 훈련생 서명</th>
             <th>⑬ 관리자 서명</th>
           </tr>
@@ -395,12 +408,20 @@
       </table>
 
       <div class="sim-banner" style="margin-top:10px; margin-bottom:0;">
-        2~15행은 일련번호 포함 완전 공란(확정) — 양식 구조는 별지 13호 원형 유지 (기획서 §10-15)
+        서식 원형: 번호 1~15 사전 인쇄, 데이터는 1행만 기재(확정 — 기획서 §10-15, 2026-08-11)
       </div>
 
       <div class="f-footer">
-        (작성요령) 원문은 고용노동부 별지 13호 서식 원본을 따른다 — 기획서에 원문 텍스트가 포함되어 있지 않아
-        본 프로토타입에는 임의로 기재하지 않는다. 확정 시 §8 참고자료(기존 수기 작성 PDF) 대조 필요.
+        <div style="font-weight:700; margin-bottom:4px;">작성요령</div>
+        <div>1. 대장은 훈련기관에서 전담자를 두어 별도 작성·관리하여야 하고, 훈련생은 사유발생일 당일에 훈련이 종료된 이후 관리자가 기재한 내용을 확인한 후 훈련생이 직접 본인의 성명을 자필로 정확하게 작성(사인, 특수문자 등은 기재할 수 없음)</div>
+        <div style="margin:2px 0 2px 14px;">1) ⑥란의 발생일자는 직권입력사유 발생 해당일자를 기재</div>
+        <div style="margin:2px 0 2px 14px;">2) ⑧란의 훈련생 성명은 훈련기관의 전담관리자가 직접 기재</div>
+        <div style="margin:2px 0 2px 14px;">3) ⑨란의 사유는 '카드 분실·훼손', '정전', '단말기 고장', '카드발급 지연' 등 직권입력 사유를 기재. 교대근무자에 대해 훈련시간 변경을 허용한 경우, 변경한 훈련과정명 및 수강일·수강시간도 함께 기재</div>
+        <div style="margin:2px 0 2px 14px;">4) ⑩란의 입실시간은 직권사유가 발생한 훈련생의 입실(외출) 시간을 기재</div>
+        <div style="margin:2px 0 2px 14px;">5) ⑪란의 퇴실시간은 직권사유가 발생한 훈련생의 퇴실(귀원) 시간을 기재</div>
+        <div style="margin:2px 0 2px 14px;">6) ⑫란의 훈련생 서명은 직권사유가 발생한 훈련생이 본인의 이름을 자필로 정자로 기재</div>
+        <div style="margin:2px 0 6px 14px;">7) ⑬란의 관리자 서명은 관리자가 자필로 확인 서명(대장관리자가 직접 서명)</div>
+        <div>2. 출석입력 신청은 해당 사유가 발생한 날의 다음 날까지 HRD-Net을 통해 신청 가능</div>
       </div>
     </div>
   </div>
@@ -417,6 +438,16 @@
     reasonType: '공가',
     reasonDetail: '본인 질병/입원',
     reasonExtra: '몸살로 병원 진료'
+  };
+
+  // 신청 원본값(훈련생 신청 데이터 기준, 더미). 카드3 인라인 수정값이 이 값과 달라지면 화면에 "신청 원본: ..." 병기
+  var ORIGINAL_ABSENCE_DATE = '2026-07-15';
+  var ORIGINAL_APPLY_DATE = '2026-07-14';
+
+  // 공결일·신청일 현재값(카드③에서 직접 수정). 확인중 상태에서만 편집 가능, 완료 전환 후 값 유지(잠금)
+  var manualValues = {
+    absenceDate: ORIGINAL_ABSENCE_DATE,
+    applyDate: ORIGINAL_APPLY_DATE
   };
 
   var state = '접수'; // 접수 | 확인중 | 완료
@@ -438,20 +469,58 @@
     // 첨부파일 미리보기는 disabled 처리 + title 툴팁으로 안내(기능 코드 없음)
   }
 
+  // 카드③(공결 신청 내역) 내 공결일·신청일 행을 상태에 맞게 렌더링
+  // 접수/완료: 텍스트 조회, 확인중: 행 내 date input으로 직접 수정
+  function renderCard3() {
+    var editable = (state === '확인중');
+
+    el('cell-absence').innerHTML = editable
+      ? '<input type="date" id="in-absence-date" value="' + manualValues.absenceDate + '">'
+      : (manualValues.absenceDate || '-');
+    el('cell-apply').innerHTML = editable
+      ? '<input type="date" id="in-apply-date" value="' + manualValues.applyDate + '">'
+      : (manualValues.applyDate || '-');
+
+    if (editable) {
+      el('in-absence-date').addEventListener('input', function () {
+        manualValues.absenceDate = this.value;
+        updateOrigNotes();
+      });
+      el('in-apply-date').addEventListener('input', function () {
+        manualValues.applyDate = this.value;
+        updateOrigNotes();
+      });
+    }
+
+    updateOrigNotes();
+
+    el('badge-card3').textContent = editable ? '공결일·신청일 편집 가능' : '조회 전용';
+  }
+
+  function updateOrigNotes() {
+    var absDiff = manualValues.absenceDate && manualValues.absenceDate !== ORIGINAL_ABSENCE_DATE;
+    var origAbsence = el('orig-absence');
+    origAbsence.style.display = absDiff ? 'block' : 'none';
+    origAbsence.textContent = '신청 원본: ' + ORIGINAL_ABSENCE_DATE;
+
+    var appDiff = manualValues.applyDate && manualValues.applyDate !== ORIGINAL_APPLY_DATE;
+    var origApply = el('orig-apply');
+    origApply.style.display = appDiff ? 'block' : 'none';
+    origApply.textContent = '신청 원본: ' + ORIGINAL_APPLY_DATE;
+  }
+
   // 필수 필드 검증 (기획서 §4-1 필수 필드 검증 표)
+  // 개발 참고: 훈련 시간 연동값 부재 시 완료 전환·발급 차단(기획서 §4-1 검증 표) — 프로토 더미는 항상 값 있음이라 미구현
   function validateManual() {
     var errors = [];
-    var absence = el('in-absence-date').value;
-    var apply = el('in-apply-date').value;
-    var hours = el('in-hours').value.trim();
+    var absence = manualValues.absenceDate;
+    var apply = manualValues.applyDate;
 
-    toggleError('mf-absence', !absence);
-    toggleError('mf-apply', !apply);
-    toggleError('mf-hours', !hours);
+    toggleError('block-absence', !absence);
+    toggleError('block-apply', !apply);
 
     if (!absence) errors.push('공결일을 입력해 주세요.');
     if (!apply) errors.push('신청일을 입력해 주세요.');
-    if (!hours) errors.push('훈련시간을 입력해 주세요.');
     return errors;
   }
 
@@ -462,7 +531,7 @@
   }
 
   function clearErrors() {
-    ['mf-absence', 'mf-apply', 'mf-hours'].forEach(function (id) { toggleError(id, false); });
+    ['block-absence', 'block-apply'].forEach(function (id) { toggleError(id, false); });
   }
 
   function onSave() {
@@ -501,21 +570,22 @@
     // WYSIWYG: 화면에 표시/입력된 값을 그대로 매핑 (기획서 §4-1, §5, §7)
     el('pdf-course-name').textContent = data.hrdnetCourseName;
     el('pdf-period').textContent = data.period;
-    var hoursVal = el('in-hours').value.trim();
-    el('pdf-hours').textContent = hoursVal ? (hoursVal + ' 시간') : '';
+    // ③ 훈련시간: 수기 입력 폐기 — 훈련 과정 정보 카드 연동값을 그대로 인쇄 (인쇄 문자열 규칙은 §10-27 미확정)
+    el('pdf-hours').textContent = el('f-course-hours').textContent.trim();
 
-    var absence = formatKoreanDate(el('in-absence-date').value);
-    var apply = formatKoreanDate(el('in-apply-date').value);
+    var absence = formatKoreanDate(manualValues.absenceDate);
+    var apply = formatKoreanDate(manualValues.applyDate);
     var reason = data.reasonType + ' : ' + data.reasonDetail +
       (data.reasonExtra ? ' - ' + data.reasonExtra : ''); // §6 사유 표기 규칙
     var checkin = el('in-checkin-time').value.trim() || '미적용'; // 미입력 = 미적용 (기획서 §4-1·§5⑩ 확정)
     var checkout = el('in-checkout-time').value.trim() || '미적용';
 
     var rows = '';
+    // 서식 원형: 일련번호 1~15는 사전 인쇄(원본 PDF 확인 사항). 데이터는 1행만 채우고 2~15행은 번호만 남기고 공란(확정 — 기획서 §10-15, 2026-08-11)
     for (var i = 1; i <= 15; i++) {
       if (i === 1) {
         rows += '<tr>' +
-          '<td>1</td>' +
+          '<td>' + i + '</td>' +
           '<td>' + absence + '</td>' +
           '<td>' + apply + '</td>' +
           '<td>' + data.traineeName + '</td>' +
@@ -526,8 +596,7 @@
           '<td><span class="badge badge-unconfirmed" title="관리자 서명 이미지: 개발 착수 시 사용자 제공 예정 (기획서 §10-9)">자산 제공 대기(개발 착수 시 제공)</span></td>' +
           '</tr>';
       } else {
-        // 확정(기획서 §10-15): 2~15행은 일련번호 포함 완전 공란. 표 구조(15행)만 원형 유지
-        rows += '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+        rows += '<tr><td>' + i + '</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
       }
     }
     el('pdf-table-body').innerHTML = rows;
@@ -550,6 +619,8 @@
     var pill = el('status-pill');
     pill.textContent = '● ' + state;
     pill.className = 'status-pill status-' + state;
+
+    renderCard3();
 
     var manualCard = el('card-manual');
     var group = el('btn-group');
@@ -584,7 +655,7 @@
   }
 
   function setManualEditable(editable) {
-    ['in-absence-date', 'in-apply-date', 'in-hours', 'in-checkin-time', 'in-checkout-time'].forEach(function (id) {
+    ['in-checkin-time', 'in-checkout-time'].forEach(function (id) {
       el(id).disabled = !editable;
     });
   }
