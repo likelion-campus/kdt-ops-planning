@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>공결신청 상세 (프로토타입) — 출석입력요청대장 PDF 자동 발급</title>
+<!--
+  출석입력요청대장 PDF 자동 발급 — 어드민 공결신청 상세 화면 프로토타입
+
+  기준 문서(SSOT): docs/출석입력요청대장-기획서.md v1.5
+  화면정의서: docs/admin/screens/AS-001-공결신청-상세.md
+  포함 화면: AS-001 공결신청 상세 (어드민) 1개
+  제외 범위: 공결신청 목록 화면, 클래스룸(훈련생) 화면, 알림, 검색 등
+    기획서 §9 제외 범위(Out of Scope) 및 본 프로토타입 위임 범위 밖 일체.
+
+  성격: 본 파일은 기획 검증·전달용 시각화 자료다(기획서=SSOT, 프로토타입≠SSOT).
+  프로토타입과 기획서 내용이 다르면 기획서가 우선한다.
+  더미 데이터만 사용하며 실제 API·PDF 생성 연동은 없다.
+  색상·폰트·간격은 모두 placeholder이며 디자인 확정 대상이 아니다(디자인 단계에서 확정).
+-->
+<style>
+  /* ------- placeholder 스타일: 색상/폰트는 임의값, 디자인 확정 대상 아님 ------- */
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: #f2f3f5;
+    margin: 0;
+    color: #222;
+  }
+  .topbar {
+    background: #1f2430;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  .topbar .crumb { opacity: .75; }
+  .page-title {
+    padding: 16px 24px 0 24px;
+  }
+  .page-title h1 { font-size: 18px; margin: 0 0 4px 0; }
+  .page-title .note {
+    font-size: 12px; color: #888;
+  }
+  .demo-switcher {
+    margin-top: 10px; display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: #fdf6e3; border: 1px dashed #e0c674; border-radius: 4px;
+    width: fit-content;
+  }
+  .demo-switcher .btn { width: auto; padding: 5px 10px; font-size: 12px; }
+  .layout {
+    display: flex;
+    gap: 16px;
+    padding: 16px 24px 40px 24px;
+    align-items: flex-start;
+  }
+  .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .side-col { width: 280px; flex-shrink: 0; }
+  .card {
+    background: #fff;
+    border: 1px solid #e1e3e8;
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .card h2 {
+    font-size: 14px;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 4px 12px;
+    font-size: 13px;
+    padding: 5px 0;
+  }
+  .field-row .label { color: #777; }
+  .field-row .value { color: #222; }
+  .card-desc { font-size: 12px; color: #888; margin: -6px 0 12px 0; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .badge-unconfirmed { background: #fff2cc; color: #8a6d00; border: 1px solid #e6c86e; }
+  .badge-fixed { background: #e8eaf6; color: #33408a; border: 1px solid #c4c9ee; }
+  .badge-outscope { background: #eee; color: #888; border: 1px solid #ddd; }
+
+  .manual-field { margin-bottom: 14px; }
+  .manual-field label {
+    display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px;
+  }
+  .manual-field input[type="date"],
+  .manual-field input[type="text"],
+  .manual-field input[type="number"],
+  .manual-field input[type="time"],
+  .manual-field select {
+    width: 100%;
+    max-width: 260px;
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+  }
+  .manual-field .hours-wrap {
+    display: flex; align-items: center; gap: 8px; max-width: 260px;
+  }
+  .manual-field .hours-wrap input[type="number"] { max-width: none; flex: 1; }
+  .manual-field .hours-wrap .suffix { font-size: 13px; color: #555; white-space: nowrap; }
+  .manual-field .outing-wrap { display: flex; gap: 20px; flex-wrap: wrap; }
+  .manual-field .outing-wrap .sub-label { font-size: 11px; color: #777; margin-bottom: 3px; }
+  .manual-field input:disabled,
+  .manual-field select:disabled {
+    background: #f4f4f4;
+    color: #666;
+  }
+  .manual-field .hint {
+    font-size: 11px; color: #999; margin-top: 4px;
+  }
+  .manual-field .err {
+    font-size: 12px; color: #d33; margin-top: 4px; display: none;
+  }
+  .manual-field.has-error input,
+  .manual-field.has-error select {
+    border-color: #d33;
+  }
+  .manual-field.has-error .err { display: block; }
+
+  .attach-item {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; padding: 6px 0; border-bottom: 1px dashed #eee;
+  }
+  .attach-item:last-child { border-bottom: none; }
+  .attach-item button {
+    font-size: 11px; padding: 3px 8px; border: 1px solid #ccc; border-radius: 4px;
+    background: #f7f7f7; color: #999; cursor: not-allowed;
+  }
+
+  /* side */
+  .status-box {
+    background: #fff; border: 1px solid #e1e3e8; border-radius: 6px;
+    padding: 16px 18px; margin-bottom: 12px;
+  }
+  .status-box .status-line { font-size: 13px; margin-bottom: 8px; }
+  .status-box .status-line strong.dot { margin: 0 4px; }
+  .status-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 700;
+  }
+  .status-접수 { background: #eef1f4; color: #555; }
+  .status-확인중 { background: #fff4dd; color: #92660a; }
+  .status-완료 { background: #dff5e3; color: #1c7a34; }
+
+  .btn-group { display: flex; flex-direction: column; gap: 8px; }
+  .btn {
+    display: block; width: 100%; padding: 9px 10px; font-size: 13px;
+    border-radius: 5px; border: 1px solid #ccc; background: #fff; cursor: pointer;
+    text-align: center;
+  }
+  .btn:hover { background: #f5f5f5; }
+  .btn-primary { background: #2f5fe0; color: #fff; border-color: #2f5fe0; }
+  .btn-primary:hover { background: #274ec2; }
+  .btn-outline-disabled { color: #aaa; cursor: not-allowed; }
+  .btn-pdf { background: #1c7a34; color: #fff; border-color: #1c7a34; }
+  .btn-pdf:hover { background: #175f29; }
+
+  .flow-note {
+    font-size: 11px; color: #999; margin-top: 10px; line-height: 1.5;
+  }
+
+  .toast {
+    position: fixed; top: 16px; right: 16px; background: #1f2430; color: #fff;
+    padding: 10px 16px; border-radius: 4px; font-size: 13px; opacity: 0;
+    transition: opacity .2s; pointer-events: none; z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+
+  /* modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 100; align-items: flex-start; justify-content: center; overflow-y: auto;
+    padding: 30px 12px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #fff; width: 760px; max-width: 100%; padding: 28px 32px;
+    border-radius: 4px; font-size: 13px;
+  }
+  .modal-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px; }
+  .modal-toolbar .btn { width: auto; padding: 6px 14px; }
+  .sim-banner {
+    background: #fff4dd; border: 1px solid #e6c86e; color: #8a6d00;
+    padding: 8px 12px; font-size: 12px; border-radius: 4px; margin-bottom: 16px;
+  }
+
+  /* 별지13 layout */
+  .form13 { border: 1px solid #333; padding: 20px; }
+  .form13 .f-header { font-size: 11px; text-align: left; margin-bottom: 6px; }
+  .form13 .f-title { text-align: center; font-size: 20px; font-weight: 700; margin: 6px 0 4px 0; }
+  .form13 .f-org { text-align: center; font-size: 12px; margin-bottom: 16px; color: #555; }
+  .form13 .f-org .badge { margin-left: 4px; }
+  .top-grid {
+    display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #333;
+    margin-bottom: 0;
+  }
+  .top-grid .cell {
+    border: 1px solid #333; padding: 6px 10px; font-size: 12px;
+    display: flex; gap: 6px;
+  }
+  .top-grid .cell .k { font-weight: 700; white-space: nowrap; }
+  table.f-table {
+    width: 100%; border-collapse: collapse; margin-top: -1px; font-size: 11px;
+  }
+  table.f-table th, table.f-table td {
+    border: 1px solid #333; padding: 5px 4px; text-align: center; height: 22px;
+  }
+  table.f-table th { background: #f2f2f2; font-weight: 700; }
+  .f-footer {
+    margin-top: 12px; font-size: 10.5px; color: #444; border: 1px dashed #bbb;
+    padding: 8px 10px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="crumb">어드민 &gt; 훈련관리 &gt; 행정/운영 &gt; 공결신청 &gt; </span>상세
+</div>
+
+<div class="page-title">
+  <h1>AS-001 공결신청 상세 <span class="badge badge-outscope">프로토타입</span></h1>
+  <div class="note">기준 문서(SSOT): docs/출석입력요청대장-기획서.md v1.5 · 화면정의서: docs/admin/screens/AS-001-공결신청-상세.md · 더미 데이터</div>
+  <div class="demo-switcher">
+    <span class="badge badge-outscope">시연용 컨트롤 — 실제 기능 아님</span>
+    <button class="btn" onclick="demoSetState('접수')">접수로 보기</button>
+    <button class="btn" onclick="demoSetState('확인중')">확인중으로 보기</button>
+    <button class="btn" onclick="demoSetState('완료')">완료로 보기</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- 좌측 메인 -->
+  <div class="main-col">
+
+    <!-- ① 훈련생 -->
+    <div class="card">
+      <h2>훈련생 <span class="badge badge-outscope">조회 전용</span></h2>
+      <div class="field-row"><div class="label">이름</div><div class="value">김훈련</div></div>
+      <div class="field-row"><div class="label">연락처</div><div class="value">010-1234-5678</div></div>
+      <div class="field-row"><div class="label">이메일</div><div class="value">kim.training@example.com</div></div>
+    </div>
+
+    <!-- ② 훈련 과정 정보 -->
+    <div class="card">
+      <h2>훈련 과정 정보 <span class="badge badge-outscope">조회 전용</span></h2>
+      <div class="field-row"><div class="label">KDT 훈련명</div><div class="value">(예시) AI 활용 백엔드 개발자 양성과정</div></div>
+      <div class="field-row"><div class="label">HRD-NET 훈련과정명</div><div class="value" id="f-hrdnet">(예시) AI 활용 백엔드 개발자 양성과정 6기</div></div>
+      <div class="field-row"><div class="label">훈련 기간</div><div class="value" id="f-period">2026-01-05 ~ 2026-07-03</div></div>
+      <div class="field-row"><div class="label">훈련 시간</div><div class="value">960시간 <span style="color:#aaa;font-size:11px;">(조회 전용 — 수기 보완 훈련시간과 다른 필드, §4-1 참고)</span></div></div>
+      <div class="field-row"><div class="label">실시 회차</div><div class="value">6회차</div></div>
+    </div>
+
+    <!-- ③ 공결 신청 내역 -->
+    <div class="card">
+      <h2>공결 신청 내역 <span class="badge badge-outscope">조회 전용</span></h2>
+      <div class="field-row"><div class="label">공결일</div><div class="value" id="f-absence-date">2026-07-15</div></div>
+      <div class="field-row"><div class="label">신청 항목</div><div class="value" id="f-reason-type">공가</div></div>
+      <div class="field-row"><div class="label">상세 사유</div><div class="value" id="f-reason-detail">본인 질병/입원</div></div>
+      <div class="field-row"><div class="label">추가 사유</div><div class="value" id="f-reason-extra">몸살로 병원 진료</div></div>
+    </div>
+
+    <!-- ④ 수기 보완 (상태에 따라 노출) -->
+    <div class="card" id="card-manual" style="display:none;">
+      <h2>출석입력요청대장 수기 보완</h2>
+      <div class="card-desc">고용노동부 별지 13호 양식에 따라 필요한 항목을 보완 및 수정합니다.</div>
+
+      <div class="manual-field" id="mf-absence">
+        <label>공결일 수정 *</label>
+        <input type="date" id="in-absence-date" value="2026-07-15">
+        <div class="hint">양식 ⑥ 발생일 칸에 인쇄됩니다. 실제 사유 발생일과 다를 경우 수정하세요.</div>
+        <div class="err">공결일을 입력해 주세요.</div>
+      </div>
+
+      <div class="manual-field" id="mf-apply">
+        <label>신청일 수정 *</label>
+        <input type="date" id="in-apply-date" value="2026-07-14">
+        <div class="hint">HRD-Net 시스템 입력일과 실제 신청일이 다른 경우 수정하세요.</div>
+        <div class="err">신청일을 입력해 주세요.</div>
+      </div>
+
+      <div class="manual-field" id="mf-hours">
+        <label>훈련시간 * <span class="badge badge-fixed" title="숫자 입력 + '시간' 접미사 고정 UI로 형식 강제, 자유 텍스트 입력 폐기 — 확정">숫자 전용 · §10-12</span></label>
+        <!-- 개발 참고: 입력 컴포넌트는 숫자 전용(type=number, 비숫자 제거) + 접미사 '시간' 고정 표기. 기획서 §10-12 확정 사항, 화면 안내 문구는 정본(§4-1)을 그대로 사용한다. -->
+        <div class="hours-wrap">
+          <input type="number" id="in-hours" placeholder="예: 640" min="0" step="1"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <span class="suffix">시간</span>
+        </div>
+        <div class="hint">* 별지 13호 양식 ③ 훈련시간 항목에 그대로 인쇄됩니다. 필수 입력 항목입니다.</div>
+        <div class="err">훈련시간을 입력해 주세요.</div>
+      </div>
+
+      <div class="manual-field">
+        <label>외출/귀원 시간</label>
+        <div class="outing-wrap">
+          <div>
+            <div class="sub-label">입실시간</div>
+            <input type="time" id="in-checkin-time">
+          </div>
+          <div>
+            <div class="sub-label">퇴실시간</div>
+            <input type="time" id="in-checkout-time">
+          </div>
+        </div>
+        <div class="hint">입력된 시간은 PDF 생성 시 대장의 입실/퇴실 항목에 반영됩니다. 미입력 시 "미적용"으로 인쇄됩니다. (확정 — 기획서 §10-13)</div>
+      </div>
+    </div>
+
+    <!-- ⑤ 첨부파일 -->
+    <div class="card">
+      <h2>첨부파일 <span class="badge badge-outscope">조회 전용</span></h2>
+      <div class="attach-item">
+        <span>진단서_20260715.pdf</span>
+        <button disabled title="동작 정의는 기획서 참조">미리보기</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 우측 사이드바 -->
+  <div class="side-col">
+    <div class="status-box">
+      <div class="status-line">
+        <span id="status-name">김훈련</span>님은
+        <span class="status-pill" id="status-pill">●&nbsp;접수</span> 상태입니다.
+      </div>
+    </div>
+    <div class="status-box">
+      <div class="btn-group" id="btn-group"></div>
+      <div class="flow-note">
+        상태 전이: 접수 → 확인중 → 완료 (역행·단계 건너뛰기 불가, 기획서 §4-1)
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PDF 미리보기 모달 -->
+<div class="modal-overlay" id="pdf-modal">
+  <div class="modal-box">
+    <div class="modal-toolbar">
+      <button class="btn" onclick="closePdfModal()">닫기</button>
+    </div>
+    <div class="sim-banner">
+      PDF 생성 시뮬레이션 화면입니다. 실제 파일이 다운로드되지 않으며, 별지 13호 양식 레이아웃과 화면 입력값의 매핑(WYSIWYG)만 확인하는 용도입니다.
+    </div>
+
+    <div class="form13">
+      <div class="f-header">■ 현장 실무인재 양성을 위한 직업능력개발훈련 운영규정 [별지 제13호 서식]</div>
+      <div class="f-title">출석입력요청대장</div>
+      <div class="f-org">( 훈련기관명 <span class="badge badge-unconfirmed" title="기획서 §10-1 — 개발 착수 시 사용자가 명칭 제공 예정">자산 제공 대기(개발 착수 시 제공)</span> )</div>
+
+      <div class="top-grid">
+        <div class="cell"><span class="k">① 훈련과정명</span><span id="pdf-course-name"></span></div>
+        <div class="cell"><span class="k">② 훈련기간</span><span id="pdf-period"></span></div>
+        <div class="cell"><span class="k">③ 훈련시간</span><span id="pdf-hours"></span></div>
+        <div class="cell"><span class="k">④ 대장관리자</span><span>장지연 <span class="badge badge-fixed">고정값</span></span></div>
+      </div>
+
+      <table class="f-table">
+        <thead>
+          <tr>
+            <th>⑤ 일련번호</th>
+            <th>⑥ 발생일</th>
+            <th>⑦ 신청일 <span class="badge badge-unconfirmed" title="인쇄 형식(YYYY년 MM월 DD일)은 기획서 §10-17 확정 전 제안값">§10-17</span></th>
+            <th>⑧ 훈련생 성명</th>
+            <th>⑨ 사유</th>
+            <th>⑩ 입실시간</th>
+            <th>⑪ 퇴실시간</th>
+            <th>⑫ 훈련생 서명</th>
+            <th>⑬ 관리자 서명</th>
+          </tr>
+        </thead>
+        <tbody id="pdf-table-body"></tbody>
+      </table>
+
+      <div class="sim-banner" style="margin-top:10px; margin-bottom:0;">
+        2~15행은 일련번호 포함 완전 공란(확정) — 양식 구조는 별지 13호 원형 유지 (기획서 §10-15)
+      </div>
+
+      <div class="f-footer">
+        (작성요령) 원문은 고용노동부 별지 13호 서식 원본을 따른다 — 기획서에 원문 텍스트가 포함되어 있지 않아
+        본 프로토타입에는 임의로 기재하지 않는다. 확정 시 §8 참고자료(기존 수기 작성 PDF) 대조 필요.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ------------------------------------------------------------
+  // 더미 데이터 (기획서 §5 필드 매핑 기준). 실제 API 연동 없음.
+  // ------------------------------------------------------------
+  var data = {
+    traineeName: '김훈련',
+    hrdnetCourseName: '(예시) AI 활용 백엔드 개발자 양성과정 6기',
+    period: '2026-01-05 ~ 2026-07-03',
+    reasonType: '공가',
+    reasonDetail: '본인 질병/입원',
+    reasonExtra: '몸살로 병원 진료'
+  };
+
+  var state = '접수'; // 접수 | 확인중 | 완료
+
+  function el(id) { return document.getElementById(id); }
+
+  function showToast(msg) {
+    var t = el('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+
+  function goListStub() {
+    alert('목록 화면은 기존 기능입니다 — 본 프로토타입 범위 외입니다.\n(기획서 §4-1 [목록으로] 버튼 동작 참고)');
+  }
+
+  function attachStub() {
+    // 첨부파일 미리보기는 disabled 처리 + title 툴팁으로 안내(기능 코드 없음)
+  }
+
+  // 필수 필드 검증 (기획서 §4-1 필수 필드 검증 표)
+  function validateManual() {
+    var errors = [];
+    var absence = el('in-absence-date').value;
+    var apply = el('in-apply-date').value;
+    var hours = el('in-hours').value.trim();
+
+    toggleError('mf-absence', !absence);
+    toggleError('mf-apply', !apply);
+    toggleError('mf-hours', !hours);
+
+    if (!absence) errors.push('공결일을 입력해 주세요.');
+    if (!apply) errors.push('신청일을 입력해 주세요.');
+    if (!hours) errors.push('훈련시간을 입력해 주세요.');
+    return errors;
+  }
+
+  function toggleError(fieldId, hasError) {
+    var f = el(fieldId);
+    if (!f) return;
+    f.classList.toggle('has-error', !!hasError);
+  }
+
+  function clearErrors() {
+    ['mf-absence', 'mf-apply', 'mf-hours'].forEach(function (id) { toggleError(id, false); });
+  }
+
+  function onSave() {
+    var errors = validateManual();
+    if (errors.length) {
+      showToast('저장 실패: ' + errors[0]);
+      return;
+    }
+    showToast('저장되었습니다.');
+  }
+
+  // 시연용 컨트롤: 검증·순차 전환 로직을 거치지 않고 임의 상태로 즉시 전환한다.
+  // 실제 기능이 아니며, [확인중으로 변경하기]/[완료로 변경하기] 버튼의 순차 전환 흐름은 그대로 둔다.
+  function demoSetState(newState) {
+    state = newState;
+    render();
+  }
+
+  function onMoveToChecking() {
+    state = '확인중';
+    render();
+  }
+
+  function onComplete() {
+    var errors = validateManual();
+    if (errors.length) {
+      showToast('완료 처리 불가: ' + errors[0]);
+      return;
+    }
+    // 데이터 잠금(기획서 §4-1 데이터 잠금 정책) — 상세 화면 전체 조회 전용 전환
+    state = '완료';
+    render();
+  }
+
+  function openPdfModal() {
+    // WYSIWYG: 화면에 표시/입력된 값을 그대로 매핑 (기획서 §4-1, §5, §7)
+    el('pdf-course-name').textContent = data.hrdnetCourseName;
+    el('pdf-period').textContent = data.period;
+    var hoursVal = el('in-hours').value.trim();
+    el('pdf-hours').textContent = hoursVal ? (hoursVal + ' 시간') : '';
+
+    var absence = formatKoreanDate(el('in-absence-date').value);
+    var apply = formatKoreanDate(el('in-apply-date').value);
+    var reason = data.reasonType + ' : ' + data.reasonDetail +
+      (data.reasonExtra ? ' - ' + data.reasonExtra : ''); // §6 사유 표기 규칙
+    var checkin = el('in-checkin-time').value.trim() || '미적용'; // 미입력 = 미적용 (기획서 §4-1·§5⑩ 확정)
+    var checkout = el('in-checkout-time').value.trim() || '미적용';
+
+    var rows = '';
+    for (var i = 1; i <= 15; i++) {
+      if (i === 1) {
+        rows += '<tr>' +
+          '<td>1</td>' +
+          '<td>' + absence + '</td>' +
+          '<td>' + apply + '</td>' +
+          '<td>' + data.traineeName + '</td>' +
+          '<td>' + reason + '</td>' +
+          '<td>' + checkin + '</td>' +
+          '<td>' + checkout + '</td>' +
+          '<td>원격</td>' +
+          '<td><span class="badge badge-unconfirmed" title="관리자 서명 이미지: 개발 착수 시 사용자 제공 예정 (기획서 §10-9)">자산 제공 대기(개발 착수 시 제공)</span></td>' +
+          '</tr>';
+      } else {
+        // 확정(기획서 §10-15): 2~15행은 일련번호 포함 완전 공란. 표 구조(15행)만 원형 유지
+        rows += '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+      }
+    }
+    el('pdf-table-body').innerHTML = rows;
+    el('pdf-modal').classList.add('show');
+  }
+
+  function closePdfModal() {
+    el('pdf-modal').classList.remove('show');
+  }
+
+  function formatKoreanDate(isoDate) {
+    if (!isoDate) return '';
+    var parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate;
+    return parts[0] + '년 ' + parts[1] + '월 ' + parts[2] + '일';
+  }
+
+  function render() {
+    el('status-name').textContent = data.traineeName;
+    var pill = el('status-pill');
+    pill.textContent = '● ' + state;
+    pill.className = 'status-pill status-' + state;
+
+    var manualCard = el('card-manual');
+    var group = el('btn-group');
+    group.innerHTML = '';
+
+    if (state === '접수') {
+      manualCard.style.display = 'none';
+      group.appendChild(makeBtn('목록으로', goListStub, ''));
+      group.appendChild(makeBtn('확인중으로 변경하기', onMoveToChecking, 'btn-primary'));
+    } else if (state === '확인중') {
+      manualCard.style.display = 'block';
+      setManualEditable(true);
+      group.appendChild(makeBtn('목록으로', goListStub, ''));
+      group.appendChild(makeBtn('저장하기', onSave, ''));
+      group.appendChild(makeBtn('완료로 변경하기', onComplete, 'btn-primary'));
+    } else if (state === '완료') {
+      manualCard.style.display = 'block';
+      setManualEditable(false);
+      clearErrors();
+      group.appendChild(makeBtn('목록으로', goListStub, ''));
+      group.appendChild(makeBtn('출석입력요청대장 PDF 다운로드', openPdfModal, 'btn-pdf'));
+      group.appendChild(makePermNote());
+    }
+  }
+
+  function makePermNote() {
+    var d = document.createElement('div');
+    d.className = 'flow-note';
+    d.innerHTML = '<span class="badge badge-outscope">권한 분기 미구현</span> 유관부서 담당자 권한 보유자에게만 노출(기획서 §3-3) — 본 프로토타입은 권한 분기 미구현<br>' +
+      '릴리스 이전 완료 건은 버튼 미노출(확정, 기획서 §10-14) — 본 프로토타입은 신규 건 기준이라 미구현.';
+    return d;
+  }
+
+  function setManualEditable(editable) {
+    ['in-absence-date', 'in-apply-date', 'in-hours', 'in-checkin-time', 'in-checkout-time'].forEach(function (id) {
+      el(id).disabled = !editable;
+    });
+  }
+
+  function makeBtn(label, handler, cls) {
+    var b = document.createElement('button');
+    b.className = 'btn ' + cls;
+    b.textContent = label;
+    b.onclick = handler;
+    return b;
+  }
+
+  render();
+</script>
+
+</body>
+</html>
