@@ -188,6 +188,38 @@ screens:
     last_review: "2026-06-02"
     source: "1-planning/prototype/project.html (manager · 피드백 편집기 좌 미리보기/우 작성)"
 
+  # ========================================
+  # 과정 적합성 검사 — 채점 기능 (2026-08-10 PRD v1.9)
+  # ⚠️ 다른 Figma 파일: "국비지원 부트캠프" (fileKey 5rUnkefaTPGU8xxUQnXAWN)
+  #    상단 file_root(gTtfe482…)와 다르므로 url은 전체 경로로 등록한다.
+  #    이번 델타 = 기존 과정 적합성 검사에 배점 입력 + 객관식 정답 체크 추가
+  # ========================================
+  suitability-exam-admin-questions-scoring-on:
+    node: "5825:7913"
+    url: "https://www.figma.com/design/5rUnkefaTPGU8xxUQnXAWN/?node-id=5825-7913"
+    last_review: "2026-08-12"
+    source: "과정적합성검사-채점기능-기획서 (문항설정 · 채점적용 ON · 배점합계 100/100)"
+  suitability-exam-admin-questions-validation-error:
+    node: "5825:8110"
+    url: "https://www.figma.com/design/5rUnkefaTPGU8xxUQnXAWN/?node-id=5825-8110"
+    last_review: "2026-08-12"
+    source: "문항설정 · 저장 검증 에러 (질문·보기 미입력 + 배점 0점 red) · 저장 disabled (FR-003)"
+  suitability-exam-admin-questions-off-empty:
+    node: "5825:7690"
+    url: "https://www.figma.com/design/5rUnkefaTPGU8xxUQnXAWN/?node-id=5825-7690"
+    last_review: "2026-08-12"
+    source: "문항설정 · 검사 OFF · 빈 상태"
+  suitability-exam-admin-questions-locked:
+    node: "5825:8437"
+    url: "https://www.figma.com/design/5rUnkefaTPGU8xxUQnXAWN/?node-id=5825-8437"
+    last_review: "2026-08-12"
+    source: "문항설정 · 지원자 발생 잠금 · 배점/정답 disabled (FR-004)"
+  suitability-exam-applicant-detail-score:
+    node: "5825:23684"
+    url: "https://www.figma.com/design/5rUnkefaTPGU8xxUQnXAWN/?node-id=5825-23684"
+    last_review: "2026-08-12"
+    source: "지원자 상세(지원서 보기) · 적합성 검사 점수 뱃지 (FR-009)"
+
 prd_map:
   PRD-classroom-detail-v1.2:
     # §4.1 AI 노트 — 스코프 외(현행 유지)이나 프로토타입 v2.3 기준 Figma 변환
@@ -227,3 +259,11 @@ prd_map:
     - project-manager-register
     - project-manager-submission-board
     - project-manager-feedback-editor
+
+  PRD-classroom-과정적합성검사-채점기능:
+    # 1-planning/prd/2026-08-10_과정적합성검사-채점기능-기획서.md (v1.9)
+    - suitability-exam-admin-questions-scoring-on
+    - suitability-exam-admin-questions-validation-error
+    - suitability-exam-admin-questions-off-empty
+    - suitability-exam-admin-questions-locked
+    - suitability-exam-applicant-detail-score
